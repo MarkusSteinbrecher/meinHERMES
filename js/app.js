@@ -35,9 +35,9 @@
 
   /* Links an der Hauptnavigation: eine kleine Pille «Suchen», die beim
      Anklicken nach links breit wird. Sie findet Ergebnisse, Aufgaben, Rollen,
-     Module, Phasen und Szenarien. Ist der Überblick offen, wendet er den
-     Treffer selbst an (Umfang, Einfärbung, Fokus); sonst führt der Treffer in
-     den Überblick. Rechts daneben liegt der Platz für das Werkzeug einer
+     Module, Phasen und Szenarien. Ist der Überblick (oder eine andere Ansicht
+     mit suchtreffer, etwa die Landkarte) offen, wendet sie den Treffer selbst
+     an; sonst führt der Treffer in den Überblick. Rechts daneben liegt der Platz für das Werkzeug einer
      Ansicht. */
   var pille = null;
   var suchmodusGesetzt = false;
@@ -54,8 +54,8 @@
         });
       },
       beiWahl: function (e) {
-        var ub = HT.views.ueberblick;
-        if (routeLesen().name === 'ueberblick' && ub && ub.suchtreffer && ub.suchtreffer(e)) { return; }
+        var ansicht = HT.views[routeLesen().name];
+        if (ansicht && ansicht.suchtreffer && ansicht.suchtreffer(e)) { return; }
         global.location.hash = '#/ueberblick?id=' + encodeURIComponent(e.id);
       }
     });

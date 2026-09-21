@@ -1,0 +1,383 @@
+/* ==========================================================================
+   meinHERMES — Landkarte: das Gesamtbild zum Zoomen (Entwurf, js/landkarte.js)
+   Die Welt ist ein Grid in px bei Zoom 1; was auf dem Schirm gleich gross
+   bleiben soll, rechnet mit --lk-k (1 / Zoom) bzw. --lk-g (höchstens 2,2).
+   ========================================================================== */
+
+body[data-route="landkarte"] .view { max-width: none; margin: 0; padding: 0; }
+body[data-route="landkarte"] .unterleiste__inner { padding-inline: 12px; }
+
+@media (min-width: 700px) {
+  body[data-route="landkarte"] {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+  }
+  body[data-route="landkarte"] .topbar { position: static; flex: 0 0 auto; }
+  body[data-route="landkarte"] main { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
+  body[data-route="landkarte"] .view { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
+  body[data-route="landkarte"] .fusszeile { display: none; }
+}
+
+.lk { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
+.lk > .ub-buehne__laden { margin: 24px; }
+
+.lk-leiste__titel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.lk-leiste__entwurf {
+  padding: 2px 6px;
+  border: 1px solid var(--akzent);
+  border-radius: var(--radius-xs);
+  color: var(--akzent-text);
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+
+/* --- Bühne und Welt --------------------------------------------------------- */
+
+.lk-buehne {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--weiss);
+  touch-action: none;
+  cursor: grab;
+  outline: none;
+}
+.lk-buehne:focus-visible { box-shadow: inset 0 0 0 2px var(--fokus); }
+.lk-buehne.ist-am-ziehen { cursor: grabbing; }
+.lk-buehne.ist-am-ziehen .lk-k { cursor: grabbing; }
+@media (max-width: 699px) {
+  .lk-buehne { height: calc(100vh - 150px); height: calc(100dvh - 150px); }
+}
+
+.lk-welt {
+  --lk-k: 1;
+  --lk-g: 1;
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  grid-auto-rows: auto;
+  padding: 0 24px 24px 0;
+  transform-origin: 0 0;
+}
+
+/* Phasenzeilen: abwechselnd Weiss und Grund wie die Bahnen des Graphen. */
+.lk-band { background: var(--graph-bahn, #fff); border-top: calc(1px * var(--lk-k)) solid var(--rand); }
+.lk-band--2 { background: var(--graph-bahn-2, #f3f2f2); }
+
+.lk-zelle {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  padding: 12px 4px 16px;
+  border-radius: calc(4px * var(--lk-k));
+}
+.lk-lage {
+  grid-area: 1 / 1;
+  min-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .2s ease, visibility 0s linear .2s;
+}
+.lk-welt[data-stufe="0"] .lk-lage--0,
+.lk-welt[data-stufe="1"] .lk-lage--1,
+.lk-welt[data-stufe="2"] .lk-lage--2 {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .2s ease, visibility 0s;
+}
+
+/* --- Kategoriefarben für Zahlen, Muster und Karte ---------------------------- */
+
+.lk-zahl--rolle { --lk-farbe: var(--gk-rolle); --lk-farbe-fg: var(--gk-rolle-fg); --lk-farbe-bg: var(--gk-rolle-bg); }
+.lk-zahl--aufgabe { --lk-farbe: var(--gk-aufgabe); --lk-farbe-fg: var(--gk-aufgabe-fg); --lk-farbe-bg: var(--gk-aufgabe-bg); }
+.lk-zahl--ergebnis { --lk-farbe: var(--gk-ergebnis); --lk-farbe-fg: var(--gk-ergebnis-fg); --lk-farbe-bg: var(--gk-ergebnis-bg); }
+
+/* --- Lage 0: Zahlen ------------------------------------------------------------ */
+
+.lk-zahlen {
+  display: grid;
+  gap: 3px;
+  justify-content: start;
+  align-content: start;
+  padding-left: 4px;
+  transform: scale(var(--lk-g));
+  transform-origin: 0 0;
+  transition: opacity .15s ease;
+}
+.lk-zahl { display: flex; align-items: center; gap: 4px; height: 22px; color: var(--lk-farbe); }
+.lk-zahl .kat-ikone { width: 14px; height: 14px; flex: 0 0 auto; }
+.lk-kreis {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 5px;
+  border-radius: 11px;
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.lk-kreis--neu { background: var(--lk-farbe); color: #fff; }
+.lk-kreis--wieder { border: 1.5px dashed var(--lk-farbe); background: #fff; color: var(--lk-farbe-fg); }
+
+/* Lage 1: Rollen und Aufgaben als Zahl in einer Zeile über den Ergebnissen,
+   in Weltgrösse (sie wachsen mit, bis Lage 2 sie ablöst). */
+.lk-zahlen--zeile {
+  display: flex;
+  gap: 10px;
+  padding-left: 0;
+  transform: scale(.72);
+  margin-bottom: -6px;
+}
+
+/* --- Elemente (Lage 1 und 2) ------------------------------------------------- */
+
+.lk-k {
+  display: flex;
+  align-items: flex-start;
+  gap: 3px;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 3px 5px 3.5px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  color: var(--text);
+  font: 600 10.5px/1.2 var(--schrift);
+  text-align: left;
+  hyphens: auto;
+  overflow-wrap: break-word;
+  cursor: pointer;
+  transition: opacity .15s ease;
+}
+.lk-k .kat-ikone { width: 1.2em; height: 1.2em; flex: 0 0 auto; margin-top: -.05em; }
+.lk-k__name { min-width: 0; }
+
+.lk-k--ergebnis.ist-neu { background: var(--gk-ergebnis-bg); border-color: var(--gk-ergebnis); color: var(--gk-ergebnis-fg); }
+.lk-k--aufgabe.ist-neu { background: var(--gk-aufgabe-bg); border-color: var(--gk-aufgabe); color: var(--gk-aufgabe-fg); }
+.lk-k--ergebnis.ist-wieder,
+.lk-k--aufgabe.ist-wieder { background: #fff; border-style: dashed; color: var(--text-leise); }
+.lk-k--ergebnis.ist-wieder { border-color: var(--gk-ergebnis); }
+.lk-k--aufgabe.ist-wieder { border-color: var(--gk-aufgabe); }
+.lk-k--ergebnis.ist-wieder .kat-ikone { color: var(--gk-ergebnis); }
+.lk-k--aufgabe .kat-ikone { color: var(--gk-aufgabe); }
+
+/* Rolle und Meilenstein ohne Kasten, wie im Graph. */
+.lk-k--rolle, .lk-k--meilenstein { padding-inline: 1px; font-weight: 700; }
+.lk-k--rolle { color: var(--gk-rolle-fg); }
+.lk-k--rolle .kat-ikone { color: var(--gk-rolle); }
+.lk-k--meilenstein { color: var(--gk-ergebnis-fg); }
+.lk-k--meilenstein .kat-ikone { color: var(--gk-ergebnis); }
+.lk-k--rolle.ist-wieder, .lk-k--meilenstein.ist-wieder { font-weight: 600; color: var(--text-leise); }
+
+.lk-k.ist-gleich { outline: calc(2px * var(--lk-k)) solid var(--rand-stark); outline-offset: calc(1px * var(--lk-k)); }
+.lk-k.ist-gewaehlt { outline: calc(2.5px * var(--lk-k)) solid var(--akzent); outline-offset: calc(1px * var(--lk-k)); }
+.lk-k:focus-visible { outline: calc(2px * var(--lk-k)) solid var(--fokus); }
+
+/* Mit Auswahl tritt alles andere zurück. */
+.lk-welt.hat-auswahl .lk-k:not(.ist-gewaehlt) { opacity: .32; }
+.lk-welt.hat-auswahl .lk-zelle:not(.hat-gewaehlt) .lk-zahlen { opacity: .25; }
+.lk-zelle.hat-gewaehlt { box-shadow: inset 0 0 0 calc(2px * var(--lk-k)) var(--akzent); }
+.lk-welt[data-stufe="0"] .lk-zelle.ist-erstmals { background: var(--akzent-schwach); }
+.lk-welt[data-stufe="0"] .lk-zelle.ist-erstmals::after {
+  content: "erstmals";
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  padding: 3px 6px;
+  border-radius: 3px;
+  background: var(--akzent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  transform: scale(var(--lk-g));
+  transform-origin: 100% 0;
+}
+
+/* Lage 1: die Ergebnisse als Liste in Spalten wie die Kästen der Abbildung. */
+.lk-lage--1 { display: grid; align-content: start; gap: 4px; }
+.lk-liste { column-width: 108px; column-gap: 10px; }
+.lk-liste > .lk-k { break-inside: avoid; margin-bottom: 4px; }
+
+/* Lage 2: je Aufgabe ein Block — Rolle, Aufgabe, eingerückt die Ergebnisse. */
+.lk-bloecke { column-width: 108px; column-gap: 10px; }
+.lk-block {
+  display: grid;
+  gap: 1.5px;
+  margin-bottom: 7px;
+  break-inside: avoid;
+}
+.lk-lage--2 .lk-k { padding: 1.8px 3px 2px; border-width: .5px; border-radius: 2px; font-size: 6.5px; line-height: 1.2; }
+.lk-lage--2 .lk-k--rolle, .lk-lage--2 .lk-k--meilenstein { padding-inline: .5px; }
+.lk-block__ergebnisse {
+  display: grid;
+  gap: 1.5px;
+  margin-left: 3px;
+  padding-left: 4px;
+  border-left: .5px solid var(--rand-stark);
+}
+
+/* --- Köpfe und Phasenleiste über der Welt ----------------------------------- */
+
+.lk-koepfe { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
+.lk-kopfleiste { position: absolute; left: 0; right: 0; top: 0; height: 34px; }
+.lk-kopfleiste[hidden], .lk-kopf[hidden] { display: none; }
+.lk-kopf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 4px 4px;
+  border: 0;
+  border-bottom: 1.5px solid var(--text);
+  background: transparent;
+  color: var(--text);
+  font: 700 11.5px/1.15 var(--schrift);
+  text-align: left;
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.lk-kopf__text { width: 100%; text-align: left; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; hyphens: auto; overflow-wrap: break-word; }
+.lk-kopf:hover { color: var(--akzent-text); border-bottom-color: var(--akzent); }
+.lk-kopfleiste.ist-klebend .lk-kopf { background: rgba(255, 255, 255, .94); }
+
+.lk-phase {
+  position: absolute;
+  width: 26px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: var(--bg-gedaempft);
+  color: var(--text);
+  font: 800 10.5px/1 var(--schrift);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  pointer-events: auto;
+  cursor: pointer;
+  overflow: hidden;
+}
+.lk-phase[hidden] { display: none; }
+.lk-phase__text { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+.lk-phase__text--kurz, .lk-phase.ist-kurz .lk-phase__text--lang { display: none; }
+.lk-phase.ist-kurz .lk-phase__text--kurz { display: block; }
+.lk-phase:hover { background: var(--akzent-schwach-2); color: var(--akzent-text); }
+
+/* --- Schwebende Bedienung ------------------------------------------------------ */
+
+.lk-schweber {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  background: var(--bg);
+  border: 1px solid var(--rand);
+  border-radius: var(--radius-s);
+}
+.lk-schweber--zoom { right: 12px; bottom: 12px; }
+.lk-schweber--legende { left: 40px; bottom: 12px; gap: 14px; padding: 5px 10px; font-size: 12px; font-weight: 600; color: var(--text-weich); }
+.lk-legende { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.lk-legende--kat { gap: 10px; padding-left: 14px; border-left: 1px solid var(--rand); }
+.lk-legende__kat { display: inline-flex; align-items: center; gap: 4px; color: var(--lk-farbe-fg); }
+.lk-legende__kat .kat-ikone { color: var(--lk-farbe); }
+.lk-muster {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  flex: 0 0 auto;
+}
+.lk-muster--neu { background: var(--lk-farbe, var(--text-leise)); }
+.lk-muster--wieder { border: 1.5px dashed var(--lk-farbe, var(--text-leise)); background: #fff; }
+
+@media (max-width: 699px) {
+  /* Schmal fehlen die Stufen (+, − und Einpassen bleiben) und der Titel in der Leiste. */
+  .lk-schweber--zoom .segment { display: none; }
+  .lk-leiste__titel > span:first-child { display: none; }
+  .lk-schweber--legende { left: 8px; bottom: 56px; }
+  .lk-legende--kat { display: none; }
+  .lk-schweber--zoom { right: 8px; bottom: 8px; }
+}
+
+/* --- Karte des gewählten Elements --------------------------------------------- */
+
+.lk-karte {
+  position: absolute;
+  top: 44px;
+  right: 12px;
+  z-index: 5;
+  width: min(22rem, calc(100% - 24px));
+  max-height: calc(100% - 110px);
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--rand-stark);
+  border-radius: var(--radius);
+  box-shadow: var(--schatten-stark);
+  cursor: auto;
+}
+.lk-karte[hidden] { display: none; }
+.lk-karte__kat { display: inline-flex; align-items: center; gap: 6px; color: var(--lk-farbe); }
+.lk-karte__titel { margin: 0; font-size: 19px; font-weight: 800; line-height: 1.2; letter-spacing: -.01em; }
+.lk-karte__kurz { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-weich); text-wrap: pretty; }
+.lk-karte__fakten { margin: 0; display: grid; gap: 2px; font-size: 12.5px; }
+.lk-karte__fakten div { display: flex; gap: 6px; }
+.lk-karte__fakten dt { font-weight: 700; color: var(--text-leise); }
+.lk-karte__fakten dd { margin: 0; }
+.lk-karte__hinweis { margin: -6px 0 0; font-size: 12.5px; color: var(--text-leise); }
+.lk-karte__links { display: flex; flex-wrap: wrap; gap: 14px; margin: 0; }
+
+.lk-vorkommen { display: grid; gap: 1px; margin: -4px 0 0; padding: 0; list-style: none; }
+.lk-vorkommen__knopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text);
+  font: 600 13px/1.25 var(--schrift);
+  text-align: left;
+  cursor: pointer;
+}
+.lk-vorkommen__knopf:hover { background: var(--bg-gedaempft); }
+.lk-vorkommen__knopf .lk-muster { width: 12px; height: 12px; }
+.lk-vorkommen__feld { flex: 1 1 auto; min-width: 0; }
+.lk-vorkommen__art { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-leise); }
+.lk-vorkommen__knopf.ist-neu .lk-vorkommen__art { color: var(--akzent-text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .lk-lage, .lk-k, .lk-zahlen { transition: none; }
+}
