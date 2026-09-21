@@ -15,6 +15,14 @@
    HT.ui.bloecke gezeichnet — dieselben Absätze, Abbildungen und Seitenmarken
    wie im Handbuch, nichts nacherzählt.
 
+   Eine Lektion kann ihr Bild aus dem Handbuch nehmen (`bild`: Anfang der
+   Bildunterschrift, «Abbildung 12», oder ein Stück des Dateinamens, wenn das
+   Handbuch die Abbildung nicht beschriftet — so bei den Phasen) oder aus
+   unseren eigenen Daten zeichnen (`bildUmfang`: ein Umfang des Graphen,
+   gezeichnet wie im Überblick; für die Module, zu denen das Handbuch kein
+   Bild hat). `listen` nennt die Phase bzw. das Modul, dessen Ergebnisse und
+   Aufgaben die Lektion auflistet.
+
    Platz für später: Die Einführung ist der Ort, an dem Video und Ton
    stehen werden (ein Block `medien` je Lektion); alles andere bleibt. */
 (function (global) {
@@ -61,6 +69,10 @@
     return l.titel.split(':')[0].trim();
   }
 
+  function anzahl(n, eins, mehr) {
+    return n + ' ' + (n === 1 ? eins : mehr);
+  }
+
   /* --- Handbuchtext ------------------------------------------------------- */
 
   /** Die Abschnitte einer Lektion, in der Reihenfolge der Quelle. */
@@ -79,16 +91,98 @@
     });
   }
 
-  /** Der Block der Leitabbildung («Abbildung 4») unter den Abschnitten. */
+  /**
+   * Der Block der Leitabbildung unter den Abschnitten: gesucht wird am Anfang
+   * der Bildunterschrift («Abbildung 4») oder, wo das Handbuch keine hat, im
+   * Dateinamen («phase-hl-konzept.svg» in 1.4.2.1).
+   */
   function bildBlock(abschnitte, bild) {
     if (!bild) { return null; }
     var treffer = null;
     abschnitte.forEach(function (t) {
       (t.abschnitt.bloecke || []).forEach(function (b) {
-        if (!treffer && b.t === 'abb' && (b.text || '').indexOf(bild) === 0) { treffer = b; }
+        if (treffer || b.t !== 'abb') { return; }
+        if ((b.text || '').indexOf(bild) === 0 || (b.datei || '').indexOf(bild) !== -1) { treffer = b; }
       });
     });
     return treffer;
+  }
+
+  /* --- Eigenes Bild und eigene Listen -------------------------------------- */
+
+  /**
+   * Das Bild eines Umfangs aus unseren Daten, gezeichnet wie im Überblick
+   * (HT.methodenbild): je Aufgabe die verantwortliche Rolle und die
+   * Ergebnisse, die sie in diesem Feld erzeugt. Ein Klick führt auf die Karte
+   * des Elements im Handbuch.
+   */
+  function eigenesBild(umfang) {
+    if (!umfang || !HT.methodenbild || !HT.graph) { return null; }
+    return HT.methodenbild.bauen({
+      vorgehen: umfang.vorgehen || 'klassisch',
+      phasen: umfang.phasen || [],
+      module: umfang.module || []
+    }, {
+      beiKlick: function (e) { global.location.hash = '#/handbuch?id=' + encodeURIComponent(e.id); }
+    });
+  }
+
+  /** Die Einträge einer Kategorie, die zu dieser Phase bzw. diesem Modul gehören. */
+  function imFeld(kategorie, feld, name) {
+    return HT.daten.alphabetisch(HT.daten.eintraegeDerKategorie(kategorie).filter(function (e) {
+      return (e[feld] || []).indexOf(name) !== -1;
+    }));
+  }
+
+  function linkListe(eintraege) {
+    return h('ul', { class: 'lp-liste' }, eintraege.map(function (e) {
+      return h('li', {}, HT.ui.eintragLink(e, e.begriff));
+    }));
+  }
+
+  /**
+   * Die Ergebnisse und Aufgaben einer Phase bzw. eines Moduls aus unseren
+   * eigenen Daten — erzeugt, also immer aktuell. Bei den Ergebnissen stehen
+   * die minimal geforderten (Tabelle 16/17 des Handbuchs), der Rest liegt
+   * einen Link weit weg im Überblick; die Aufgaben stehen vollständig.
+   */
+  function listenBauen(listen) {
+    if (!listen || (!listen.phase && !listen.modul)) { return null; }
+    var feld = listen.phase ? 'phasen' : 'module';
+    var name = listen.phase || listen.modul;
+    var art = listen.phase ? 'phase' : 'modul';
+    var eintrag = HT.daten.eintragMitBegriff(name, art);
+    var alle = imFeld('ergebnis', feld, name);
+    var minimal = alle.filter(function (e) { return e.minimalGefordert; });
+    var aufgaben = imFeld('aufgabe', feld, name);
+    if (!alle.length && !aufgaben.length) { return null; }
+
+    var abschnitt = h('section', { class: 'lp-listen' }, [
+      h('h2', { class: 'lp-marke', text: 'Ergebnisse und Aufgaben' })
+    ]);
+    if (alle.length) {
+      abschnitt.appendChild(h('h3', { class: 'lp-listen__titel' }, [
+        HT.ui.katSymbol('ergebnis', 15),
+        h('span', { text: 'Ergebnisse' }),
+        h('span', { class: 'lp-listen__zahl', text: minimal.length ? minimal.length + ' minimal gefordert von ' + alle.length : String(alle.length) })
+      ]));
+      abschnitt.appendChild(linkListe(minimal.length ? minimal : alle));
+      if (eintrag && minimal.length && minimal.length < alle.length) {
+        abschnitt.appendChild(h('p', { class: 'lp-listen__mehr' }, h('a', {
+          href: '#/ueberblick?id=' + encodeURIComponent(eintrag.id),
+          text: 'Alle ' + alle.length + ' Ergebnisse im Überblick ansehen'
+        })));
+      }
+    }
+    if (aufgaben.length) {
+      abschnitt.appendChild(h('h3', { class: 'lp-listen__titel' }, [
+        HT.ui.katSymbol('aufgabe', 15),
+        h('span', { text: 'Aufgaben' }),
+        h('span', { class: 'lp-listen__zahl', text: String(aufgaben.length) })
+      ]));
+      abschnitt.appendChild(linkListe(aufgaben));
+    }
+    return abschnitt;
   }
 
   /* --- Bausteine der Seite ------------------------------------------------ */
@@ -168,22 +262,39 @@
         + 'Sätzen, worum es geht, und zeigt die Abbildung, um die es dabei geht.' }),
       h('p', { text: 'Darunter steht der Wortlaut des Handbuchs zum Nachlesen, zugeklappt: dieselben Absätze, '
         + 'Abbildungen und Seitenzahlen wie im Handbuch. Die Einführung ist von uns, alles Weitere ist Handbuchtext.' }),
+      h('p', { text: 'Lektionen zu einer Phase oder einem Modul nennen zusätzlich deren Ergebnisse und Aufgaben. '
+        + 'Diese Listen sind aus unseren Daten erzeugt und darum immer vollständig: Bei den Ergebnissen stehen die '
+        + 'minimal geforderten (Tabelle 16/17 des Handbuchs), alle übrigen liegen einen Klick weit weg im Überblick. '
+        + 'Zu den Modulen hat das Handbuch keine Abbildung — dort zeichnen wir das Bild selbst, wie im Überblick.' }),
       h('p', { text: 'Am Fuss jeder Lektion führen Verweise ins Üben (Überblick, Zuordnen, Lernkarten) und zur '
         + 'nächsten Lektion.' }),
       h('p', { class: 'lp-hinweis', text: 'Entwurf: Die Seite ist noch nicht im Menü und noch nicht abgenommen.' })
     ];
   }
 
-  function leisteSetzen(daten, aktivId) {
-    var flach = alleLektionen(daten);
+  /* In einer Lektion trägt die Leiste die Lektionen ihres Blocks, auf der
+     Übersicht die Blöcke (jeder führt auf seine erste Lektion). Alle 24
+     Lektionen nebeneinander wären eine Rolle ohne Anfang und Ende. */
+  function leisteSetzen(daten, eintrag) {
+    var bloecke = daten.bloecke || [];
+    if (!eintrag) {
+      HT.app.unterleiste({
+        label: 'Blöcke',
+        links: bloecke.filter(function (b) { return (b.lektionen || []).length; }).map(function (b, i) {
+          return { href: adresse(b.lektionen[0].id), text: b.titel, nr: String(i + 1) };
+        }),
+        info: { titel: 'Lernpfad', inhalt: anleitung }
+      });
+      return;
+    }
     HT.app.unterleiste({
-      label: 'Lektionen',
-      links: flach.map(function (e) {
+      label: eintrag.block.titel,
+      links: (eintrag.block.lektionen || []).map(function (l, i) {
         return {
-          href: adresse(e.lektion.id),
-          text: kurzTitel(e.lektion),
-          nr: String(e.nr),
-          aktiv: e.lektion.id === aktivId
+          href: adresse(l.id),
+          text: kurzTitel(l),
+          nr: String(i + 1),
+          aktiv: l.id === eintrag.lektion.id
         };
       }),
       info: { titel: 'Lernpfad', inhalt: anleitung }
@@ -210,7 +321,7 @@
       h('div', { class: 'lp-kopf' }, [
         h('h1', { class: 'lp-kopf__titel', text: 'Lernpfad' }),
         h('p', { class: 'lp-kopf__kurz', text: 'Der Stoff des Referenzhandbuchs, geordnet wie eine Schulung: '
-          + flach.length + ' Lektionen in ' + (daten.bloecke || []).length + ' Block.' }),
+          + flach.length + ' Lektionen in ' + anzahl((daten.bloecke || []).length, 'Block', 'Blöcken') + '.' }),
         h('p', { class: 'lp-entwurf', role: 'note' }, [
           h('b', { text: 'Entwurf. ' }),
           'Diese Seite steht noch nicht im Menü. Sie ist über die Adresse erreichbar, damit sie sich ansehen lässt, '
@@ -221,7 +332,10 @@
 
     (daten.bloecke || []).forEach(function (b) {
       seite.appendChild(h('section', { class: 'lp-block' }, [
-        h('h2', { class: 'lp-block__titel', text: b.titel }),
+        h('h2', { class: 'lp-block__titel' }, [
+          h('span', { text: b.titel }),
+          h('span', { class: 'lp-block__zahl', text: anzahl((b.lektionen || []).length, 'Lektion', 'Lektionen') })
+        ]),
         b.einleitung ? h('p', { class: 'lp-block__text', text: b.einleitung }) : null,
         h('div', { class: 'lp-karten' }, (b.lektionen || []).map(function (l, i) {
           return lektionKarte({ lektion: l, block: b, nr: i + 1 });
@@ -257,16 +371,48 @@
     (l.einfuehrung || []).forEach(function (t) { worum.appendChild(abschnittText(t)); });
     seite.appendChild(worum);
 
-    /* Abbildung und Wortlaut kommen aus dem Handbuch und damit später. */
+    /* Abbildung und Wortlaut kommen aus dem Handbuch und damit später; das
+       eigene Bild steht sofort, es kommt aus den schon geladenen Daten. */
     var bildPlatz = h('div', { class: 'lp-bild' });
+    var eigenBild = null, eigenFuss = null;
+    if (l.bildUmfang) {
+      var eigen = eigenesBild(l.bildUmfang);
+      if (eigen) {
+        eigenBild = eigen;
+        eigenFuss = h('p', { class: 'lp-bild__quelle', text: 'Eigene Darstellung aus den Daten der Methode: '
+          + 'je Aufgabe die verantwortliche Rolle und die Ergebnisse, die sie erzeugt (klassische Vorgehensweise).' });
+        bildPlatz.classList.add('lp-bild--eigen');
+        bildPlatz.appendChild(h('div', { class: 'lp-bild__rahmen' }, eigen));
+        bildPlatz.appendChild(eigenFuss);
+      }
+    }
     var quellePlatz = h('div', { class: 'lp-quelle__platz' }, h('p', { class: 'trefferzahl', role: 'status', text: 'Handbuchtext wird geladen …' }));
     seite.appendChild(bildPlatz);
     seite.appendChild(quellePlatz);
+
+    var listen = listenBauen(l.listen);
+    if (listen) { seite.appendChild(listen); }
 
     var ueben = uebenZeile(l.ueben);
     if (ueben) { seite.appendChild(ueben); }
     seite.appendChild(weiterZeile(daten, eintrag));
     behaelter.appendChild(seite);
+
+    /* Erst in der Seite hat das Bild eine Höhe. Ist es deutlich höher als der
+       Schirm (Projektführung: 33 Zeilen), bekommt es einen Deckel und rollt in
+       seinem Rahmen; der Fuss sagt es und der untere Rand läuft weich aus —
+       sonst sähe es aus, als hörte das Modul nach vier Zeilen auf. Knapp
+       überstehende Bilder (ISDS: 21 px) bleiben ganz stehen: für zwei
+       Fingerbreit zu rollen ist lästiger als weiterzuscrollen. (Gemessen ohne
+       requestAnimationFrame, der im Hintergrundtab nicht läuft.) */
+    if (eigenBild && eigenBild.scrollHeight > (global.innerHeight || 800) * 0.85) {
+      bildPlatz.dataset.rollt = 'ja';
+      if (eigenFuss) {
+        eigenFuss.textContent = eigenFuss.textContent + ' Es rollt in seinem Rahmen: '
+          + anzahl(eigenBild.querySelectorAll('.mb-block').length, 'Zeile', 'Zeilen') + ' in '
+          + anzahl(eigenBild.querySelectorAll('.mb-phase').length, 'Phase', 'Phasen') + '.';
+      }
+    }
 
     abschnitteLaden(l).then(function (abschnitte) {
       if (!document.body.contains(quellePlatz)) { return; }   // inzwischen weitergeblättert
@@ -298,7 +444,7 @@
         return;
       }
       var eintrag = params.lektion ? eintragVon(daten, String(params.lektion)) : null;
-      leisteSetzen(daten, eintrag ? eintrag.lektion.id : null);
+      leisteSetzen(daten, eintrag);
       if (eintrag) { lektionBauen(behaelter, daten, eintrag); }
       else { uebersichtBauen(behaelter, daten); }
     });

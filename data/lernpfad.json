@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-21a",
+  "version": "2026-09-21b",
   "bloecke": [
     {
       "id": "methode",
@@ -187,6 +187,803 @@
             {
               "titel": "Hinweise zur Anwendung im Handbuch",
               "adresse": "#/handbuch?kapitel=hinweise"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phasen",
+      "titel": "Die Phasen",
+      "kurz": "Der Projektlebenszyklus und die sechs Phasen — was in jeder geschieht und wie sie endet.",
+      "einleitung": "Der zweite Block geht das Kapitel «Phasen» des Referenzhandbuchs durch: zuerst, wie der Projektlebenszyklus aufgebaut ist und wozu die Meilensteine dazwischen dienen, dann Phase für Phase. Initialisierung und Abschluss durchläuft jedes Projekt; dazwischen liegt entweder die klassische Lösungsentstehung mit Konzept, Realisierung und Einführung oder die agile Phase Umsetzung. Jede Lektion nennt die Ergebnisse und Aufgaben ihrer Phase.",
+      "lektionen": [
+        {
+          "id": "wie-phasen-laufen",
+          "titel": "Wie Phasen laufen",
+          "kurz": "Projektlebenszyklus, Phasenmodell und die Meilensteine dazwischen.",
+          "dauer": 8,
+          "ziele": [
+            "den Projektlebenszyklus in seine drei Teile gliedern: Projektbeginn, Lösungsentstehung, Projektende",
+            "sagen, welche Phasen klassisch und welche agil durchlaufen werden",
+            "erklären, wozu die Meilensteine am Anfang und am Ende jeder Phase da sind"
+          ],
+          "einfuehrung": [
+            "Jedes HERMES-Projekt folgt demselben Lebenszyklus: Es beginnt damit, das Vorhaben auszurichten, geht in die Lösungsentstehung über und endet mit dem organisatorischen und formellen Projektende.",
+            "Die Phase Initialisierung steht immer am Anfang, die Phase Abschluss immer am Ende — unabhängig davon, ob dazwischen klassisch oder agil gearbeitet wird. Das hält die Schnittstellen zur Stammorganisation für alle Projekte gleich.",
+            "Nur die Lösungsentstehung unterscheidet sich: klassisch mit den drei Phasen Konzept, Realisierung und Einführung, agil mit der einen Phase Umsetzung, die sich nicht weiter unterteilen lässt.",
+            "An den Phasengrenzen stehen Meilensteine. Sie sind Quality Gates: Vor jeder Freigabe wird über Ergebnisse und Vorgehen entschieden, und der Auftraggeber gibt die Ressourcen für die nächste Phase frei."
+          ],
+          "bild": "Abbildung 12",
+          "quelle": [
+            {
+              "kapitel": "phasen",
+              "abschnitte": [
+                "1.1.1",
+                "1.1.2",
+                "1.1.3",
+                "1.1.4",
+                "1.2.1",
+                "1.2.2",
+                "1.2.3",
+                "1.3"
+              ]
+            }
+          ],
+          "ueben": [
+            {
+              "titel": "Phasen im Überblick",
+              "adresse": "#/ueberblick"
+            },
+            {
+              "titel": "Gesamtbild im Zuordnen",
+              "adresse": "#/trainer?alles=1"
+            }
+          ]
+        },
+        {
+          "id": "phase-initialisierung",
+          "titel": "Initialisierung",
+          "kurz": "Die Phase, die jedes Projekt durchläuft: Grundlagen, Varianten, Durchführungsauftrag.",
+          "dauer": 7,
+          "ziele": [
+            "sagen, was die Initialisierung erarbeitet und wozu",
+            "den Entscheid Durchführungsfreigabe einordnen",
+            "Gründe nennen, aus denen ein Projekt hier endet"
+          ],
+          "einfuehrung": [
+            "Die Initialisierung wird in jedem Projekt durchgeführt, gleich welche Vorgehensweise später gewählt wird — und aus Projektmanagementsicht stets klassisch, auch wenn agile Werkzeuge zum Einsatz kommen.",
+            "Sie schafft die Ausgangslage: Die Studie erarbeitet und vergleicht die möglichen Lösungsvarianten, das passende Szenario wird gewählt und bei Bedarf individualisiert.",
+            "Aus der gewählten Variante entstehen der Projektmanagementplan und der Durchführungsauftrag, abgeglichen mit den Strategien und Zielen der Stammorganisation. Hier fällt auch der Entscheid, ob klassisch oder agil weitergearbeitet wird — fachlich begründet, nicht dem Trend folgend.",
+            "Am Ende steht die Durchführungsfreigabe. Sie kann auch ausbleiben: bei fehlender Wirtschaftlichkeit, zu hohen Risiken, fehlender Realisierbarkeit, rechtlichen oder politischen Bedenken oder fehlender Übereinstimmung mit den Zielen der Organisation."
+          ],
+          "bild": "phase-initialisierung.svg",
+          "quelle": [
+            {
+              "kapitel": "phasen",
+              "abschnitte": [
+                "1.4.1.1"
+              ]
+            }
+          ],
+          "listen": {
+            "phase": "Initialisierung"
+          },
+          "ueben": [
+            {
+              "titel": "Initialisierung im Überblick",
+              "adresse": "#/ueberblick?id=phase-initialisierung"
+            },
+            {
+              "titel": "Zuordnen: Initialisierung",
+              "adresse": "#/trainer?phase=Initialisierung"
+            }
+          ]
+        },
+        {
+          "id": "phase-konzept",
+          "titel": "Konzept",
+          "kurz": "Die gewählte Variante wird so konkret, dass man planen, offerieren und realisieren kann.",
+          "dauer": 7,
+          "ziele": [
+            "sagen, was in der Phase Konzept entsteht",
+            "die Reihenfolge Situationsanalyse, Anforderungen, Konzept nachvollziehen",
+            "sagen, worüber am Ende der Phase entschieden wird"
+          ],
+          "einfuehrung": [
+            "Im Konzept wird die in der Initialisierung gewählte Variante konkretisiert — so detailliert, dass die Beteiligten die Lösung auf einer verlässlichen Grundlage planen, offerieren und realisieren können.",
+            "Der Weg dahin ist immer derselbe: zuerst die Situationsanalysen, gestützt darauf die Lösungsanforderungen, und daraus die Konzepte.",
+            "Welche Konzepte das sind, hängt vom Szenario ab: Organisationskonzept, sobald Geschäftsabläufe oder -strukturen betroffen sind, dazu Einführungskonzept, bei Bedarf Test- und Migrationskonzept, in IT-Projekten Lösungsarchitektur und Betriebskonzept.",
+            "Am Ende wird geprüft, ob es sinnvoll ist, das Projekt zu realisieren; ist es das, wird die Phasenfreigabe für die Realisierung erteilt."
+          ],
+          "bild": "phase-hl-konzept.svg",
+          "quelle": [
+            {
+              "kapitel": "phasen",
+              "abschnitte": [
+                "1.4.2.1"
+              ]
+            }
+          ],
+          "listen": {
+            "phase": "Konzept"
+          },
+          "ueben": [
+            {
+              "titel": "Konzept im Überblick",
+              "adresse": "#/ueberblick?id=phase-konzept"
+            },
+            {
+              "titel": "Zuordnen: Konzept",
+              "adresse": "#/trainer?phase=Konzept"
+            }
+          ]
+        },
+        {
+          "id": "phase-realisierung",
+          "titel": "Realisierung",
+          "kurz": "Das Produkt oder System entsteht und wird getestet; die Einführung wird vorbereitet.",
+          "dauer": 6,
+          "ziele": [
+            "sagen, was in der Realisierung geschieht",
+            "die Vorabnahme als Grundlage der Phasenfreigabe einordnen",
+            "sagen, woran die Phase Realisierung scheitern kann"
+          ],
+          "einfuehrung": [
+            "In der Realisierung wird das Produkt oder System entwickelt — oder, wenn es beschafft wurde, parametrisiert und angepasst — und getestet.",
+            "Parallel dazu wird die Organisation umgesetzt, in IT-Projekten das System in die Betriebsinfrastruktur integriert und die Betriebsorganisation realisiert.",
+            "Die Phase leistet zugleich die Vorarbeit für die Einführung: Sie wird auf der Grundlage des Einführungskonzepts vorbereitet, je nach Szenario werden Tests durchgeführt und die Migration vorbereitet.",
+            "Der Entscheid über die Freigabe der Einführung stützt sich auf den Entscheid Vorabnahme; die Einführungsrisiken müssen beurteilt und vertretbar sein, sonst kann die Einführung nicht erfolgen."
+          ],
+          "bild": "phase-hl-realisierung.svg",
+          "quelle": [
+            {
+              "kapitel": "phasen",
+              "abschnitte": [
+                "1.4.2.2"
+              ]
+            }
+          ],
+          "listen": {
+            "phase": "Realisierung"
+          },
+          "ueben": [
+            {
+              "titel": "Realisierung im Überblick",
+              "adresse": "#/ueberblick?id=phase-realisierung"
+            },
+            {
+              "titel": "Zuordnen: Realisierung",
+              "adresse": "#/trainer?phase=Realisierung"
+            }
+          ]
+        },
+        {
+          "id": "phase-einfuehrung",
+          "titel": "Einführung",
+          "kurz": "Der sichere Übergang zum neuen Zustand; der Betrieb wird aufgenommen.",
+          "dauer": 6,
+          "ziele": [
+            "sagen, was die Einführung sicherstellt",
+            "Betriebsaufnahme, erste Betriebszeit und Abnahme auseinanderhalten",
+            "sagen, wann die Gewährleistung beginnt"
+          ],
+          "einfuehrung": [
+            "Die Einführung gewährleistet den sicheren Übergang zum neuen Zustand: Einführungsmassnahmen wie die Anwenderschulung werden durchgeführt, je nach Szenario wird migriert.",
+            "Produkt oder System und die Organisation werden aktiviert, der Betrieb wird aufgenommen und das ISDS-Konzept in den Betrieb überführt.",
+            "Zwischen Betriebsaufnahme und Abnahme liegt die erste Betriebszeit: Das Projekt unterstützt dort noch die Problemanalyse und -behebung; danach beginnt die Gewährleistung und damit der reguläre Betrieb.",
+            "Am Ende der Phase wird nach erfolgreicher Betriebsaufnahme der Entscheid Abnahme getroffen und die Phasenfreigabe für den Abschluss erteilt."
+          ],
+          "bild": "phase-hl-einfuehrung.svg",
+          "quelle": [
+            {
+              "kapitel": "phasen",
+              "abschnitte": [
+                "1.4.2.3"
+              ]
+            }
+          ],
+          "listen": {
+            "phase": "Einführung"
+          },
+          "ueben": [
+            {
+              "titel": "Einführung im Überblick",
+              "adresse": "#/ueberblick?id=phase-einfuehrung"
+            },
+            {
+              "titel": "Zuordnen: Einführung",
+              "adresse": "#/trainer?phase=Einführung"
+            }
+          ]
+        },
+        {
+          "id": "phase-umsetzung",
+          "titel": "Umsetzung (agil)",
+          "kurz": "Die agile Lösungsentstehung in einer einzigen Phase: iterativ-inkrementell.",
+          "dauer": 8,
+          "ziele": [
+            "sagen, was die Phase Umsetzung an die Stelle der drei klassischen Phasen setzt",
+            "erklären, warum sie nicht weiter unterteilt wird",
+            "sagen, was ein Inkrement ist und wann die Releasefreigabe vorkommt"
+          ],
+          "einfuehrung": [
+            "Die Phase Umsetzung ersetzt in der agilen Vorgehensweise die drei klassischen Phasen Konzept, Realisierung und Einführung; Initialisierung und Abschluss bleiben gleich.",
+            "Die gewählte Variante wird iterativ-inkrementell umgesetzt: Die Lösungsanforderungen werden laufend aufgeteilt, verfeinert und priorisiert und in absteigender Priorität abgearbeitet — entwickelt, realisiert und in Betrieb genommen.",
+            "Mit jeder Iteration entsteht ein Inkrement, ein weiterer Teil der Lösung, der sich nahtlos mit dem bereits Erstellten verbindet. Weil Änderungen zum Vorgehen gehören, ergibt eine Phasenstruktur hier keinen Sinn; deshalb lässt sich die Phase nicht unterteilen.",
+            "Ist es im Projektmanagementplan so festgelegt, wird je Release der Entscheid Releasefreigabe getroffen; nach der Abnahme des letzten Release endet die Phase und die Umsetzungsorganisation wird aufgelöst."
+          ],
+          "bild": "phase-hl-umsetzung.svg",
+          "quelle": [
+            {
+              "kapitel": "phasen",
+              "abschnitte": [
+                "1.4.3.1"
+              ]
+            }
+          ],
+          "listen": {
+            "phase": "Umsetzung"
+          },
+          "ueben": [
+            {
+              "titel": "Umsetzung im Überblick",
+              "adresse": "#/ueberblick?id=phase-umsetzung"
+            },
+            {
+              "titel": "Zuordnen: Umsetzung",
+              "adresse": "#/trainer?phase=Umsetzung&vorgehen=agil"
+            }
+          ]
+        },
+        {
+          "id": "phase-abschluss",
+          "titel": "Abschluss",
+          "kurz": "Das systematische Herunterfahren des Projekts und die Übergabe.",
+          "dauer": 6,
+          "ziele": [
+            "sagen, was die Phase Abschluss leistet",
+            "die Projektschlussbeurteilung einordnen",
+            "sagen, was mit Altsystem, Daten und Projektorganisation geschieht"
+          ],
+          "einfuehrung": [
+            "Der Abschluss ist die letzte Phase jedes Projekts und wird — wie die Initialisierung — aus Projektmanagementsicht stets klassisch abgewickelt.",
+            "Die Ergebnisse werden auf Vollständigkeit geprüft und formell ergänzt, die Projektschlussbeurteilung wird erarbeitet und genehmigt.",
+            "Ergebnisse und Dokumentationen gehen an die Stammorganisation zuhanden der Anwendungs-, Betriebs- und Wartungsorganisation; die Projektabwicklung wird nach den Ablagevorschriften archiviert.",
+            "Je nach Szenario wird das Altsystem ausser Betrieb gesetzt und samt nicht mehr benötigter Infrastruktur entfernt; zuletzt wird das Projekt abgeschlossen und die Projektorganisation aufgelöst."
+          ],
+          "bild": "phase-abschluss.svg",
+          "quelle": [
+            {
+              "kapitel": "phasen",
+              "abschnitte": [
+                "1.4.4.1"
+              ]
+            }
+          ],
+          "listen": {
+            "phase": "Abschluss"
+          },
+          "ueben": [
+            {
+              "titel": "Abschluss im Überblick",
+              "adresse": "#/ueberblick?id=phase-abschluss"
+            },
+            {
+              "titel": "Zuordnen: Abschluss",
+              "adresse": "#/trainer?phase=Abschluss"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "module",
+      "titel": "Die Module",
+      "kurz": "Die zwölf Standardmodule — was jedes leistet und welche Aufgaben und Ergebnisse dazugehören.",
+      "einleitung": "Module enthalten thematisch zusammengehörende Aufgaben und Ergebnisse; sie sind die Bausteine, aus denen Projekte und Szenarien zusammengesetzt werden. Der dritte Block nimmt jedes der zwölf Standardmodule einzeln vor, zuerst die beiden Module zur Steuerung und Führung, dann die zehn Module zur Ausführung. Vier davon müssen in jedem Projekt vorkommen: Projektsteuerung, Projektführung, Projektgrundlagen und Einführungsorganisation. Ergänzend lassen sich eigene, individuelle Module bilden (Kapitel 3.2.2).",
+      "lektionen": [
+        {
+          "id": "modul-projektsteuerung",
+          "titel": "Projektsteuerung",
+          "kurz": "Wo entschieden und freigegeben wird — zwingend in jedem Projekt.",
+          "dauer": 6,
+          "ziele": [
+            "sagen, wofür das Modul Projektsteuerung da ist",
+            "die vier Module nennen, die in jedem Projekt vorkommen müssen"
+          ],
+          "einfuehrung": [
+            "Das Modul Projektsteuerung sorgt für die gesamthafte, organisationsübergreifende Steuerung des Projekts und stellt sicher, dass es zu den übergeordneten Zielen und Vorgaben der Stammorganisation passt.",
+            "Seine acht Aufgaben sind fast alle Entscheide — von der Projektinitialisierungsfreigabe bis zum Projektabschluss oder -abbruch; zusammen mit Projektführung, Projektgrundlagen und Einführungsorganisation gehört es zu den vier Modulen, die in jedem Projekt vorkommen müssen."
+          ],
+          "bildUmfang": {
+            "vorgehen": "klassisch",
+            "phasen": [],
+            "module": [
+              "Projektsteuerung"
+            ]
+          },
+          "quelle": [
+            {
+              "kapitel": "module",
+              "abschnitte": [
+                "3.4.1.1"
+              ]
+            }
+          ],
+          "listen": {
+            "modul": "Projektsteuerung"
+          },
+          "ueben": [
+            {
+              "titel": "Projektsteuerung im Überblick",
+              "adresse": "#/ueberblick?id=modul-projektsteuerung"
+            },
+            {
+              "titel": "Zuordnen: Projektsteuerung",
+              "adresse": "#/trainer?modul=Projektsteuerung"
+            }
+          ]
+        },
+        {
+          "id": "modul-projektfuehrung",
+          "titel": "Projektführung",
+          "kurz": "Die tägliche Arbeit des Projektleiters: planen, führen, koordinieren — zwingend in jedem Projekt.",
+          "dauer": 6,
+          "ziele": [
+            "die Projektführung von der Projektsteuerung unterscheiden",
+            "sagen, welche Beschaffungen hier und nicht im Modul Beschaffung laufen"
+          ],
+          "einfuehrung": [
+            "Im Modul Projektführung plant, führt und koordiniert der Projektleiter das Projekt, bringt es innerhalb von Terminen und Kosten zum Ziel, gewinnt und informiert die Stakeholder, managt Risiken und Probleme und führt Änderungsmanagement und Qualitätssicherung.",
+            "Es ist mit zwölf Aufgaben das grösste Modul der Methode, ebenfalls zwingend in jedem Projekt, und deckt auch alle Beschaffungen ab, die nicht im offenen oder selektiven Verfahren laufen."
+          ],
+          "bildUmfang": {
+            "vorgehen": "klassisch",
+            "phasen": [],
+            "module": [
+              "Projektführung"
+            ]
+          },
+          "quelle": [
+            {
+              "kapitel": "module",
+              "abschnitte": [
+                "3.4.1.2"
+              ]
+            }
+          ],
+          "listen": {
+            "modul": "Projektführung"
+          },
+          "ueben": [
+            {
+              "titel": "Projektführung im Überblick",
+              "adresse": "#/ueberblick?id=modul-projektfuehrung"
+            },
+            {
+              "titel": "Zuordnen: Projektführung",
+              "adresse": "#/trainer?modul=Projektführung"
+            }
+          ]
+        },
+        {
+          "id": "modul-projektgrundlagen",
+          "titel": "Projektgrundlagen",
+          "kurz": "Die Studie und die Abklärungen, auf denen der Entscheid Weiteres Vorgehen beruht.",
+          "dauer": 5,
+          "ziele": [
+            "sagen, was das Modul Projektgrundlagen erarbeitet",
+            "die Studie als sein zentrales Ergebnis einordnen"
+          ],
+          "einfuehrung": [
+            "Das Modul Projektgrundlagen schafft die fundierte Ausgangslage für eine mögliche Lösungsentstehung: Es erarbeitet die Studie, klärt die Rechtsgrundlagen, analysiert den Schutzbedarf und führt bei geplanter Beschaffung die Beschaffungsanalyse durch.",
+            "Damit liegen die Voraussetzungen vor, um den Entscheid Weiteres Vorgehen zu treffen und anschliessend Projektmanagementplan und Durchführungsauftrag zu erarbeiten — es ist das dritte der vier zwingenden Module."
+          ],
+          "bildUmfang": {
+            "vorgehen": "klassisch",
+            "phasen": [],
+            "module": [
+              "Projektgrundlagen"
+            ]
+          },
+          "quelle": [
+            {
+              "kapitel": "module",
+              "abschnitte": [
+                "3.4.2.1"
+              ]
+            }
+          ],
+          "listen": {
+            "modul": "Projektgrundlagen"
+          },
+          "ueben": [
+            {
+              "titel": "Projektgrundlagen im Überblick",
+              "adresse": "#/ueberblick?id=modul-projektgrundlagen"
+            },
+            {
+              "titel": "Zuordnen: Projektgrundlagen",
+              "adresse": "#/trainer?modul=Projektgrundlagen"
+            }
+          ]
+        },
+        {
+          "id": "modul-beschaffung",
+          "titel": "Beschaffung",
+          "kurz": "Das offene und das selektive Verfahren mit öffentlicher Publikation.",
+          "dauer": 5,
+          "ziele": [
+            "das offene und das selektive Verfahren vom Rest abgrenzen",
+            "sagen, wo die übrigen Beschaffungen abgewickelt werden"
+          ],
+          "einfuehrung": [
+            "Das Modul Beschaffung dient der gezielten Beschaffung eines am Markt verfügbaren Systems, Produkts oder einer Dienstleistung im offenen oder selektiven Verfahren mit öffentlicher Publikation.",
+            "Die Abgrenzung ist prüfungsrelevant: Alle anderen Beschaffungen werden im Modul Projektführung abgewickelt, und die Grundlagen wie Bedarfs- und Marktanalyse entstehen ausserhalb dieses Moduls."
+          ],
+          "bildUmfang": {
+            "vorgehen": "klassisch",
+            "phasen": [],
+            "module": [
+              "Beschaffung"
+            ]
+          },
+          "quelle": [
+            {
+              "kapitel": "module",
+              "abschnitte": [
+                "3.4.2.2"
+              ]
+            }
+          ],
+          "listen": {
+            "modul": "Beschaffung"
+          },
+          "ueben": [
+            {
+              "titel": "Beschaffung im Überblick",
+              "adresse": "#/ueberblick?id=modul-beschaffung"
+            },
+            {
+              "titel": "Zuordnen: Beschaffung",
+              "adresse": "#/trainer?modul=Beschaffung"
+            }
+          ]
+        },
+        {
+          "id": "modul-organisation",
+          "titel": "Organisation",
+          "kurz": "Geschäftsmodell, Aufbau- und Ablauforganisation der Lösung.",
+          "dauer": 5,
+          "ziele": [
+            "sagen, was das Modul Organisation erarbeitet",
+            "sagen, wann Organisationsanforderungen zwingend sind"
+          ],
+          "einfuehrung": [
+            "Das Modul Organisation konzipiert die Organisation der Lösung neu oder passt sie an — Geschäftsmodell, Aufbau- und Ablauforganisation — setzt sie um und aktiviert sie, oder es liefert die organisatorisch-fachlichen Grundlagen für den Aufbau der Lösung.",
+            "Werden durch die Lösung Geschäftsabläufe oder -strukturen berührt, sind Organisationsanforderungen und Organisationskonzept in jedem Fall zu erarbeiten; die Stakeholder werden dabei laufend einbezogen."
+          ],
+          "bildUmfang": {
+            "vorgehen": "klassisch",
+            "phasen": [],
+            "module": [
+              "Organisation"
+            ]
+          },
+          "quelle": [
+            {
+              "kapitel": "module",
+              "abschnitte": [
+                "3.4.2.3"
+              ]
+            }
+          ],
+          "listen": {
+            "modul": "Organisation"
+          },
+          "ueben": [
+            {
+              "titel": "Organisation im Überblick",
+              "adresse": "#/ueberblick?id=modul-organisation"
+            },
+            {
+              "titel": "Zuordnen: Organisation",
+              "adresse": "#/trainer?modul=Organisation"
+            }
+          ]
+        },
+        {
+          "id": "modul-produkt",
+          "titel": "Produkt",
+          "kurz": "Die Entwicklung eines Produkts oder einer Dienstleistung.",
+          "dauer": 5,
+          "ziele": [
+            "Produkt und IT-System auseinanderhalten",
+            "die Ergebnisse Produktkonzept, Lösungsanforderungen und Detailspezifikation einordnen"
+          ],
+          "einfuehrung": [
+            "Das Modul Produkt dient der Entwicklung eines Produkts oder einer Dienstleistung: Produktkonzept erarbeiten, Lösungsanforderungen verfeinern, Detailspezifikation erstellen, das Produkt realisieren und aktivieren.",
+            "Es ist das Gegenstück zum Modul IT-System — beide sind in der agilen Vorgehensweise jene Module, die iterativ durchlaufen werden."
+          ],
+          "bildUmfang": {
+            "vorgehen": "klassisch",
+            "phasen": [],
+            "module": [
+              "Produkt"
+            ]
+          },
+          "quelle": [
+            {
+              "kapitel": "module",
+              "abschnitte": [
+                "3.4.2.4"
+              ]
+            }
+          ],
+          "listen": {
+            "modul": "Produkt"
+          },
+          "ueben": [
+            {
+              "titel": "Produkt im Überblick",
+              "adresse": "#/ueberblick?id=modul-produkt"
+            },
+            {
+              "titel": "Zuordnen: Produkt",
+              "adresse": "#/trainer?modul=Produkt"
+            }
+          ]
+        },
+        {
+          "id": "modul-it-system",
+          "titel": "IT-System",
+          "kurz": "Die Entwicklung eines Systems: Architektur, Spezifikation, Realisierung, Integration.",
+          "dauer": 5,
+          "ziele": [
+            "sagen, was im Modul IT-System entsteht",
+            "den Entscheid Lösungsarchitektur einordnen"
+          ],
+          "einfuehrung": [
+            "Das Modul IT-System dient der Entwicklung eines Systems: Lösungsanforderungen verfeinern, Lösungsarchitektur erarbeiten, Machbarkeit allenfalls mit Prototypen prüfen, Detailspezifikation erstellen und das System realisieren, integrieren und dokumentieren.",
+            "Der Entscheid Lösungsarchitektur fällt in der Phase Konzept und ist die Weiche für alles, was danach realisiert wird."
+          ],
+          "bildUmfang": {
+            "vorgehen": "klassisch",
+            "phasen": [],
+            "module": [
+              "IT-System"
+            ]
+          },
+          "quelle": [
+            {
+              "kapitel": "module",
+              "abschnitte": [
+                "3.4.2.5"
+              ]
+            }
+          ],
+          "listen": {
+            "modul": "IT-System"
+          },
+          "ueben": [
+            {
+              "titel": "IT-System im Überblick",
+              "adresse": "#/ueberblick?id=modul-it-system"
+            },
+            {
+              "titel": "Zuordnen: IT-System",
+              "adresse": "#/trainer?modul=IT-System"
+            }
+          ]
+        },
+        {
+          "id": "modul-tests",
+          "titel": "Tests",
+          "kurz": "Testinfrastruktur, Testkonzept, Testdurchführung und Protokoll.",
+          "dauer": 4,
+          "ziele": [
+            "sagen, was das Modul Tests umfasst",
+            "Testkonzept und Testprotokoll einordnen"
+          ],
+          "einfuehrung": [
+            "Das Modul Tests organisiert das Testen von Lösungen systematisch und effizient: Testinfrastruktur realisieren und überführen, Tests vorbereiten, durchführen und protokollieren.",
+            "Mit fünf Ergebnissen und vier Aufgaben ist es eines der kleinsten Module — von seinen Ergebnissen sind nur Testkonzept und Testprotokoll minimal gefordert."
+          ],
+          "bildUmfang": {
+            "vorgehen": "klassisch",
+            "phasen": [],
+            "module": [
+              "Tests"
+            ]
+          },
+          "quelle": [
+            {
+              "kapitel": "module",
+              "abschnitte": [
+                "3.4.2.6"
+              ]
+            }
+          ],
+          "listen": {
+            "modul": "Tests"
+          },
+          "ueben": [
+            {
+              "titel": "Tests im Überblick",
+              "adresse": "#/ueberblick?id=modul-tests"
+            },
+            {
+              "titel": "Zuordnen: Tests",
+              "adresse": "#/trainer?modul=Tests"
+            }
+          ]
+        },
+        {
+          "id": "modul-einfuehrungsorganisation",
+          "titel": "Einführungsorganisation",
+          "kurz": "Schulung, Einführung und der Übergang zum neuen Zustand — zwingend in jedem Projekt.",
+          "dauer": 5,
+          "ziele": [
+            "sagen, was die Einführungsorganisation leistet",
+            "Vorabnahme, Betriebsaufnahme und Abnahme in die richtige Reihenfolge bringen"
+          ],
+          "einfuehrung": [
+            "Das Modul Einführungsorganisation unterstützt die Schulung und die Einführung der neuen Lösung, also den Übergang zum neuen Zustand: Einführungskonzept erarbeiten, Einführungsmassnahmen realisieren und durchführen, Organisationschangemanagement betreiben.",
+            "Die drei Entscheide Vorabnahme, Betriebsaufnahme und Abnahme liegen hier — und es ist das vierte der Module, die in jedem Projekt vorkommen müssen."
+          ],
+          "bildUmfang": {
+            "vorgehen": "klassisch",
+            "phasen": [],
+            "module": [
+              "Einführungsorganisation"
+            ]
+          },
+          "quelle": [
+            {
+              "kapitel": "module",
+              "abschnitte": [
+                "3.4.2.7"
+              ]
+            }
+          ],
+          "listen": {
+            "modul": "Einführungsorganisation"
+          },
+          "ueben": [
+            {
+              "titel": "Einführungsorganisation im Überblick",
+              "adresse": "#/ueberblick?id=modul-einfuehrungsorganisation"
+            },
+            {
+              "titel": "Zuordnen: Einführungsorganisation",
+              "adresse": "#/trainer?modul=Einführungsorganisation"
+            }
+          ]
+        },
+        {
+          "id": "modul-it-migration",
+          "titel": "IT-Migration",
+          "kurz": "Daten ins neue System überführen und das Altsystem entfernen.",
+          "dauer": 4,
+          "ziele": [
+            "sagen, was das Modul IT-Migration umfasst",
+            "sagen, wann das Altsystem ausser Betrieb gesetzt wird"
+          ],
+          "einfuehrung": [
+            "Das Modul IT-Migration überführt die Daten in das neue System: Die Migration wird konzipiert, geplant, vorbereitet, durchgeführt und abgenommen.",
+            "Dazu gehört am Ende auch, das Altsystem ausser Betrieb zu setzen — eine Aufgabe, die in der Phase Abschluss liegt."
+          ],
+          "bildUmfang": {
+            "vorgehen": "klassisch",
+            "phasen": [],
+            "module": [
+              "IT-Migration"
+            ]
+          },
+          "quelle": [
+            {
+              "kapitel": "module",
+              "abschnitte": [
+                "3.4.2.8"
+              ]
+            }
+          ],
+          "listen": {
+            "modul": "IT-Migration"
+          },
+          "ueben": [
+            {
+              "titel": "IT-Migration im Überblick",
+              "adresse": "#/ueberblick?id=modul-it-migration"
+            },
+            {
+              "titel": "Zuordnen: IT-Migration",
+              "adresse": "#/trainer?modul=IT-Migration"
+            }
+          ]
+        },
+        {
+          "id": "modul-it-betrieb",
+          "titel": "IT-Betrieb",
+          "kurz": "Betriebsorganisation beim Betreiber aufbauen und den Betrieb aktivieren.",
+          "dauer": 4,
+          "ziele": [
+            "sagen, was das Modul IT-Betrieb leistet",
+            "Betriebskonzept und Betriebshandbuch einordnen"
+          ],
+          "einfuehrung": [
+            "Das Modul IT-Betrieb konzipiert und realisiert die Betriebsorganisation beim Betreiber samt Infrastruktur, integriert das System in den Betrieb und aktiviert ihn.",
+            "Es ist die Schnittstelle zwischen Projekt und späterem Regelbetrieb; minimal gefordert sind Betriebskonzept und Betriebshandbuch."
+          ],
+          "bildUmfang": {
+            "vorgehen": "klassisch",
+            "phasen": [],
+            "module": [
+              "IT-Betrieb"
+            ]
+          },
+          "quelle": [
+            {
+              "kapitel": "module",
+              "abschnitte": [
+                "3.4.2.9"
+              ]
+            }
+          ],
+          "listen": {
+            "modul": "IT-Betrieb"
+          },
+          "ueben": [
+            {
+              "titel": "IT-Betrieb im Überblick",
+              "adresse": "#/ueberblick?id=modul-it-betrieb"
+            },
+            {
+              "titel": "Zuordnen: IT-Betrieb",
+              "adresse": "#/trainer?modul=IT-Betrieb"
+            }
+          ]
+        },
+        {
+          "id": "modul-isds",
+          "titel": "ISDS",
+          "kurz": "Informationssicherheit und Datenschutz: Anforderungen, Risiken, Massnahmen.",
+          "dauer": 5,
+          "ziele": [
+            "sagen, wofür ISDS steht und was das Modul leistet",
+            "den Weg des ISDS-Konzepts durch die Phasen beschreiben"
+          ],
+          "einfuehrung": [
+            "Im Modul ISDS (Informationssicherheit und Datenschutz) werden die erforderlichen Schutzmassnahmen für Nutzung und Betrieb der IT-Lösung festgelegt: Anforderungen ermitteln, Risiken bewerten, Massnahmen konzipieren und umsetzen.",
+            "Das ISDS-Konzept wird erarbeitet, entschieden, realisiert und in der Phase Einführung in den Betrieb überführt — vier Aufgaben, die denselben Faden entlanglaufen."
+          ],
+          "bildUmfang": {
+            "vorgehen": "klassisch",
+            "phasen": [],
+            "module": [
+              "ISDS"
+            ]
+          },
+          "quelle": [
+            {
+              "kapitel": "module",
+              "abschnitte": [
+                "3.4.2.10"
+              ]
+            }
+          ],
+          "listen": {
+            "modul": "ISDS"
+          },
+          "ueben": [
+            {
+              "titel": "ISDS im Überblick",
+              "adresse": "#/ueberblick?id=modul-isds"
+            },
+            {
+              "titel": "Zuordnen: ISDS",
+              "adresse": "#/trainer?modul=ISDS"
             }
           ]
         }

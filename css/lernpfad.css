@@ -59,11 +59,17 @@
 .lp-block { margin-top: 30px; }
 
 .lp-block__titel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
   margin: 0 0 6px;
   padding-top: 12px;
   border-top: 1px solid var(--rand);
   font-size: 20px;
 }
+
+.lp-block__zahl { color: var(--text-leise); font-size: 13px; font-weight: 400; }
 
 .lp-block__text {
   margin: 0 0 16px;
@@ -141,6 +147,102 @@
 
 .lp-bild:not(:empty) { margin: 0 0 22px; }
 
+/* Hat das Handbuch zu einem Thema keine Abbildung (den Modulen fehlt sie),
+   zeichnet die Lektion das Bild aus unseren eigenen Daten — dasselbe wie im
+   Überblick (.mb, css/ueberblick.css). Hier steht es in der Lesespalte: ohne
+   Mindestbreite, ohne den Platz für die Steuerung und mit stehenden statt
+   klebenden Spaltentiteln (die Kopfzeile klebt schon). */
+.lp-bild--eigen {
+  padding: 4px 16px 12px;
+  border: 1px solid var(--rand);
+  border-radius: var(--radius);
+  background: var(--weiss);
+}
+
+/* Grosse Module werden lang (Projektführung 33 Zeilen, schmal über 6000 px).
+   Das Bild bleibt darum auf Schirmhöhe gedeckelt und rollt in seinem Rahmen —
+   wie die Bühne des Überblicks. Der Fuss mit der Herkunft bleibt stehen. */
+.lp-bild__rahmen { position: relative; }
+
+.lp-bild--eigen .mb { min-width: 0; }
+
+.lp-bild--eigen[data-rollt="ja"] .mb {
+  max-height: 68vh;
+  overflow: auto;
+}
+
+/* Rollt es, läuft der untere Rand weich aus (wie die zweite Leiste). */
+.lp-bild--eigen[data-rollt="ja"] .lp-bild__rahmen::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30px;
+  background: linear-gradient(to top, var(--weiss), transparent);
+  pointer-events: none;
+}
+
+/* Die Lektion zeigt genau ein Modul; sein Name stünde sonst unter jeder
+   Phase noch einmal (im Überblick trennt er mehrere Module). */
+.lp-bild--eigen .mb-modul__titel { display: none; }
+
+/* Die Spaltentitel kleben im Rahmen, nicht am Fensterrand: Hier rollt das
+   Bild selbst, und die Kopfzeile der Seite klebt schon oben. Die Farbe kommt
+   aus dem Rahmen (im Überblick liegt das Bild auf weissem Papier). */
+.lp-bild--eigen .mb-spalten {
+  top: 0;
+  padding: 14px 0 8px;
+  background: var(--weiss);
+}
+
+.lp-bild__quelle {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--rand-fein);
+  color: var(--text-leise);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* --- Ergebnisse und Aufgaben aus unseren Daten --------------------------- */
+
+.lp-listen { margin-bottom: 24px; }
+
+.lp-listen__titel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 8px;
+  font-size: 15px;
+}
+
+.lp-listen__titel:first-of-type { margin-top: 0; }
+.lp-listen__titel svg { flex: 0 0 auto; }
+.lp-listen__titel .gswatch, .lp-listen__titel svg { color: var(--text-leise); }
+
+.lp-listen__zahl {
+  color: var(--text-leise);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.lp-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+
+.lp-liste > li { display: flex; align-items: baseline; gap: 9px; }
+.lp-liste > li + li::before { content: "·"; color: var(--text-leise-hell); }
+
+.lp-listen__mehr { margin: 8px 0 0; font-size: 13.5px; }
+
 /* --- Wortlaut zum Nachlesen ---------------------------------------------- */
 
 .lp-quelle {
@@ -206,6 +308,7 @@
 
 @media (max-width: 699px) {
   .lp-kopf__titel { font-size: 22px; }
+  .lp-bild--eigen { padding: 4px 12px 12px; }
   .lp-karte { padding: 12px 13px; gap: 11px; }
   .lp-weiter { flex-wrap: wrap; gap: 10px; }
   .lp-weiter__link { max-width: none; }
