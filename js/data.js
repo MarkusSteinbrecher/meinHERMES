@@ -600,6 +600,9 @@
     handbuchKapitel: handbuchKapitel,
     handbuchIndex: handbuchIndex,
     rhbIndex: rhbIndex,
-    rhbKapitel: rhbKapitel
+    rhbKapitel: rhbKapitel,
+    /* Eigene Datei laden (mit DATEN_VERSION gegen den Cache): für Ansichten
+       mit eigenem Bestand, etwa data/lernpfad.json. */
+    ladeJson: ladeJson
   };
 }(window));

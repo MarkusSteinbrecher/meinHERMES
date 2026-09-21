@@ -1,0 +1,196 @@
+{
+  "version": "2026-09-21a",
+  "bloecke": [
+    {
+      "id": "methode",
+      "titel": "Die Methode",
+      "kurz": "Wofür HERMES da ist, wie es aufgebaut ist und woraus es besteht.",
+      "einleitung": "Der erste Block geht durch den Methodenüberblick des Referenzhandbuchs (Kapitel A und B). Danach wissen Sie, wofür HERMES gemacht ist, welche zwei Vorgehensweisen es gibt und welche sechs Bausteine die Methode ausmachen. Die Einzelheiten zu Phasen, Ergebnissen, Aufgaben und Rollen folgen in späteren Blöcken.",
+      "lektionen": [
+        {
+          "id": "was-hermes-ist",
+          "titel": "Was HERMES ist",
+          "kurz": "Ergebnisorientierte Managementmethode für Projekte und Programme.",
+          "dauer": 5,
+          "ziele": [
+            "in einem Satz sagen, wofür HERMES da ist",
+            "erklären, was «ergebnisorientiert» hier bedeutet",
+            "das Gesamtbild (Abbildung 1) lesen: Module, Ergebnisse, Phasen"
+          ],
+          "einfuehrung": [
+            "HERMES ist die gesamtheitliche Managementmethode für Projekte und Programme — nicht nur in der Informatik, sondern ebenso bei der Anpassung einer Organisation oder der Entwicklung von Dienstleistungen und Produkten.",
+            "Im Zentrum stehen die Ergebnisse. HERMES legt fest, was am Ende vorliegen muss, und ordnet jedem Ergebnis Aufgaben und Rollen zu; wie die Arbeit im Einzelnen geschieht, bleibt dem Projekt.",
+            "Das Gesamtbild zeigt genau das: die wesentlichen Ergebnisse jedes Moduls entlang der Phasen, dazu die groben Abhängigkeiten. Die roten Pfeile stehen für die Iteration der Module Produkt und IT-System in der agilen Entwicklung.",
+            "Wer diese eine Abbildung lesen kann, hat das Gerüst der Methode verstanden — der ganze Trainer dieser Seite übt sie ein."
+          ],
+          "bild": "Abbildung 1",
+          "quelle": [
+            {
+              "kapitel": "methodenueberblick",
+              "abschnitte": [
+                "A.1",
+                "A.2"
+              ]
+            }
+          ],
+          "ueben": [
+            {
+              "titel": "Gesamtbild im Überblick",
+              "adresse": "#/ueberblick"
+            },
+            {
+              "titel": "Grundbegriffe als Lernkarten",
+              "adresse": "#/trainer?teil=lernkarten&kat=grundbegriff"
+            }
+          ]
+        },
+        {
+          "id": "klassisch-und-agil",
+          "titel": "Klassisch und agil",
+          "kurz": "Zwei Vorgehensweisen, eine Hülle — und was HERMES bewusst offen lässt.",
+          "dauer": 6,
+          "ziele": [
+            "die beiden Vorgehensweisen benennen und unterscheiden",
+            "sagen, was HERMES bei agiler Umsetzung regelt und was nicht",
+            "erklären, warum der Projektleiter nicht in die Selbstorganisation eingreift"
+          ],
+          "einfuehrung": [
+            "HERMES unterstützt zwei Vorgehensweisen: das klassische, phasenweise Vorgehen nach Systems Engineering und das agile, iterativ-inkrementelle Vorgehen.",
+            "Für die agile Entwicklung ist HERMES eine Vorgehenshülle: Die Entwicklungsmethode — Scrum, Kanban, SAFe bis «Essential» — steckt als Blackbox darin. HERMES geht nicht hinein, definiert aber die Schnittstellen für Steuerung, Führung, Kommunikation und Reporting.",
+            "Der Unterschied zeigt sich in der Führung der Ausführung. Klassisch erteilt der Projektleiter Arbeitsaufträge; agil steuert der Anwendervertreter die Arbeit über die Lösungsanforderungen, und die Teams organisieren sich selbst.",
+            "Der Projektleiter führt sein Projekt weiterhin — er darf aber nicht in die Selbstorganisation der agilen Umsetzungsorganisation eingreifen. Sein Ansprechpartner dort ist der Anwendervertreter."
+          ],
+          "bild": "Abbildung 2",
+          "quelle": [
+            {
+              "kapitel": "methodenueberblick",
+              "abschnitte": [
+                "A.4",
+                "A.6"
+              ]
+            }
+          ],
+          "ueben": [
+            {
+              "titel": "Agile Vorgehensweise im Zuordnen",
+              "adresse": "#/trainer?alles=1&vorgehen=agil"
+            }
+          ]
+        },
+        {
+          "id": "das-geruest",
+          "titel": "Das Gerüst: Phasen, Szenarien, Module",
+          "kurz": "Wie ein Projekt eingeteilt wird und woher sein Zuschnitt kommt.",
+          "dauer": 8,
+          "ziele": [
+            "sagen, warum ein Projekt fünf oder drei Phasen hat",
+            "die Phasen beider Vorgehensweisen in der richtigen Reihenfolge nennen",
+            "erklären, wofür ein Szenario da ist und wann es gewählt wird",
+            "sagen, woraus ein Modul besteht"
+          ],
+          "einfuehrung": [
+            "Das Phasenmodell ist das Rückgrat jedes Projekts. Initialisierung am Anfang und Abschluss am Ende sind beiden Vorgehensweisen gemeinsam; dazwischen liegt die Lösungsentstehung.",
+            "Klassisch sind das die drei Phasen Konzept, Realisierung und Einführung — zusammen fünf. Agil ist es die eine Phase Umsetzung — zusammen drei.",
+            "Ein Szenario bestimmt dieses eingeschlossene Entwicklungsvorgehen. Der Projektleiter wählt es in der Initialisierung zusammen mit der Lösungsvariante; es bringt genau die Methodenelemente mit, die für diese Art von Projekt nötig sind.",
+            "Module sind die wiederverwendbaren Bausteine, aus denen Szenarien gebaut werden: thematisch zusammengehörende Ergebnisse und die Aufgaben, die sie erarbeiten."
+          ],
+          "bild": "Abbildung 4",
+          "quelle": [
+            {
+              "kapitel": "methodenelemente",
+              "abschnitte": [
+                "B.1",
+                "B.2",
+                "B.3"
+              ]
+            }
+          ],
+          "ueben": [
+            {
+              "titel": "Phasen und Module im Überblick",
+              "adresse": "#/ueberblick"
+            },
+            {
+              "titel": "Gesamtbild im Zuordnen",
+              "adresse": "#/trainer?alles=1"
+            }
+          ]
+        },
+        {
+          "id": "der-inhalt",
+          "titel": "Der Inhalt: Ergebnisse, Aufgaben, Rollen",
+          "kurz": "Was geliefert wird, wie es entsteht und wer dafür geradesteht.",
+          "dauer": 8,
+          "ziele": [
+            "erklären, warum die Ergebnisse im Zentrum stehen",
+            "sagen, was ein Meilenstein ist und wo er steht",
+            "die drei Hierarchieebenen und die drei Partnergruppen nennen",
+            "die drei minimal zu besetzenden Rollen nennen"
+          ],
+          "einfuehrung": [
+            "Jedes Ergebnis hat eine Ergebnisbeschreibung, für Dokumente zusätzlich eine Vorlage. Jedem Ergebnis sind Aufgaben und Rollen zugeordnet — daran hängt, wer verantwortlich ist und wer mitwirkt.",
+            "Am Anfang und am Ende jeder Phase stehen Meilensteine. Sie sind Quality Gates, an denen über Ergebnisse und Vorgehen entschieden wird; jede Entscheidungsaufgabe endet mit einem Meilenstein, und alle Meilensteine sind selbst Ergebnisse.",
+            "Aufgaben dienen der Erarbeitung von Ergebnissen. Die Aufgabenbeschreibung sagt, wie generell vorgegangen wird und welche Aktivitäten dazugehören.",
+            "Jede Rolle gehört zu einer der Hierarchieebenen Steuerung, Führung oder Ausführung und zu einer oder mehreren Partnergruppen (Anwender, Ersteller, Betreiber). Minimal zu besetzen sind Auftraggeber, Projektleiter und Anwendervertreter."
+          ],
+          "bild": "Abbildung 7",
+          "quelle": [
+            {
+              "kapitel": "methodenelemente",
+              "abschnitte": [
+                "B.4",
+                "B.5",
+                "B.6"
+              ]
+            }
+          ],
+          "ueben": [
+            {
+              "titel": "Ergebnisse als Lernkarten",
+              "adresse": "#/trainer?teil=lernkarten&kat=ergebnis"
+            },
+            {
+              "titel": "Aufgaben als Lernkarten",
+              "adresse": "#/trainer?teil=lernkarten&kat=aufgabe"
+            }
+          ]
+        },
+        {
+          "id": "zuschnitt-und-umfeld",
+          "titel": "Zuschnitt und Umfeld",
+          "kurz": "Die Methode auf Projektgrösse bringen — und wo sie an die Organisation andockt.",
+          "dauer": 6,
+          "ziele": [
+            "sagen, wie ein Szenario auf die Projektgrösse zugeschnitten wird",
+            "die drei Rollen nennen, die für die Schnittstellen unentbehrlich sind",
+            "Projekt und Programm auseinanderhalten"
+          ],
+          "einfuehrung": [
+            "Der volle Umfang von HERMES ist für grosse, komplexe Projekte ausgelegt — das passt nicht zu jedem Vorhaben.",
+            "In HERMES Online schneidet darum zuerst die Sizing-Funktion ein Standardszenario auf die ermittelte Projektwertigkeit zu; anschliessend kann die Tailoring-Funktion es weiter individualisieren. Das Ergebnis lässt sich samt Strukturplänen und Vorlagen herunterladen.",
+            "Nach aussen sorgt die gemeinsame Terminologie für die Verständigung zwischen Stamm- und Projektorganisation, zwischen Projekt und Programm, zwischen Projekt-, Anwendungs- und Portfoliomanagement. Innerhalb des Projekts tragen drei Rollen die Schnittstellen: Auftraggeber, Projektleiter und Anwendervertreter.",
+            "Werden mehrere zusammenhängende Projekte gemeinsam auf ein Ziel geführt, ist das Programmmanagement — eine Erweiterung des Projektmanagements. Projekte und Programme können in einer Stammorganisation nebeneinander laufen."
+          ],
+          "bild": "Abbildung 3",
+          "quelle": [
+            {
+              "kapitel": "methodenueberblick",
+              "abschnitte": [
+                "A.3",
+                "A.5",
+                "A.7",
+                "A.8"
+              ]
+            }
+          ],
+          "ueben": [
+            {
+              "titel": "Hinweise zur Anwendung im Handbuch",
+              "adresse": "#/handbuch?kapitel=hinweise"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

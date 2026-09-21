@@ -1,0 +1,213 @@
+/* ==========================================================================
+   meinHERMES — Lernpfad: der Stoff als Schulung (Entwurf, js/lernpfad.js)
+   Lesebreite wie die Prosa der Über-Seite; die Lektion ist eine Spalte aus
+   Zielen, Einführung, Abbildung, Wortlaut und Verweisen.
+   ========================================================================== */
+
+.lp-seite { max-width: 46rem; margin: 0 auto; }
+
+/* --- Kopf ---------------------------------------------------------------- */
+
+.lp-kopf { margin-bottom: 26px; }
+
+.lp-kopf__titel {
+  font-size: 27px;
+  line-height: 1.2;
+  margin: 0 0 6px;
+  text-wrap: balance;
+}
+
+.lp-kopf__kurz {
+  margin: 0;
+  color: var(--text-weich);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.lp-brot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-leise);
+}
+
+.lp-brot a { color: inherit; }
+.lp-brot__trenner { color: var(--text-leise-hell); }
+.lp-brot__stand { color: var(--akzent-text); }
+
+/* Solange die Seite nicht abgenommen ist, sagt sie es selbst. */
+.lp-entwurf {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--akzent-schwach-2);
+  border-radius: var(--radius);
+  background: var(--akzent-schwach);
+  color: var(--text-weich);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.lp-hinweis { color: var(--akzent-text); }
+
+/* --- Übersicht ----------------------------------------------------------- */
+
+.lp-block { margin-top: 30px; }
+
+.lp-block__titel {
+  margin: 0 0 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rand);
+  font-size: 20px;
+}
+
+.lp-block__text {
+  margin: 0 0 16px;
+  color: var(--text-weich);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.lp-karten { display: grid; gap: 10px; }
+
+.lp-karte {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--rand);
+  border-radius: var(--radius);
+  background: var(--weiss);
+  color: inherit;
+  text-decoration: none;
+}
+
+.lp-karte:hover { border-color: var(--rand-stark); background: var(--flaeche-2); }
+
+.lp-karte__nr {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--akzent-schwach);
+  color: var(--akzent-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.lp-karte__text { display: grid; gap: 3px; min-width: 0; }
+.lp-karte__titel { font-size: 16px; font-weight: 600; }
+.lp-karte__kurz { color: var(--text-weich); font-size: 14px; line-height: 1.5; }
+.lp-karte__fuss { color: var(--text-leise); font-size: 12px; }
+
+/* --- Lektion ------------------------------------------------------------- */
+
+.lp-marke {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-leise);
+}
+
+.lp-ziele {
+  margin-bottom: 24px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--akzent-schwach-2);
+  background: var(--flaeche-2);
+  border-radius: var(--radius-s);
+}
+
+.lp-ziele__liste { margin: 0; padding-left: 1.1rem; }
+.lp-ziele__liste li { margin-bottom: 4px; font-size: 15px; line-height: 1.5; }
+.lp-ziele__liste li:last-child { margin-bottom: 0; }
+
+.lp-worum { margin-bottom: 22px; }
+
+.lp-text {
+  margin: 0 0 12px;
+  font-size: 16px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.lp-text:last-child { margin-bottom: 0; }
+
+.lp-bild:not(:empty) { margin: 0 0 22px; }
+
+/* --- Wortlaut zum Nachlesen ---------------------------------------------- */
+
+.lp-quelle {
+  margin-bottom: 24px;
+  border: 1px solid var(--rand);
+  border-radius: var(--radius);
+  background: var(--weiss);
+}
+
+.lp-quelle__kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--radius);
+}
+
+.lp-quelle[open] .lp-quelle__kopf { border-bottom: 1px solid var(--rand-fein); border-radius: var(--radius) var(--radius) 0 0; }
+.lp-quelle__kopf:hover { background: var(--flaeche-2); }
+.lp-quelle__nummern { color: var(--text-leise); font-size: 13px; font-weight: 400; }
+.lp-quelle__inhalt { padding: 4px 16px 16px; }
+
+.lp-quelle__titel {
+  margin: 18px 0 6px;
+  font-size: 15px;
+  color: var(--text-weich);
+}
+
+.lp-quelle__inhalt > .lp-quelle__titel:first-child { margin-top: 8px; }
+
+/* --- Üben und Weiter ------------------------------------------------------ */
+
+.lp-ueben { margin-bottom: 24px; }
+.lp-ueben__links { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.lp-weiter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rand);
+}
+
+.lp-weiter__link {
+  display: grid;
+  gap: 2px;
+  max-width: 17rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lp-weiter__link--vor { text-align: right; }
+.lp-weiter__marke { font-size: 12px; color: var(--akzent-text); font-weight: 600; }
+.lp-weiter__titel { font-size: 14px; color: var(--text-weich); }
+.lp-weiter__link:hover .lp-weiter__titel { color: var(--text); text-decoration: underline; }
+.lp-weiter__uebersicht { flex: 0 0 auto; font-size: 13px; color: var(--text-leise); }
+
+@media (max-width: 699px) {
+  .lp-kopf__titel { font-size: 22px; }
+  .lp-karte { padding: 12px 13px; gap: 11px; }
+  .lp-weiter { flex-wrap: wrap; gap: 10px; }
+  .lp-weiter__link { max-width: none; }
+  .lp-weiter__uebersicht { order: 3; width: 100%; text-align: center; }
+}
