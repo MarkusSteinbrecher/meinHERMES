@@ -234,6 +234,8 @@
      Auswahl im Umfang. */
   function graphFolgen(e, halten) {
     if (!graph) { return; }
+    /* Dieser Weg setzt den Umfang; der Halt gehört danach wieder ihm. */
+    gruppeAusBild = false;
     var gruppe = e.kategorie === 'modul' || e.kategorie === 'phase' || e.kategorie === 'szenario';
     if (halten) {
       if (gruppe || graph.fokusId() !== e.id) { graph.suchtreffer(e); }
@@ -387,8 +389,15 @@
 
   /* Ein einzelnes Modul oder eine einzelne Phase im Filter des Graphen ist
      dasselbe wie der festgehaltene Modulkopf bzw. Phasenbalken oben — und
-     umgekehrt: fällt der Umfang weg oder wächst er, löst sich der Kasten. */
+     umgekehrt: fällt der Umfang weg oder wächst er, löst sich der Kasten.
+
+     Ein Klick im Bild ist der eine Fall, der nicht so gemeint ist: er hält
+     den Kopf fest, ohne den Umfang anzufassen (sonst verschwände das Bild,
+     in dem man gerade klickt, zugunsten des Umfangsbilds). `gruppeAusBild`
+     merkt sich das, sonst löste der Abgleich den Kopf im selben Atemzug
+     wieder — der Klick sah dann aus, als täte er nichts. */
   var abgleichLaeuft = false;
+  var gruppeAusBild = false;
   function umfangAbgleichen() {
     if (!graph || abgleichLaeuft) { return; }
     var u = graph.umfang();
@@ -399,12 +408,13 @@
     var aGruppe = !!a && (a.kategorie === 'modul' || a.kategorie === 'phase');
     abgleichLaeuft = true;
     try {
-      if (aGruppe && (!einzel || einzel.id !== a.id)) {
+      if (aGruppe && !gruppeAusBild && (!einzel || einzel.id !== a.id)) {
         zustand.gehalten = false;
         aktivSetzen(null);
         if (graph.auswahlId() === a.id) { graph.auswaehlen(null); }
       } else if (einzel && !zustand.gehalten && !graph.fokusId() && !graph.auswahlId()) {
         zustand.gehalten = true;
+        gruppeAusBild = false;
         aktivSetzen(einzel);
         graph.auswaehlen(einzel.id);
       }
@@ -539,7 +549,10 @@
     zustand.gehalten = !(gleich && zustand.gehalten);
     aktivSetzen(e);
     malen();
-    if (graph) { graph.auswaehlen(zustand.gehalten ? e.id : null); }
+    if (graph) {
+      gruppeAusBild = zustand.gehalten && (e.kategorie === 'modul' || e.kategorie === 'phase');
+      graph.auswaehlen(zustand.gehalten ? e.id : null);
+    }
     if (zustand.gehalten) { inhaltInSichtBringen(); }
   }
 
