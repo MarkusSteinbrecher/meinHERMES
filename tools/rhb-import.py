@@ -406,7 +406,8 @@ def raster_lesen(bereich, zeilen, spalten, baender, w):
             kopf += 1
         else:
             break
-    return {'zeilen': [r[0] for r in reihen], 'kopf': kopf, 'spalten': len(spalten), 'abdeckung': None}
+    return {'zeilen': [r[0] for r in reihen], 'kopf': kopf, 'fett': [r[1] for r in reihen],
+            'spalten': len(spalten), 'abdeckung': None}
 
 
 def spalten_aus_text(bereich, zeilen):
@@ -458,19 +459,23 @@ def tabelle_lesen(fitz, seite, bereich, zeilen, w):
                     if tab['abdeckung'] >= 0.85:
                         return tab
             zeilen_aus = []
-            for zeile in t.extract():
+            fett_aus = []
+            for r, zeile in zip(t.rows, t.extract()):
                 zellen = [zelle_text(w, s) for s in zeile]
-                if any(zellen):
-                    zeilen_aus.append(zellen)
+                if not any(zellen):
+                    continue
+                zl = [z for z in zeilen if z.bereich is bereich and r.bbox[1] - 1 <= (z.y0 + z.y1) / 2 <= r.bbox[3] + 1]
+                zeilen_aus.append(zellen)
+                fett_aus.append(bool(zl) and all(z.fett for z in zl))
             if zeilen_aus and abdeckung(zeilen_aus) >= 0.85:
                 kopf = 0
-                for r in t.rows:
-                    zl = [z for z in zeilen if z.bereich is bereich and r.bbox[1] - 1 <= (z.y0 + z.y1) / 2 <= r.bbox[3] + 1]
-                    if zl and all(z.fett for z in zl):
+                for f in fett_aus:
+                    if f:
                         kopf += 1
                     else:
                         break
-                return {'zeilen': zeilen_aus, 'kopf': kopf, 'spalten': t.col_count, 'abdeckung': abdeckung(zeilen_aus), 'extract': True}
+                return {'zeilen': zeilen_aus, 'kopf': kopf, 'fett': fett_aus,
+                        'spalten': t.col_count, 'abdeckung': abdeckung(zeilen_aus), 'extract': True}
         # Zebra: Spalten aus dem breitesten Stück, Bänder aus allen Stücken
         breit = max(gefunden, key=lambda t: t.col_count)
         spalten = sorted((c[0], c[2]) for c in breit.rows[0].cells if c is not None)
@@ -499,12 +504,24 @@ def tabelle_lesen(fitz, seite, bereich, zeilen, w):
 
 
 def tabelle_block(tab, titel):
+    """Kopfzeilen sind die fetten Zeilen — nicht nur die am Anfang.
+
+    Das Handbuch setzt auch mitten in einer Tabelle Zeilen wie eine Kopfzeile:
+    die Gruppenzeilen von Tabelle 19 («Steuerung / Steuerungsrollen»,
+    «Führung», «Ausführung») stehen wie die Spaltentitel fett und weiss auf
+    dunkelblauem Grund, und läuft eine Tabelle über einen Seitenumbruch,
+    wiederholt sie dort ihre Spaltentitel. Bisher zählte nur der fette Block
+    am Anfang; alles danach wurde gewöhnliche Datenzeile — «Steuerung» sah
+    darum anders aus als «Führung» und «Ausführung».
+    """
+    kopfzahl = int(tab['kopf'] or 0)
+    fett = tab.get('fett') or []
     zeilen = []
     for i, z in enumerate(tab['zeilen']):
         zeile = []
         for text in z:
             zelle = {'text': text}
-            if i < int(tab['kopf'] or 0):
+            if i < kopfzahl or (i < len(fett) and fett[i]):
                 zelle['kopf'] = True
             zeile.append(zelle)
         zeilen.append(zeile)

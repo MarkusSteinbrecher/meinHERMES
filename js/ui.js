@@ -376,21 +376,29 @@
     return /^x$/i.test(String(text || '').trim());
   }
 
-  /* Läuft eine Tabelle im PDF über einen Seitenumbruch, wiederholt sie dort
-     ihre Spaltenköpfe. Der Import hat diese Wiederholung als gewöhnliche Zeile
-     übernommen — in den Tabellen 4, 5, 8, 12, 15 und 18 stand mitten in den
-     Daten ein linksbündiges «I K R E U A». Eine Zeile, die Wort für Wort einer
-     früheren Kopfzeile gleicht, ist wieder eine Kopfzeile und wird auch so
-     gezeichnet. */
+  /* Welche Zeilen sind Kopfzeilen? Zwei Quellen. Erstens das Merkmal aus dem
+     Import (fett im PDF): das sind die Spaltentitel und die Gruppenzeilen, die
+     das Handbuch mitten in einer Tabelle genauso setzt («Steuerung /
+     Steuerungsrollen» in Tabelle 19). Zweitens die Wiederholung nach einem
+     Seitenumbruch: der Import hat sie in den Tabellen 4, 5, 8, 12, 15 und 18
+     als gewöhnliche Zeile übernommen — mitten in den Daten stand ein
+     linksbündiges «I K R E U A». Eine Zeile, die Wort für Wort einer früheren
+     Kopfzeile gleicht, ist wieder eine Kopfzeile.
+     Die Spalten beschriftet (scope) nur, was ganz oben steht und selbst keine
+     Kreuze trägt: «Steuerung / Steuerungsrollen» ist die erste Zeile unter den
+     Spaltentiteln, benennt aber eine Gruppe und bringt eigene Kreuze mit. */
   function kopfZeilen(zeilen) {
-    var gesehen = {}, raus = [];
+    var gesehen = {}, raus = [], vorn = true;
     zeilen.forEach(function (z) {
       var texte = z.map(function (c) { return String(c.text || '').trim(); });
       var sig = texte.join('\u0001');
-      var echt = z.length > 0 && z.every(function (c) { return !!c.kopf; });
+      var ausDaten = z.length > 0 && z.every(function (c) { return !!c.kopf; });
       var gefuellt = texte.some(function (s) { return !!s; });
-      if (echt) { gesehen[sig] = true; }
-      raus.push({ kopf: echt || (gefuellt && !!gesehen[sig]), echt: echt });
+      if (ausDaten) { gesehen[sig] = true; }
+      var kopf = ausDaten || (gefuellt && !!gesehen[sig]);
+      var mitKreuz = texte.some(istKreuz);
+      raus.push({ kopf: kopf, spalte: kopf && vorn && !mitKreuz });
+      if (!kopf) { vorn = false; }
     });
     return raus;
   }
@@ -476,9 +484,9 @@
         var td = h(istKopf ? 'th' : 'td', {
           class: klassen.length ? klassen.join(' ') : null,
           colspan: feld.spalten > 1 ? String(feld.spalten) : null,
-          /* Nur der erste Kopf beschriftet die Spalten; die Wiederholung nach
-             dem Seitenumbruch tut es nicht noch einmal. */
-          scope: koepfe[nr].echt ? (feld.spalten > 1 ? 'colgroup' : 'col') : null
+          /* Nur der Kopf zuoberst beschriftet die Spalten; Gruppenzeilen und
+             die Wiederholung nach dem Seitenumbruch tun es nicht noch einmal. */
+          scope: koepfe[nr].spalte ? (feld.spalten > 1 ? 'colgroup' : 'col') : null
         }, x ? [h('span', { class: 'nur-sr', text: 'ja' }), h('span', { 'aria-hidden': 'true', text: '✓' })]
              : begriffeText(text, optionen.verlinken && !istKopf && text.length < 120));
         tr.appendChild(td);

@@ -500,19 +500,24 @@
 ],
 [
 {
-"text": "Führung"
+"text": "Führung",
+"kopf": true
 },
 {
-"text": "Führungsrollen"
+"text": "Führungsrollen",
+"kopf": true
 },
 {
-"text": "X"
+"text": "X",
+"kopf": true
 },
 {
-"text": "X"
+"text": "X",
+"kopf": true
 },
 {
-"text": "X"
+"text": "X",
+"kopf": true
 }
 ],
 [
@@ -585,19 +590,24 @@
 ],
 [
 {
-"text": "Ausführung"
+"text": "Ausführung",
+"kopf": true
 },
 {
-"text": "Ausführungsrollen"
+"text": "Ausführungsrollen",
+"kopf": true
 },
 {
-"text": "X"
+"text": "X",
+"kopf": true
 },
 {
-"text": "X"
+"text": "X",
+"kopf": true
 },
 {
-"text": "X"
+"text": "X",
+"kopf": true
 }
 ],
 [
