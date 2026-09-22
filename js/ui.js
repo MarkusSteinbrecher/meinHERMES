@@ -372,20 +372,115 @@
     return el;
   }
 
+  function istKreuz(text) {
+    return /^x$/i.test(String(text || '').trim());
+  }
+
+  /* Läuft eine Tabelle im PDF über einen Seitenumbruch, wiederholt sie dort
+     ihre Spaltenköpfe. Der Import hat diese Wiederholung als gewöhnliche Zeile
+     übernommen — in den Tabellen 4, 5, 8, 12, 15 und 18 stand mitten in den
+     Daten ein linksbündiges «I K R E U A». Eine Zeile, die Wort für Wort einer
+     früheren Kopfzeile gleicht, ist wieder eine Kopfzeile und wird auch so
+     gezeichnet. */
+  function kopfZeilen(zeilen) {
+    var gesehen = {}, raus = [];
+    zeilen.forEach(function (z) {
+      var texte = z.map(function (c) { return String(c.text || '').trim(); });
+      var sig = texte.join('\u0001');
+      var echt = z.length > 0 && z.every(function (c) { return !!c.kopf; });
+      var gefuellt = texte.some(function (s) { return !!s; });
+      if (echt) { gesehen[sig] = true; }
+      raus.push({ kopf: echt || (gefuellt && !!gesehen[sig]), echt: echt });
+    });
+    return raus;
+  }
+
+  /* Kreuzspalten: Spalten, in denen ausser Kreuzen nichts steht — die Phasen
+     I K R E U A, die Module eines Szenarios, «minimal geforderte Dokumente».
+     Ihre Zellen und die Überschrift darüber stehen mittig und die Spalte wird
+     so schmal wie ihr Inhalt; sonst stand der Buchstabe links und der Haken in
+     der Mitte, die beiden also nicht übereinander. Gezählt wird nur in den
+     Datenzeilen: in Tabelle 19 tragen auch Kopfzeilen Kreuze. */
+  function kreuzSpalten(zeilen, koepfe) {
+    var breite = 0, i;
+    zeilen.forEach(function (z) { breite = Math.max(breite, z.length); });
+    var hat = [], nur = [], kreuz = [];
+    for (i = 0; i < breite; i++) { hat[i] = false; nur[i] = true; }
+    zeilen.forEach(function (z, nr) {
+      if (koepfe[nr].kopf) { return; }
+      z.forEach(function (zelle, k) {
+        var s = String(zelle.text || '').trim();
+        if (!s) { return; }
+        if (istKreuz(s)) { hat[k] = true; } else { nur[k] = false; }
+      });
+    });
+    for (i = 0; i < breite; i++) { kreuz[i] = hat[i] && nur[i]; }
+    /* Eine leere Spalte gehört dazu, wenn sie an eine Kreuzspalte grenzt: das
+       Modul Produkt hat in den Phasen I und A kein Kreuz, ihre Buchstaben
+       gehören trotzdem zur Gruppe und dürfen die Spalte nicht breit machen.
+       Einmal nach rechts, einmal nach links — so werden auch Lücken mitten in
+       der Gruppe erfasst. */
+    for (i = 1; i < breite; i++) { if (kreuz[i - 1] && nur[i]) { kreuz[i] = true; } }
+    for (i = breite - 2; i >= 0; i--) { if (kreuz[i + 1] && nur[i]) { kreuz[i] = true; } }
+    return kreuz;
+  }
+
+  /* Eine Kopfzeile in Gruppen zerlegen. Trägt eine Gruppe benachbarter
+     Kreuzspalten nur einen einzigen Titel («Phasen» über I K R E U A), wird
+     daraus eine verbundene Zelle über der ganzen Gruppe — so steht sie im PDF,
+     und die Spalte, in der der Titel beim Lesen zufällig landete, wird nicht
+     mehr breiter als die anderen. Zeilen aus lauter Buchstaben bleiben, wie
+     sie sind. */
+  function kopfGruppen(zeile, kreuz) {
+    var raus = [];
+    for (var i = 0; i < zeile.length;) {
+      if (!kreuz[i]) { raus.push({ zelle: zeile[i], spalten: 1, kreuz: false }); i++; continue; }
+      var ende = i;
+      while (ende < zeile.length && kreuz[ende]) { ende++; }
+      var gefuellt = [];
+      for (var j = i; j < ende; j++) {
+        if (String(zeile[j].text || '').trim()) { gefuellt.push(zeile[j]); }
+      }
+      if (gefuellt.length <= 1) {
+        raus.push({ zelle: gefuellt[0] || zeile[i], spalten: ende - i, kreuz: true });
+      } else {
+        for (var k = i; k < ende; k++) { raus.push({ zelle: zeile[k], spalten: 1, kreuz: true }); }
+      }
+      i = ende;
+    }
+    return raus;
+  }
+
   function tabelleElement(block, optionen) {
     var tabelle = h('table', { class: 'hb-tabelle' + (block.unten ? ' hb-tabelle--unten' : '') });
     if (block.titel) { tabelle.appendChild(h('caption', { text: block.titel })); }
+    var zeilen = block.zeilen || [];
+    var koepfe = kopfZeilen(zeilen);
+    var kreuz = kreuzSpalten(zeilen, koepfe);
     var koerper = h('tbody');
-    (block.zeilen || []).forEach(function (zeile) {
+    zeilen.forEach(function (zeile, nr) {
+      var istKopf = koepfe[nr].kopf;
       var tr = h('tr');
-      zeile.forEach(function (zelle) {
-        var text = zelle.text || '';
-        var istX = /^x$/i.test(text.trim());
-        var td = h(zelle.kopf ? 'th' : 'td', {
-          class: istX ? 'hb-x' : null,
-          scope: zelle.kopf ? 'col' : null
-        }, istX ? [h('span', { class: 'nur-sr', text: 'ja' }), h('span', { 'aria-hidden': 'true', text: '✓' })]
-               : begriffeText(text, optionen.verlinken && !zelle.kopf && text.length < 120));
+      var felder = istKopf
+        ? kopfGruppen(zeile, kreuz)
+        : zeile.map(function (z, i) { return { zelle: z, spalten: 1, kreuz: !!kreuz[i] }; });
+      felder.forEach(function (feld) {
+        var text = feld.zelle.text || '';
+        var x = istKreuz(text);
+        var klassen = [];
+        if (x) { klassen.push('hb-x'); }
+        /* Eine verbundene Zelle steht über mehreren Spalten mittig, eine
+           einzelne Kreuzspalte bleibt zudem so schmal wie ihr Inhalt. */
+        if (feld.kreuz) { klassen.push('hb-mitte'); }
+        if (feld.kreuz && feld.spalten === 1) { klassen.push('hb-schmal'); }
+        var td = h(istKopf ? 'th' : 'td', {
+          class: klassen.length ? klassen.join(' ') : null,
+          colspan: feld.spalten > 1 ? String(feld.spalten) : null,
+          /* Nur der erste Kopf beschriftet die Spalten; die Wiederholung nach
+             dem Seitenumbruch tut es nicht noch einmal. */
+          scope: koepfe[nr].echt ? (feld.spalten > 1 ? 'colgroup' : 'col') : null
+        }, x ? [h('span', { class: 'nur-sr', text: 'ja' }), h('span', { 'aria-hidden': 'true', text: '✓' })]
+             : begriffeText(text, optionen.verlinken && !istKopf && text.length < 120));
         tr.appendChild(td);
       });
       koerper.appendChild(tr);

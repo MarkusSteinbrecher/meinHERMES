@@ -1785,7 +1785,17 @@ html:has(.willkommen[open]) { overflow: hidden; }
   vertical-align: top;
 }
 .hb-tabelle th { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-leise); border-top: 1px solid var(--linie-stark); }
+/* Ein Haken steht immer mittig — auch der seltene Fall, dass in seiner Spalte
+   noch anderer Text steht und sie darum keine Kreuzspalte ist. */
 .hb-tabelle .hb-x { text-align: center; color: var(--akzent); font-weight: 800; }
+/* Kreuzspalten (Phasen, Module eines Szenarios, «minimal gefordert»): der
+   Haken und der Buchstabe darüber stehen mittig übereinander. Eine einzelne
+   solche Spalte wird zudem so schmal wie ihr Inhalt (width: 1% heisst im
+   automatischen Tabellenlayout «so wenig wie möglich»); die Breite gehört den
+   Textspalten. Kein `nowrap`: in Tabelle 2 sind die Spaltentitel ganze
+   Modulnamen. */
+.hb-tabelle .hb-mitte { text-align: center; vertical-align: middle; }
+.hb-tabelle .hb-schmal { width: 1%; }
 .hb-abb { margin: 10px 0 16px; }
 .hb-abb img {
   display: block;
