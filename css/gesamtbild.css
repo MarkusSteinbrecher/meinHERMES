@@ -1,0 +1,227 @@
+/* ==========================================================================
+   meinHERMES — das nachgebaute Gesamtbild (js/gesamtbild.js)
+
+   Zweite Sicht der Abbildung 1 im Überblick. Die Farben und Formen sind die
+   der Originalgrafik, damit man beim Umschalten dasselbe Bild wiedererkennt:
+   Ergebnisse als hellblaue Kästen, Zustände weiss mit hellblauer Kontur und
+   runden Ecken, Phasenbänder grau (erste und letzte Phase) bzw. blau
+   (dazwischen). Nur Schrift und Hervorhebung folgen der Anwendung.
+
+   Das Gitter steht in festen px bei Zoom 1; skaliert wird von aussen über
+   transform auf .gb (siehe js/ueberblick.js).
+   ========================================================================== */
+
+.gb {
+  /* Farben der Originalgrafik (js/abbildung.js FARBEN). */
+  --gb-ergebnis: #dcebfa;
+  --gb-kontur: #b9d6ef;
+  --gb-phase-rand: #d9d9d9;
+  --gb-phase-mitte: #b7d5f1;
+  --gb-linie: #cfcbc8;
+
+  box-sizing: border-box;
+  transform-origin: 0 0;
+  background: #fff;
+  color: var(--ub-tinte, #201e1d);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.gb-gitter {
+  display: grid;
+  align-items: start;
+}
+
+/* --- Die Kästen ------------------------------------------------------------ */
+
+/* Die Grundform steht vor den Spielarten — sie setzt die Knopfvorgaben des
+   Browsers zurück, die Spielarten setzen Farbe und Rahmen darauf. */
+.gb-k {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 5px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.gb-k:focus-visible { outline: 2px solid var(--ub-akzent, #ec3013); outline-offset: 1px; }
+.gb-k__name { display: block; min-width: 0; hyphens: auto; overflow-wrap: anywhere; }
+
+/* --- Kopfzeile: die Module ------------------------------------------------- */
+
+.gb-ecke { min-height: 34px; }
+
+.gb-k--modul {
+  align-self: stretch;
+  justify-content: center;
+  min-height: 34px;
+  padding: 5px 4px;
+  border: 1px solid var(--ub-tinte, #201e1d);
+  background: #fff;
+  font-weight: 700;
+  text-align: center;
+  hyphens: auto;
+}
+
+/* --- Linke Leiste: Phase und ihre Meilensteine ----------------------------- */
+
+.gb-leiste {
+  display: flex;
+  align-self: stretch;
+  gap: 8px;
+  min-height: 60px;
+}
+.gb-k--phase {
+  flex: 0 0 26px;
+  justify-content: center;
+  align-self: stretch;
+  padding: 8px 2px;
+  background: var(--gb-phase-rand);
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.gb-leiste[data-art="mitte"] .gb-k--phase { background: var(--gb-phase-mitte); }
+
+.gb-ms {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+  padding-bottom: 2px;
+}
+.gb-k--meilenstein {
+  gap: 4px;
+  padding: 2px 0;
+  font-weight: 700;
+}
+.gb-k--meilenstein svg { flex: 0 0 auto; color: var(--ub-akzent, #ec3013); }
+
+/* --- Felder: Phase × Modul ------------------------------------------------- */
+
+.gb-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-self: stretch;
+}
+.gb-feld[data-band="ja"] {
+  padding: 5px;
+  background: #faf9f8;
+  outline: 1px solid var(--gb-linie);
+}
+.gb-feld__titel {
+  margin: 0 0 2px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--ub-leise, #6b6663);
+}
+
+/* --- Die Ergebniskästen ---------------------------------------------------- */
+
+.gb-k--ergebnis {
+  flex-wrap: wrap;
+  min-height: 24px;
+  background: var(--gb-ergebnis);
+}
+/* Zustände sind in der Abbildung weiss mit runden Ecken — hier auch, sonst
+   sähe der Nachbau anders aus als das, was man daneben umschaltet. */
+.gb-k--ergebnis[data-art="zustand"] {
+  background: #fff;
+  border: 1px solid var(--gb-kontur);
+  border-radius: 9px;
+}
+/* Die Marke steht auf einer eigenen Zeile — «nur Konzept · Realisierung»
+   passt nicht neben den Namen. */
+.gb-k__nurin {
+  flex: 0 0 100%;
+  margin-top: 1px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  color: var(--ub-leise, #6b6663);
+}
+
+/* --- Zustände von aussen (js/gesamtbild.js malen) -------------------------- */
+
+.gb-k.ist-blass { opacity: .32; }
+.gb-k[data-bezug="verantwortlich"] {
+  background: var(--ub-akzent, #ec3013);
+  color: #fff;
+  opacity: 1;
+}
+.gb-k[data-bezug="verantwortlich"] svg { color: #fff; }
+.gb-k[data-bezug="beteiligt"] {
+  box-shadow: inset 0 0 0 2px var(--ub-akzent, #ec3013);
+  opacity: 1;
+}
+
+.gb-k:hover,
+.gb-k.ist-gleich { box-shadow: inset 0 0 0 2px var(--ub-akzent, #ec3013); opacity: 1; }
+.gb-k.ist-gewaehlt {
+  background: var(--ub-akzent, #ec3013);
+  color: #fff;
+  box-shadow: inset 0 0 0 2px var(--ub-akzent, #ec3013);
+  opacity: 1;
+}
+.gb-k.ist-gewaehlt svg { color: #fff; }
+.gb-k.ist-ohne { display: flex; align-items: center; padding: 4px 5px; }
+
+/* --- Umschalter Original / Nachbau ----------------------------------------- */
+
+.ub-sicht {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ub-sicht__knopf {
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--ub-leise, #6b6663);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  line-height: 26px;
+  cursor: pointer;
+}
+.ub-sicht__knopf:hover { color: var(--ub-tinte, #201e1d); }
+.ub-sicht__knopf[aria-checked="true"] {
+  color: var(--ub-tinte, #201e1d);
+  box-shadow: inset 0 -3px 0 var(--ub-akzent, #ec3013);
+}
+/* Der Abfragemodus spielt immer auf der Originalgrafik — dort gibt es
+   nichts umzuschalten. */
+.ub-werkbank[data-modus="abfragen"] .ub-schweber__sicht { display: none; }
+
+/* Die Bühne des Nachbaus verhält sich wie die der Abbildung. Oben bleibt
+   mehr Platz als dort: die Modulköpfe stehen am oberen Rand und lägen sonst
+   unter den schwebenden Knöpfen — und zwar bei jedem Zoom, weil dieser
+   Abstand nicht mitskaliert. */
+.ub-gesamt {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  padding: 40px 16px calc(56px + var(--ub-unten-frei, 0px));
+}
+@media (min-width: 700px) {
+  .ub-gesamt { flex: 1 1 auto; min-height: 0; }
+}
+.ub-gesamt__rahmen { position: relative; }

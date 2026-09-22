@@ -93,6 +93,7 @@
 
   var zustand = {
     modus: 'erkunden',        // 'erkunden' | 'abfragen'
+    sicht: 'original',        // Gesamtbild: 'original' (Abbildung 1) | 'nachbau'
     abbildungOffen: true,     // oberer Bereich der Bühne (Abbildung) aufgeklappt
     graphOffen: true,         // unterer Bereich der Bühne (Graph) aufgeklappt
     details: false,           // nachgebautes Bild: Beteiligte und Kurzdefinitionen zeigen
@@ -132,7 +133,8 @@
       besteSerie: zustand.besteSerie,
       abbildungOffen: zustand.abbildungOffen,
       graphOffen: zustand.graphOffen,
-      details: zustand.details
+      details: zustand.details,
+      sicht: zustand.sicht
     });
   }
 
@@ -144,6 +146,7 @@
     if (typeof g.abbildungOffen === 'boolean') { zustand.abbildungOffen = g.abbildungOffen; }
     if (typeof g.graphOffen === 'boolean') { zustand.graphOffen = g.graphOffen; }
     if (typeof g.details === 'boolean') { zustand.details = g.details; }
+    if (g.sicht === 'original' || g.sicht === 'nachbau') { zustand.sicht = g.sicht; }
     /* Beide zu gab es mit den Kopfzeilen; die Pille kennt es nicht. */
     if (!zustand.abbildungOffen && !zustand.graphOffen) { zustand.abbildungOffen = true; zustand.graphOffen = true; }
   }
@@ -345,17 +348,20 @@
   function filterAktiv() {
     return !!graph && graph.umfangAktiv();
   }
-  function imAuswahl(feld) {
+  function imAuswahlEintrag(e) {
     var u = umfang();
     var ph = u.phasen, mo = u.module;
     if (!ph.length && !mo.length) { return true; }
-    return feld.eintraege.some(function (e) {
-      if (e.kategorie === 'phase') { return !ph.length || ph.indexOf(e.begriff) !== -1; }
-      if (e.kategorie === 'modul') { return !mo.length || mo.indexOf(e.begriff) !== -1; }
-      var phOk = !ph.length || (e.phasen || []).some(function (p) { return ph.indexOf(p) !== -1; });
-      var moOk = !mo.length || (e.module || []).some(function (m) { return mo.indexOf(m) !== -1; });
-      return phOk && moOk;
-    });
+    if (e.kategorie === 'phase') { return !ph.length || ph.indexOf(e.begriff) !== -1; }
+    if (e.kategorie === 'modul') { return !mo.length || mo.indexOf(e.begriff) !== -1; }
+    var phOk = !ph.length || (e.phasen || []).some(function (p) { return ph.indexOf(p) !== -1; });
+    var moOk = !mo.length || (e.module || []).some(function (m) { return mo.indexOf(m) !== -1; });
+    return phOk && moOk;
+  }
+  function imAuswahl(feld) {
+    var u = umfang();
+    if (!u.phasen.length && !u.module.length) { return true; }
+    return feld.eintraege.some(imAuswahlEintrag);
   }
   /* Die eingefärbte Rolle ist die gewählte Rolle: sie hat keinen Kasten in
      der Abbildung, darum zeigt die Abbildung die Auswahl als Einfärbung
@@ -414,31 +420,60 @@
     urlSetzen();
   }
 
-  /* --- Nachgebautes Bild und Schritte (js/methodenbild.js) ------------------- */
+  /* --- Die drei Bilder des oberen Bereichs ----------------------------------- */
 
-  /* Ist ein Umfang gewählt, zeigt der obere Bereich das nachgebaute Bild
-     statt der Originalabbildung — ausser im Abfragemodus, der auf der
-     Originalgrafik spielt. Neu gebaut wird nur, wenn sich Umfang oder
-     «Details» ändern; sonst wird nur markiert. */
+  /* Oben steht eines von dreien:
+     – 'original' die Originalgrafik (Abbildung 1),
+     – 'gesamt'   dasselbe Gesamtbild nachgebaut (js/gesamtbild.js) — mit
+                  getrennten Spalten für Projektsteuerung und Projektführung
+                  und allen Ergebnissen; zwischen beiden schaltet die Leiste
+                  oben rechts um,
+     – 'nachbau'  das Bild eines gewählten Umfangs (js/methodenbild.js).
+     Der Abfragemodus spielt immer auf der Originalgrafik. Neu gebaut wird
+     nur, wenn sich Umfang, «Details» oder die Vorgehensweise ändern; sonst
+     wird nur neu gemalt. */
   var bildUmfang = null, bildDetails = null;
+  var gesamtVorgehen = null;
 
-  function nachbauZeigen() {
-    return zustand.modus === 'erkunden' && !!graph && graph.umfangAktiv();
+  function bildArt() {
+    if (zustand.modus !== 'erkunden') { return 'original'; }
+    if (graph && graph.umfangAktiv()) { return 'nachbau'; }
+    return zustand.sicht === 'nachbau' ? 'gesamt' : 'original';
+  }
+
+  function vorgehenJetzt() {
+    return (graph && graph.umfang().vorgehen) || 'klassisch';
   }
 
   function bildZeichnen() {
     if (!refs.bild || !refs.buehneHuelle || !graph) { return; }
-    var nachbau = nachbauZeigen();
+    var art = bildArt();
     var vorher = refs.buehneHuelle.dataset.bild;
-    refs.buehneHuelle.dataset.bild = nachbau ? 'nachbau' : 'original';
+    refs.buehneHuelle.dataset.bild = art;
     if (refs.knopfDetails) { refs.knopfDetails.setAttribute('aria-pressed', zustand.details ? 'true' : 'false'); }
-    if (!nachbau) {
+    sichtKnoepfeAktualisieren();
+
+    if (art !== 'nachbau') {
       bildUmfang = null;
       HT.ui.leeren(refs.bild);
-      /* Verborgen hatte die Bühne keine Breite zum Einpassen. */
-      if (vorher === 'nachbau') { zoomPassendSpaeter(40); }
-      return;
     }
+    if (art === 'gesamt') {
+      var v = vorgehenJetzt();
+      if (v !== gesamtVorgehen) {
+        HT.ui.leeren(refs.gesamtRahmen).appendChild(HT.gesamtbild.bauen(v, {
+          beiZeigen: bildGezeigt,
+          beiKlick: bildGeklickt
+        }));
+        gesamtVorgehen = v;
+        refs.gesamt.scrollTop = 0;
+        refs.gesamt.scrollLeft = 0;
+      }
+      gesamtMalen();
+    }
+    /* Verborgen hatte der Bereich keine Breite zum Einpassen. */
+    if (vorher !== art && art !== 'nachbau') { zoomPassendSpaeter(40); }
+    if (art !== 'nachbau') { return; }
+
     var u = graph.umfang();
     var schluessel = JSON.stringify([u.vorgehen, u.phasen, u.module]);
     if (schluessel !== bildUmfang || zustand.details !== bildDetails) {
@@ -456,8 +491,36 @@
   }
 
   function bildMarkieren() {
-    if (!refs.bild || !refs.bild.firstChild) { return; }
-    HT.methodenbild.markieren(refs.bild.firstChild, zustand.gehalten && zustand.aktiv ? zustand.aktiv.id : null);
+    if (refs.bild && refs.bild.firstChild) {
+      HT.methodenbild.markieren(refs.bild.firstChild, zustand.gehalten && zustand.aktiv ? zustand.aktiv.id : null);
+    }
+    gesamtMalen();
+  }
+
+  /* Das nachgebaute Gesamtbild kennt keinen eigenen Zustand: Rolle, «nur
+     minimal», Auswahl und das festgehaltene Element kommen von hier. */
+  function gesamtMalen() {
+    var el = refs.gesamtRahmen && refs.gesamtRahmen.firstChild;
+    if (!el) { return; }
+    HT.gesamtbild.malen(el, {
+      rolle: zustand.rolle,
+      nurMinimal: zustand.nurMinimal,
+      aktivId: zustand.gehalten && zustand.aktiv ? zustand.aktiv.id : null,
+      imAuswahl: filterAktiv() ? imAuswahlEintrag : null
+    });
+  }
+
+  function sichtSetzen(sicht) {
+    if (zustand.sicht === sicht) { return; }
+    zustand.sicht = sicht;
+    speichern();
+    bildZeichnen();
+  }
+
+  function sichtKnoepfeAktualisieren() {
+    (refs.sichtKnoepfe || []).forEach(function (b) {
+      b.setAttribute('aria-checked', b.dataset.sicht === zustand.sicht ? 'true' : 'false');
+    });
   }
 
   function bildGezeigt(e) {
@@ -677,9 +740,8 @@
 
   /* --- Diagramm einsetzen -------------------------------------------------- */
 
-  function diagrammVeredeln(svg) {
+  function diagrammVeredeln(svg, kaesten) {
     var gruppe = svg.getElementsByTagName('g')[0] || svg;
-    var kaesten = HT.abbildung.kaesten(svg);
 
     var maske = svgEl('g', { 'class': 'ub-deckel' });
     var ebene = svgEl('g', { 'class': 'ub-felder' });
@@ -728,13 +790,23 @@
     svg.setAttribute('role', 'img');
     svg.setAttribute('aria-label', BILDUNTERSCHRIFT);
 
-    diagrammVeredeln(svg);
+    var kaesten = HT.abbildung.kaesten(svg);
+    diagrammVeredeln(svg, kaesten);
+
+    /* Die Reihenfolge der Ergebnisse in einem Feld folgt der Abbildung —
+       ihre Lagen stehen erst jetzt. Das nachgebaute Gesamtbild wird darum
+       hier noch einmal gebaut; ohne das hinge seine Ordnung davon ab, wer
+       die Grafik zuerst gelesen hat. */
+    HT.graph.abbildungLagenSetzen(HT.abbildung.lagen(kaesten));
+    HT.gesamtbild.vergessen();
+    gesamtVorgehen = null;
 
     refs.abb = svg;
     refs.abbBreite = breite;
 
     HT.ui.leeren(refs.buehne);
     refs.buehne.appendChild(svg);
+    bildZeichnen();
     zoomPassend();
     malen();
     rundeNachladenRichten();
@@ -768,6 +840,15 @@
     if (refs.abb && refs.abbBreite) {
       refs.abb.style.width = Math.round(refs.abbBreite * zustand.zoom) + 'px';
     }
+    /* Das nachgebaute Gesamtbild ist HTML in festen px: es wird skaliert, und
+       der Rahmen darum nimmt die skalierten Masse an — sonst wüsste die
+       scrollende Fläche nichts vom Zoom. */
+    var gb = refs.gesamtRahmen && refs.gesamtRahmen.firstChild;
+    if (gb) {
+      gb.style.transform = 'scale(' + zustand.zoom + ')';
+      refs.gesamtRahmen.style.width = Math.round(gb.offsetWidth * zustand.zoom) + 'px';
+      refs.gesamtRahmen.style.height = Math.round(gb.offsetHeight * zustand.zoom) + 'px';
+    }
     if (refs.zoomWert) { refs.zoomWert.textContent = Math.round(zustand.zoom * 100) + ' %'; }
   }
 
@@ -777,10 +858,13 @@
   }
 
   function zoomPassend() {
-    if (!refs.buehne || !refs.abbBreite) { return; }
-    var platz = refs.buehne.clientWidth - 32;
+    var gesamt = bildArt() === 'gesamt';
+    var flaeche = gesamt ? refs.gesamt : refs.buehne;
+    var breite = gesamt ? HT.gesamtbild.breite() : refs.abbBreite;
+    if (!flaeche || !breite) { return; }
+    var platz = flaeche.clientWidth - 32;
     if (platz <= 0) { return; }
-    zoomSetzen(platz / refs.abbBreite);
+    zoomSetzen(platz / breite);
   }
 
   function zoomPassendSpaeter(verzoegerung) {
@@ -982,6 +1066,24 @@
     bildZeichnen();
   }
 
+  /* Umschalter zwischen den beiden Gesamtbildern: zwei Knöpfe als Radiogruppe
+     — die Originalgrafik des Referenzhandbuchs und der Nachbau, der
+     Projektsteuerung und Projektführung trennt und alle Ergebnisse zeigt. */
+  var SICHTEN = [
+    { sicht: 'original', text: 'Original', titel: 'Abbildung 1 des Referenzhandbuchs, unverändert' },
+    { sicht: 'nachbau', text: 'Nachbau', titel: 'Dasselbe Bild nachgebaut: Projektsteuerung und Projektführung getrennt, alle Ergebnisse, Meilensteine mit Namen' }
+  ];
+
+  function sichtBauen() {
+    refs.sichtKnoepfe = SICHTEN.map(function (s) {
+      return werkzeugKnopf(s.text, 'ub-sicht__knopf', function () { sichtSetzen(s.sicht); }, {
+        role: 'radio', 'aria-checked': zustand.sicht === s.sicht ? 'true' : 'false',
+        title: s.titel, 'data-sicht': s.sicht
+      });
+    });
+    return h('div', { class: 'ub-sicht', role: 'radiogroup', 'aria-label': 'Sicht auf das Gesamtbild' }, refs.sichtKnoepfe);
+  }
+
   function schweberBauen() {
     refs.zoomWert = h('span', {
       class: 'ub-zoom__wert', role: 'status',
@@ -996,6 +1098,7 @@
 
     return [
       h('div', { class: 'ub-schweber ub-schweber--steuerung' }, [
+        h('span', { class: 'ub-schweber__sicht' }, [sichtBauen(), werkzeugTrenner()]),
         h('span', { class: 'ub-schweber__nachbau' }, [refs.knopfDetails, werkzeugTrenner()]),
         refs.knopfPanel
       ]),
@@ -1664,9 +1767,11 @@
     }
     links.push(h('a', { class: 'hb-online', href: QUELLE_ALLGEMEIN, target: '_blank', rel: 'noopener', text: 'HERMES online ↗' }));
     return [
-      h('p', { text: 'Oben das Gesamtbild der Methode — Abbildung 1 des Referenzhandbuchs als Originalgrafik —, darunter der Graph mit Rollen, Aufgaben, Ergebnissen und ihren Verbindungen. Zeigen auf einen Kasten der Abbildung füllt die Inhaltsseite rechts (auf dem Telefon steht sie unter dem Graphen, dort genügt Antippen); ein Klick, auch auf einen Knoten im Graphen, hält das Element dort fest.' }),
+      h('p', { text: 'Oben das Gesamtbild der Methode, darunter der Graph mit Rollen, Aufgaben, Ergebnissen und ihren Verbindungen. Zeigen auf einen Kasten füllt die Inhaltsseite rechts (auf dem Telefon steht sie unter dem Graphen, dort genügt Antippen); ein Klick, auch auf einen Knoten im Graphen, hält das Element dort fest.' }),
+      h('p', { text: 'Das Gesamtbild gibt es in zwei Sichten; der Schalter dafür steht oben rechts auf der Bühne. «Original» ist Abbildung 1 des Referenzhandbuchs, unverändert. «Nachbau» zeigt dasselbe aus den Daten neu gezeichnet und ergänzt drei Dinge, die der Originalgrafik fehlen: Projektsteuerung und Projektführung haben je eine eigene Spalte statt einer gemeinsamen; es stehen alle Ergebnisse da statt nur der wesentlichen (161 Kästen statt 81 — die Ergebnisse der Aufgabe «Projekt steuern» etwa fehlen im Original ganz); und die Meilensteine tragen links an der Phasenleiste ihren Namen statt nur eine Raute.' }),
+      h('p', { text: 'Wie im Original stehen die Phasen links und die Module oben in den Spalten. Projektsteuerung und Projektführung erzeugen in Konzept, Realisierung und Einführung dasselbe — diese Felder sind darum wie im Original zu einem Block «phasenunabhängig» zusammengefasst. Was darin nicht in jeder der drei Phasen entsteht, nennt seine Phasen als kleine Marke.' }),
       h('p', { text: 'Vorn in der Leiste gehen ‹ und › die Methode Schritt für Schritt durch: nach dem Gesamtbild die Initialisierung, dann Konzept, Realisierung und Einführung je Modul (Projektsteuerung und Projektführung zusammen, wie in der Abbildung), zuletzt der Abschluss; agil steht an Stelle der drei Phasen die Umsetzung. Ein Klick auf den Titel zeigt alle Schritte, klassisch und agil.' }),
-      h('p', { text: 'Auf einem Schritt steht oben statt der Originalgrafik das nachgebaute Bild: je Aufgabe links die verantwortliche Rolle, rechts die Ergebnisse, die sie dort erzeugt — wie im Zuordnen des Trainers, aber ausgefüllt. «Details» blendet die beteiligten Rollen und die Kurzdefinitionen ein. Zeigen und Klicken wirken wie in der Abbildung; der Abfragemodus spielt immer auf der Originalgrafik.' }),
+      h('p', { text: 'Auf einem Schritt steht oben statt des Gesamtbilds das Bild dieses Schritts: je Aufgabe links die verantwortliche Rolle, rechts die Ergebnisse, die sie dort erzeugt — wie im Zuordnen des Trainers, aber ausgefüllt. «Details» blendet die beteiligten Rollen und die Kurzdefinitionen ein. Zeigen und Klicken wirken wie in der Abbildung; der Abfragemodus spielt immer auf der Originalgrafik.' }),
       h('p', { text: 'Rechts neben den Schritten blenden Elemente und Verbindungen im Graphen ein und aus. Phasen, Szenarien und Module frei kombinieren lässt das Filter-Icon neben der Suche; auch eine solche Auswahl zeigt oben das nachgebaute Bild.' }),
       h('p', { text: 'Die Abbildung ist die Originalgrafik von hermes.admin.ch, die Texte der Inhaltsseite stammen aus dem Referenzhandbuch. Jede Verbindung im Graphen entspricht einem Querverweis der offiziellen Dokumentation; ergänzt wird nichts.' }),
       h('h3', { class: 'gpop__abschnitt', text: 'Zeichen der Abbildung' }),
@@ -1695,10 +1800,18 @@
     /* Oben die Hülle mit Icons, Steuerung und der Legende für den Druck (die Bühne darin
        scrollt — läge das Schwebende in der Bühne, scrollte es mit). */
     refs.bild = h('div', { class: 'ub-bild' });
+    /* Das nachgebaute Gesamtbild scrollt wie die Abbildung und zoomt mit
+       denselben Knöpfen; der Rahmen trägt die skalierten Masse. */
+    refs.gesamtRahmen = h('div', { class: 'ub-gesamt__rahmen' });
+    refs.gesamt = h('div', { class: 'ub-gesamt' }, [refs.gesamtRahmen]);
+    HT.ui.radZoomAnbinden(refs.gesamt, function () {
+      return refs.gesamtRahmen && refs.gesamtRahmen.firstChild ? refs.gesamtRahmen : null;
+    }, buehneSkalieren);
     bildUmfang = null;
     bildDetails = null;
+    gesamtVorgehen = null;
     refs.buehneHuelle = h('div', { class: 'ub-buehne-huelle', dataset: { bild: 'original' } },
-      [refs.buehne, refs.bild].concat(schweberBauen(), [abbLegendeBauen(), refs.panelHuelle]));
+      [refs.buehne, refs.bild, refs.gesamt].concat(schweberBauen(), [abbLegendeBauen(), refs.panelHuelle]));
     var bereichAbb = h('section', { class: 'ub-bereich ub-bereich--abbildung', 'aria-label': 'Abbildung' }, [refs.buehneHuelle]);
     refs.bereiche.abbildung = bereichAbb;
 
@@ -1817,6 +1930,9 @@
     behaelter.appendChild(refs.werkbank);
 
     werkzeugAktualisieren();
+    /* Erst jetzt steht der Graph — und damit die Vorgehensweise, die das
+       nachgebaute Gesamtbild braucht. */
+    bildZeichnen();
     inhaltBreiteSetzen(zustand.inhaltBreite);
     inhaltZeichnen();
     panelZeichnen();

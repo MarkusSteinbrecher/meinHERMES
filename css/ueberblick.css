@@ -561,13 +561,23 @@ body[data-route="ueberblick"] .unterleiste__inner { padding-inline: 12px; }
 
 /* --- Nachgebautes Bild (js/methodenbild.js) ----------------------------------- */
 
-/* Mit gewähltem Umfang tritt das Bild an die Stelle der Originalabbildung;
-   Zoom gibt es dort keinen, «Details» nur dort. */
-.ub-buehne-huelle[data-bild="nachbau"] .ub-buehne,
-.ub-buehne-huelle[data-bild="nachbau"] .ub-schweber--zoom,
+/* Der obere Bereich zeigt eines von dreien: die Originalabbildung, das
+   nachgebaute Gesamtbild (js/gesamtbild.js) oder — mit gewähltem Umfang —
+   das Bild dieses Umfangs (js/methodenbild.js). «Details» gehört allein zum
+   Umfangsbild, der Umschalter Original/Nachbau allein zum Gesamtbild, und
+   gezoomt wird überall ausser im Umfangsbild. */
 .ub-buehne-huelle[data-bild="original"] .ub-bild,
-.ub-buehne-huelle[data-bild="original"] .ub-schweber__nachbau { display: none; }
-.ub-schweber__nachbau { display: flex; align-items: center; }
+.ub-buehne-huelle[data-bild="original"] .ub-gesamt,
+.ub-buehne-huelle[data-bild="original"] .ub-schweber__nachbau,
+.ub-buehne-huelle[data-bild="gesamt"] .ub-buehne,
+.ub-buehne-huelle[data-bild="gesamt"] .ub-bild,
+.ub-buehne-huelle[data-bild="gesamt"] .ub-schweber__nachbau,
+.ub-buehne-huelle[data-bild="nachbau"] .ub-buehne,
+.ub-buehne-huelle[data-bild="nachbau"] .ub-gesamt,
+.ub-buehne-huelle[data-bild="nachbau"] .ub-schweber--zoom,
+.ub-buehne-huelle[data-bild="nachbau"] .ub-schweber__sicht { display: none; }
+.ub-schweber__nachbau,
+.ub-schweber__sicht { display: flex; align-items: center; }
 .ub-schweber--steuerung .ub-schweber__knopf { padding: 0 8px; }
 .ub-schweber__knopf[aria-pressed="true"] { color: var(--ub-tinte); box-shadow: inset 0 -3px 0 var(--ub-akzent); }
 .ub-bild {
