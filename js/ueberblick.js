@@ -467,6 +467,10 @@
         gesamtVorgehen = v;
         refs.gesamt.scrollTop = 0;
         refs.gesamt.scrollLeft = 0;
+        /* Das frisch gebaute Bild trägt noch keinen Massstab; ohne das stünde
+           es nach einem Wechsel der Vorgehensweise in voller Grösse in einer
+           Fläche, die noch die Masse des alten Zooms hat. */
+        zoomAnwenden();
       }
       gesamtMalen();
     }

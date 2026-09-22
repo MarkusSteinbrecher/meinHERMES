@@ -51,22 +51,23 @@
   cursor: pointer;
 }
 .gb-k:focus-visible { outline: 2px solid var(--ub-akzent, #ec3013); outline-offset: 1px; }
-.gb-k__name { display: block; min-width: 0; hyphens: auto; overflow-wrap: anywhere; }
+/* Getrennt wird an den Fugen, die js/gesamtbild.js gesetzt hat (weiche
+   Trennzeichen) — nicht nach den Sprechsilben des Browsers. break-word ist
+   nur die Notbremse für einen Namen, den die Liste dort nicht kennt. */
+.gb-k__name { display: block; min-width: 0; hyphens: manual; overflow-wrap: break-word; }
 
-/* --- Kopfzeile: die Module ------------------------------------------------- */
-
-.gb-ecke { min-height: 34px; }
+/* --- Der Modulkopf (oben in der Phase, in der das Modul beginnt) ----------- */
 
 .gb-k--modul {
-  align-self: stretch;
+  grid-column: 1 / -1;
   justify-content: center;
   min-height: 34px;
+  margin-bottom: 2px;
   padding: 5px 4px;
   border: 1px solid var(--ub-tinte, #201e1d);
   background: #fff;
   font-weight: 700;
   text-align: center;
-  hyphens: auto;
 }
 
 /* --- Linke Leiste: Phase und ihre Meilensteine ----------------------------- */
@@ -91,15 +92,21 @@
 }
 .gb-leiste[data-art="mitte"] .gb-k--phase { background: var(--gb-phase-mitte); }
 
+/* Die drei Lagen einer Phase: was sie öffnet, steht oben, was sie schliesst,
+   unten, die modulspezifischen Meilensteine genau dazwischen — die beiden
+   1fr-Zeilen sind die Luft, die das gleich verteilt. Leere Gruppen nehmen
+   keinen Platz. */
 .gb-ms {
   flex: 1 1 auto;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 3px;
-  padding-bottom: 2px;
+  display: grid;
+  grid-template-rows: auto 1fr auto 1fr auto;
+  padding: 2px 0;
 }
+.gb-ms__gruppe { display: flex; flex-direction: column; gap: 3px; }
+.gb-ms__gruppe[data-lage="anfang"] { grid-row: 1; }
+.gb-ms__gruppe[data-lage="mitte"] { grid-row: 3; }
+.gb-ms__gruppe[data-lage="ende"] { grid-row: 5; }
 .gb-k--meilenstein {
   gap: 4px;
   padding: 2px 0;
@@ -109,18 +116,25 @@
 
 /* --- Felder: Phase × Modul ------------------------------------------------- */
 
+/* Ein Feld ist ein Gitter über die Spalten seines Moduls — ein Kasten je
+   Spalte, auch bei Projektgrundlagen über dreien. */
 .gb-feld {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 3px;
   align-self: stretch;
+  align-content: start;
 }
+/* Das Bandfeld kostet Textbreite: sein Rand und der des Kastens gehen von
+   den 90 px der Spalte ab. Seitlich ist beides darum knapper, sonst bliebe
+   von «Lösungsanforderungen» ein umgebrochenes «anforderunge/n». */
 .gb-feld[data-band="ja"] {
-  padding: 5px;
+  padding: 5px 3px;
   background: #faf9f8;
   outline: 1px solid var(--gb-linie);
 }
+.gb-feld[data-band="ja"] .gb-k { padding-right: 4px; padding-left: 4px; }
 .gb-feld__titel {
+  grid-column: 1 / -1;
   margin: 0 0 2px;
   font-size: 9.5px;
   font-weight: 700;
@@ -131,9 +145,11 @@
 
 /* --- Die Ergebniskästen ---------------------------------------------------- */
 
+/* Alle Kästen gleich breit (eine Spalte) und mindestens zwei Zeilen hoch —
+   damit steht das Raster ruhig; nur die längsten Namen brauchen eine dritte. */
 .gb-k--ergebnis {
   flex-wrap: wrap;
-  min-height: 24px;
+  min-height: 36px;
   background: var(--gb-ergebnis);
 }
 /* Zustände sind in der Abbildung weiss mit runden Ecken — hier auch, sonst

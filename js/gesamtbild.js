@@ -2,8 +2,11 @@
    Überblick).
 
    Aufbau wie die Originalgrafik: links die Phasen als Band mit ihren
-   Meilensteinen, oben die Module als Spaltenköpfe, dazwischen je Feld
-   (Phase × Modul) die Ergebnisse. Drei Dinge macht der Nachbau anders:
+   Meilensteinen, rechts daneben je Feld (Phase × Modul) die Ergebnisse. Der
+   Modulkopf steht — wie im Original — am oberen Rand der Phase, in der das
+   Modul beginnt: drei Köpfe in der Initialisierung (Projektsteuerung,
+   Projektführung, Projektgrundlagen), neun in der Phase darauf (Konzept
+   klassisch, Umsetzung agil). Drei Dinge macht der Nachbau anders:
 
    1. Projektsteuerung und Projektführung haben je eine eigene Spalte. Die
       Abbildung legt beide Module in eine, dadurch ist nicht zu sehen, welches
@@ -12,7 +15,10 @@
       zeigt 81 Kästen für 64 der 105 Ergebnisse; hier sind es 161 Kästen —
       etwa die Ergebnisse der Aufgabe «Projekt steuern» fehlen dort ganz.
    3. Die Meilensteine tragen ihren Namen. In der Abbildung sind sie nur
-      namenlose Rauten am linken Rand.
+      namenlose Rauten am linken Rand. Sie stehen dort, wo sie terminiert
+      sind: die Freigabe, die eine Phase öffnet, am Anfang, die Entscheide,
+      mit denen die Phase endet, am Ende, die modulspezifischen dazwischen in
+      der Mitte (MS_ANFANG, MS_ENDE).
 
    Wiederholungen: Projektsteuerung und Projektführung erzeugen in jeder Phase
    zwischen der ersten und der letzten praktisch dasselbe — die Abbildung nennt
@@ -48,7 +54,77 @@
 
   var IKONE_RAUTE = ['M12 3.5 20.5 12 12 20.5 3.5 12Z'];
 
+  /* Wortteile, vor denen ein langer Name umbrochen werden darf. In 90 px
+     passt kaum ein Name auf eine Zeile, und die Silbentrennung des Browsers
+     (hyphens: auto) trennt nach Sprechsilben — «Projektsteue-rung»,
+     «Situationsanaly-se». Gelesen wird der Fachwortschatz aber in seinen
+     Bestandteilen, darum setzt trennen() die Trennstellen selbst an die
+     Fugen der Zusammensetzung: «Projekt-steuerung», «Situations-analyse».
+     Der Wortschatz ist geschlossen (105 Ergebnisse, 12 Module), die Liste
+     deckt ihn ab; was sie nicht trifft, bricht die CSS-Regel notfalls
+     irgendwo um.
+
+     Nur Fugen, keine Sprechsilben: der Browser bricht an der letzten Stelle,
+     die noch auf die Zeile passt, und eine zusätzliche Silbenstelle gewinnt
+     dann gegen die Fuge davor — «Prozessbe-schreibung» statt
+     «Prozess-beschreibung». Die Spalte muss dafür so breit sein, dass das
+     längste Wortstück hineinpasst; gemessen sind das 80 px für
+     «Ausschreibungs-», und danach ist auch der Rand der Bandfelder
+     bemessen (css/gesamtbild.css). */
+  var TRENNTEILE = ['abbruch', 'abnahme', 'abschluss', 'aktiviert', 'analyse',
+    'anforderungen', 'anfrage', 'angepasst', 'anleitung', 'antrag', 'architektur',
+    'aufnahme', 'auftrag', 'bedarfs', 'bericht', 'beschreibung', 'beurteilung',
+    'dokumentation', 'entscheide', 'erfahrungen', 'freigabe', 'führung',
+    'grundlagen', 'handbuch', 'infrastruktur', 'initialisierung', 'interessen',
+    'konzept', 'liste', 'management', 'massnahmen', 'modell', 'organisation',
+    'plan', 'protokoll', 'prozess', 'schluss', 'spezifikation', 'status',
+    'steuerung', 'system', 'unabhängig', 'unterlagen', 'verfahren', 'vorgehen'];
+
+  /* Ein Wort, dessen längster Bestandteil auch nach der Fuge nicht in die
+     Spalte passt: «Ausschreibungs-» misst 83 px, frei sind 80. Dort trennt
+     zusätzlich die Sprechsilbe (Stelle im Wort). */
+  var AUSNAHMEN = { ausschreibungsunterlagen: [3] };
+
+  /* Das weiche Trennzeichen (U+00AD) wörtlich in die Quelle zu schreiben
+     hiesse, ein unsichtbares Zeichen zu pflegen. */
+  var WEICH = String.fromCharCode(0xAD);
+
+  /* Meilensteine, die ihre Phase öffnen bzw. schliessen. Die Daten sagen nur,
+     zu welcher Phase ein Meilenstein gehört; wann er fällt, steht im Wortlaut
+     des Handbuchs («Am Ende der Phase Konzept …»). Alles, was hier nicht
+     steht, ist ein modulspezifischer Meilenstein und fällt mitten in der
+     Phase. */
+  var MS_ANFANG = ['Meilenstein Projektinitialisierungsfreigabe'];
+  var MS_ENDE = ['Meilenstein Durchführungsfreigabe', 'Meilenstein Phasenfreigabe',
+    'Meilenstein Phasenfreigabe Abschluss', 'Meilenstein Projektabschluss'];
+  var LAGEN = ['anfang', 'mitte', 'ende'];
+
   var modelle = {};
+
+  /* --- Umbruch --------------------------------------------------------------- */
+
+  /** Setzt weiche Trennzeichen an die Fugen eines zusammengesetzten Namens. */
+  function trennen(text) {
+    return String(text).split(' ').map(function (wort) {
+      if (wort.length < 12) { return wort; }
+      var klein = wort.toLowerCase(), stellen = (AUSNAHMEN[klein] || []).slice();
+      TRENNTEILE.forEach(function (teil) {
+        var i = klein.indexOf(teil, 3);
+        while (i !== -1) {
+          /* Nicht direkt hinter einem Bindestrich — dort bricht es ohnehin —
+             und nicht so, dass weniger als drei Zeichen übrig bleiben. */
+          if (klein.charAt(i - 1) !== '-' && wort.length - i >= 3 && stellen.indexOf(i) === -1) {
+            stellen.push(i);
+          }
+          i = klein.indexOf(teil, i + 1);
+        }
+      });
+      stellen.sort(function (a, b) { return b - a; });
+      var neu = wort;
+      stellen.forEach(function (i) { neu = neu.slice(0, i) + WEICH + neu.slice(i); });
+      return neu;
+    }).join(' ');
+  }
 
   /* --- Modell ---------------------------------------------------------------- */
 
@@ -76,7 +152,12 @@
     return liste;
   }
 
-  /** Die Meilensteine einer Phase über alle Module — sie stehen links. */
+  /**
+   * Die Meilensteine einer Phase über alle Module — sie stehen links, nach
+   * ihrer Lage in der Phase gruppiert: { anfang: [], mitte: [], ende: [] }.
+   * Innerhalb einer Gruppe gilt die Reihenfolge des Handbuchkapitels der
+   * Phase (Eintrag `meilensteine`); was dort nicht steht, folgt dahinter.
+   */
   function meilensteineVon(vorgehen, phase) {
     var gesehen = {}, liste = [];
     HT.graph.bloecke({ vorgehen: vorgehen, phasen: [phase], module: [] }, true).forEach(function (b) {
@@ -86,12 +167,28 @@
         liste.push(k);
       });
     });
-    return liste;
+
+    var e = HT.daten.eintragMitBegriff(phase, 'phase');
+    var folge = ((e && e.meilensteine) || []).map(function (m) { return m.name; });
+    function rang(k) {
+      var i = folge.indexOf(k.begriff);
+      return i === -1 ? folge.length : i;
+    }
+    liste.sort(function (a, b) { return rang(a) - rang(b); });
+
+    var nach = { anfang: [], mitte: [], ende: [] };
+    liste.forEach(function (k) {
+      var lage = MS_ANFANG.indexOf(k.begriff) !== -1 ? 'anfang'
+        : MS_ENDE.indexOf(k.begriff) !== -1 ? 'ende' : 'mitte';
+      nach[lage].push(k);
+    });
+    return nach;
   }
 
   /**
    * { vorgehen, phasen, zeilen: [{ phase, index, mitte, meilensteine }],
-   *   felder: [{ modul, spalte, zeile, hoehe, band, titel, ergebnisse }] }
+   *   felder: [{ modul, spalte, zeile, hoehe, band, kopf, titel, ergebnisse }] }
+   * kopf: in diesem Feld steht der Modulkopf — es ist das erste der Spalte.
    * ergebnisse: [{ knoten, nurIn }] — nurIn nennt die Phasen eines
    * Bandfeldes, in denen das Ergebnis entsteht (null = in allen).
    */
@@ -116,6 +213,11 @@
       var spalte = spalteVon(modul);
       if (!spalte) { return; }
       var band = bandAn && BAND_MODULE.indexOf(modul) !== -1;
+      /* Die Ergebnisse je Phase einmal holen — die erste Phase mit Ergebnissen
+         trägt den Modulkopf. */
+      var jePhase = phasen.map(function (p) { return ergebnisseVon(vorgehen, p, modul); });
+      var erste = -1;
+      jePhase.some(function (erg, i) { if (!erg.length) { return false; } erste = i; return true; });
 
       if (band) {
         var vereint = [], wo = {};
@@ -128,7 +230,7 @@
         if (vereint.length) {
           felder.push({
             modul: modul, spalte: spalte, zeile: 1, hoehe: mitte.length, band: true,
-            titel: 'phasenunabhängig',
+            kopf: false, titel: 'phasenunabhängig',
             ergebnisse: vereint.map(function (k) {
               return { knoten: k, nurIn: wo[k.id].length === mitte.length ? null : wo[k.id] };
             })
@@ -138,13 +240,11 @@
 
       phasen.forEach(function (phase, i) {
         if (band && mitte.indexOf(phase) !== -1) { return; }
-        var erg = ergebnisseVon(vorgehen, phase, modul);
+        var erg = jePhase[i];
         if (!erg.length) { return; }
         felder.push({
           modul: modul, spalte: spalte, zeile: i, hoehe: 1, band: false,
-          /* Ein Modul über mehreren Spalten hat oben keinen Kopf — sein Name
-             steht darum im Feld. */
-          titel: spalte.breite > 1 ? modul : '',
+          kopf: i === erste, titel: '',
           ergebnisse: erg.map(function (k) { return { knoten: k, nurIn: null }; })
         });
       });
@@ -171,7 +271,7 @@
       'aria-pressed': 'false'
     }, [
       art === 'meilenstein' ? HT.ui.symbol(IKONE_RAUTE, 11) : null,
-      h('span', { class: 'gb-k__name', text: text || eintrag.begriff })
+      h('span', { class: 'gb-k__name', text: trennen(text || eintrag.begriff) })
     ]);
   }
 
@@ -192,36 +292,45 @@
     return el;
   }
 
+  function kopfBauen(modul) {
+    var e = HT.daten.eintragMitBegriff(modul, 'modul');
+    return knopf(e, 'gb-k gb-k--modul', 'modul', modul);
+  }
+
+  /* Ein Feld ist selbst ein Gitter über die Spalten des Moduls: so ist jeder
+     Ergebniskasten eine Spalte breit, auch unter Projektgrundlagen, das über
+     drei geht. Kopf und Titel spannen darüber (CSS). */
   function feldBauen(f) {
     var el = h('div', { class: 'gb-feld', dataset: { modul: f.modul, band: f.band ? 'ja' : 'nein' } },
-      [f.titel ? h('p', { class: 'gb-feld__titel', text: f.titel }) : null]
+      [f.kopf ? kopfBauen(f.modul) : null,
+        f.titel ? h('p', { class: 'gb-feld__titel', text: trennen(f.titel) }) : null]
         .concat(f.ergebnisse.map(ergebnisBauen)));
     el.style.gridColumn = (f.spalte.start + 2) + ' / span ' + f.spalte.breite;
-    el.style.gridRow = (f.zeile + 2) + ' / span ' + f.hoehe;
+    el.style.gridRow = (f.zeile + 1) + ' / span ' + f.hoehe;
+    /* minmax(0, 1fr): ohne die 0 wächst die Spur auf das längste Wort und das
+       Feld schiebt sich über seine Spalten hinaus. */
+    el.style.gridTemplateColumns = 'repeat(' + f.spalte.breite + ', minmax(0, 1fr))';
     return el;
+  }
+
+  function meilensteinBauen(k) {
+    var b = knopf(k.eintrag || { id: k.id, begriff: k.begriff }, 'gb-k gb-k--meilenstein',
+      'meilenstein', String(k.begriff).replace(/^Meilenstein\s+/, ''));
+    if (!b.dataset.id) { b.dataset.id = k.id; }
+    return b;
   }
 
   function leisteBauen(z) {
     var phase = HT.daten.eintragMitBegriff(z.phase, 'phase');
     var el = h('div', { class: 'gb-leiste', dataset: { art: z.mitte ? 'mitte' : 'rand' } }, [
       knopf(phase, 'gb-k gb-k--phase', 'phase', z.phase),
-      h('div', { class: 'gb-ms' }, z.meilensteine.map(function (k) {
-        var b = knopf(k.eintrag || { id: k.id, begriff: k.begriff }, 'gb-k gb-k--meilenstein',
-          'meilenstein', String(k.begriff).replace(/^Meilenstein\s+/, ''));
-        if (!b.dataset.id) { b.dataset.id = k.id; }
-        return b;
+      h('div', { class: 'gb-ms' }, LAGEN.map(function (lage) {
+        return h('div', { class: 'gb-ms__gruppe', dataset: { lage: lage } },
+          z.meilensteine[lage].map(meilensteinBauen));
       }))
     ]);
     el.style.gridColumn = '1';
-    el.style.gridRow = String(z.index + 2);
-    return el;
-  }
-
-  function kopfBauen(modul, i) {
-    var e = HT.daten.eintragMitBegriff(modul, 'modul');
-    var el = knopf(e, 'gb-k gb-k--modul', 'modul', modul);
-    el.style.gridColumn = String(i + 2);
-    el.style.gridRow = '1';
+    el.style.gridRow = String(z.index + 1);
     return el;
   }
 
@@ -237,11 +346,6 @@
     gitter.style.gridTemplateColumns = MASS.leiste + 'px repeat(' + SPALTEN.length + ', ' + MASS.spalte + 'px)';
     gitter.style.gap = MASS.luecke + 'px';
 
-    var ecke = h('div', { class: 'gb-ecke', 'aria-hidden': 'true' });
-    ecke.style.gridColumn = '1';
-    ecke.style.gridRow = '1';
-    gitter.appendChild(ecke);
-    SPALTEN.forEach(function (modul, i) { gitter.appendChild(kopfBauen(modul, i)); });
     m.zeilen.forEach(function (z) { gitter.appendChild(leisteBauen(z)); });
     m.felder.forEach(function (f) { gitter.appendChild(feldBauen(f)); });
 
