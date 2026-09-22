@@ -6,7 +6,9 @@
    data/handbuch/rhb/ (tools/rhb-import.py); jeder Abschnitt trägt Nummer und
    Seite des PDF, Seitenzahlen sind Links auf die Seite im PDF. Abschnitte, die
    ein Element beschreiben (4.4.1.1 Abnahmeprotokoll), stehen als Karte mit
-   Faktenzeile, Link auf HERMES online und ins PDF (siehe js/karte.js).
+   Faktenzeile, Link auf HERMES online und ins PDF (siehe js/karte.js) und,
+   bei Aufgaben und Ergebnissen, rechts in der Verweiszeile dem Lernstand
+   ihrer Lernkarte als fünf Punkte (HT.lernkarten.marke).
    Die Kapitel stehen in einer zweiten Leiste unter der Kopfzeile
    (HT.app.unterleiste), rechts darin ein Info-Icon zu Zweck und Quelle der
    Seite. Gesucht wird in der Kopfzeile: hier im Text des ganzen Handbuchs,
@@ -119,6 +121,13 @@
       h('p', { text: 'Das Referenzhandbuch Projektmanagement von HERMES als Text — Kapitel für Kapitel in seiner Gliederung, mit den Nummern und Seitenzahlen des PDF. Phasen, Szenarien, Module, Ergebnisse, Aufgaben und Rollen stehen als Karten an ihrer Stelle.' }),
       h('p', { text: 'Quelle ist das offizielle PDF von hermes.admin.ch' + (q.ausgabe ? ' (' + q.ausgabe + ')' : '')
         + '. Der Text ist daraus maschinell gelesen und 1:1 übernommen, ohne Verzeichnisse und Index; jede Seitenzahl öffnet die Seite im PDF. Massgebend ist die offizielle Fassung.' }),
+      h('p', {}, [
+        'Bei Aufgaben und Ergebnissen stehen rechts in der Verweiszeile ihrer Karte fünf Punkte: die letzten fünf Versuche mit der '
+          + 'zugehörigen Lernkarte im ',
+        h('a', { href: '#/trainer?teil=lernkarten', text: 'Trainer' }),
+        ' — grün «Gewusst», rot «Nochmals», der älteste links, leere Ringe für noch freie Plätze. Ein Klick darauf legt diese '
+          + 'Lernkarte zuoberst auf den Stapel. Phasen, Szenarien, Module und Rollen haben keine Lernkarte; dort stehen keine Punkte.'
+      ]),
       h('p', { text: 'Die Suche oben durchsucht hier den Text aller Kapitel, ohne Rücksicht auf Gross- und Kleinschreibung und Akzente. Der Zähler nennt die Treffer im ganzen Handbuch, die Leiste die Zahl je Kapitel; Enter springt zum nächsten Treffer, Umschalt+Enter zum vorherigen, auch ins nächste Kapitel. ⌘F bzw. Strg+F öffnet die Suche, Escape leert sie.' }),
       h('p', { class: 'hb-verweis' }, links)
     ];
@@ -136,10 +145,15 @@
     }, [h('span', { 'aria-hidden': 'true', text: '◎ ' }), 'Im Graph']);
   }
 
-  /* Karte eines Elements mit dem Text seines Abschnitts im PDF. */
+  /* Karte eines Elements mit dem Text seines Abschnitts im PDF. Rechts in der
+     Verweiszeile der Lernstand: die fünf Punkte der Lernkarte dieses Elements
+     (js/lernkarten.js). Sie stehen bei den 71 Aufgaben und 108 Ergebnissen,
+     die eine Karte haben — Phasen, Szenarien, Module und Rollen haben keine,
+     ebenso die Sammelkarten «Checklisten» und «Meilensteine». */
   function karte(e, a) {
     return HT.karte.bauen(e, {
       nurHandbuch: true,
+      lernstand: true,
       bloecke: a.bloecke || [],
       zusatz: graphLink(e),
       titelEbene: a.ebene <= 3 ? 'h3' : 'h4',

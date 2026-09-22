@@ -1146,6 +1146,18 @@ a.wert:hover, .wert a:hover { color: var(--akzent); border-color: var(--text); }
 .lk-verlauf__punkt { width: 9px; height: 9px; border: 1.5px solid var(--rand-stark); border-radius: 50%; }
 .lk-verlauf__punkt--gewusst { background: var(--gut); border-color: var(--gut); }
 .lk-verlauf__punkt--nochmals { background: var(--akzent); border-color: var(--akzent); }
+/* Dieselben Punkte am Fuss einer Handbuchkarte: dort sind sie der Weg zu
+   dieser Lernkarte. Die Fläche ist etwas grösser als die Punkte, damit sie
+   auf dem Telefon zu treffen ist; der Ring beim Überfahren sagt, dass es ein
+   Link ist — die Punkte selbst behalten ihre Farbe, sie sind die Auskunft. */
+.lk-verlauf--link {
+  padding: 5px 8px;
+  margin: -5px -8px -5px auto;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: inset 0 0 0 1px transparent;
+}
+.lk-verlauf--link:hover { box-shadow: inset 0 0 0 1px var(--akzent); }
 
 /* Liste aller Karten: je Kategorie ein Titel an der Haarlinie, darunter die
    Karten in Spalten (oben nach unten, dann die nächste), rechts je Zeile der

@@ -157,7 +157,7 @@
     var wieder = liste.length - neu;
     var label = HT.graph.KAT[kat].label;
     return h('div', {
-      class: 'lk-zahl lk-zahl--' + kat,
+      class: 'lk-zahlzeile lk-farbe--' + kat,
       title: label + ': ' + neu + ' erstmals, ' + wieder + ' wiederholt'
     }, [
       HT.ui.katSymbol(kat, 14),
@@ -180,7 +180,7 @@
         zahlZeile('rolle', z.rollen, z),
         zahlZeile('aufgabe', z.aufgaben, z)
       ]),
-      h('div', { class: 'lk-liste' }, z.ergebnisse.map(function (k) { return knoten(k, z, m); }))
+      h('div', { class: 'lk-knotenliste' }, z.ergebnisse.map(function (k) { return knoten(k, z, m); }))
     ]);
   }
 
@@ -273,8 +273,8 @@
       a.koepfe.forEach(function (k) {
         k.x = spalteX(k.spalte.start);
         k.w = spaltenBreite(k.spalte);
-        k.el = h('button', { type: 'button', class: 'lk-kopf', tabindex: '-1', title: k.modul + ' — ganze Spalte zeigen' },
-          h('span', { class: 'lk-kopf__text', text: k.modul }));
+        k.el = h('button', { type: 'button', class: 'lk-modulkopf', tabindex: '-1', title: k.modul + ' — ganze Spalte zeigen' },
+          h('span', { class: 'lk-modulkopf__text', text: k.modul }));
         k.el.addEventListener('click', function () { spalteZeigen(k.modul); });
         a.leiste.appendChild(k.el);
       });
@@ -308,7 +308,7 @@
       h('span', { class: 'lk-legende' }, [h('span', { class: 'lk-muster lk-muster--neu', 'aria-hidden': 'true' }), 'erstmals']),
       h('span', { class: 'lk-legende' }, [h('span', { class: 'lk-muster lk-muster--wieder', 'aria-hidden': 'true' }), 'wiederholt']),
       h('span', { class: 'lk-legende lk-legende--kat' }, KAT_REIHE.map(function (kat) {
-        return h('span', { class: 'lk-legende__kat lk-zahl--' + kat, title: HT.graph.KAT[kat].label }, [
+        return h('span', { class: 'lk-legende__kat lk-farbe--' + kat, title: HT.graph.KAT[kat].label }, [
           HT.ui.katSymbol(kat, 14), h('span', { text: HT.graph.KAT[kat].label })
         ]);
       }))
@@ -585,7 +585,7 @@
       if (e.kategorie === 'ergebnis' && e.typ) { fakten.push(['Typ', e.typ]); }
 
       karte.appendChild(h('div', { class: 'gpop__kopf' }, [
-        h('span', { class: 'lk-karte__kat lk-zahl--' + e.kategorie }, [
+        h('span', { class: 'lk-karte__kat lk-farbe--' + e.kategorie }, [
           HT.ui.katSymbol(art, 14),
           h('span', { class: 'gpop__titel', text: art === 'meilenstein' ? 'Meilenstein' : HT.graph.KAT[e.kategorie].singular })
         ]),
@@ -606,7 +606,7 @@
             type: 'button', class: 'lk-vorkommen__knopf' + (vk.erstmals ? ' ist-neu' : ' ist-wieder'),
             on: { click: function () { zuVorkommen(vk, gewaehlt); } }
           }, [
-            h('span', { class: 'lk-muster lk-muster--' + (vk.erstmals ? 'neu' : 'wieder') + ' lk-zahl--' + e.kategorie, 'aria-hidden': 'true' }),
+            h('span', { class: 'lk-muster lk-muster--' + (vk.erstmals ? 'neu' : 'wieder') + ' lk-farbe--' + e.kategorie, 'aria-hidden': 'true' }),
             h('span', { class: 'lk-vorkommen__feld', text: feldName(vk.zelle) }),
             h('span', { class: 'lk-vorkommen__art', text: vk.erstmals ? 'erstmals' : 'wiederholt' })
           ]));
@@ -625,7 +625,7 @@
       return { x: ev.clientX - r.left, y: ev.clientY - r.top };
     }
     function aufBedienung(ziel) {
-      return !!(ziel && ziel.closest && ziel.closest('.lk-schweber, .lk-karte, .lk-kopf, .lk-phase'));
+      return !!(ziel && ziel.closest && ziel.closest('.lk-schweber, .lk-karte, .lk-modulkopf, .lk-phase'));
     }
 
     buehne.addEventListener('wheel', function (ev) {

@@ -2,6 +2,13 @@
    meinHERMES — Landkarte: das Gesamtbild zum Zoomen (Entwurf, js/landkarte.js)
    Die Welt ist ein Grid in px bei Zoom 1; was auf dem Schirm gleich gross
    bleiben soll, rechnet mit --lk-k (1 / Zoom) bzw. --lk-g (höchstens 2,2).
+
+   Achtung beim Benennen: «lk-» gehört auch den Lernkarten (css/style.css,
+   js/lernkarten.js), und dieses Blatt wird nach style.css geladen — ein
+   gleicher Name gewinnt hier und beschädigt die Lernkartenseite. So
+   geschehen mit lk-kopf, lk-zahl und lk-liste (2026-09-22 umbenannt in
+   lk-modulkopf, lk-zahlzeile/lk-farbe-- und lk-knotenliste). Neue Namen
+   vorher gegen style.css und js/lernkarten.js prüfen.
    ========================================================================== */
 
 body[data-route="landkarte"] .view { max-width: none; margin: 0; padding: 0; }
@@ -103,9 +110,9 @@ body[data-route="landkarte"] .unterleiste__inner { padding-inline: 12px; }
 
 /* --- Kategoriefarben für Zahlen, Muster und Karte ---------------------------- */
 
-.lk-zahl--rolle { --lk-farbe: var(--gk-rolle); --lk-farbe-fg: var(--gk-rolle-fg); --lk-farbe-bg: var(--gk-rolle-bg); }
-.lk-zahl--aufgabe { --lk-farbe: var(--gk-aufgabe); --lk-farbe-fg: var(--gk-aufgabe-fg); --lk-farbe-bg: var(--gk-aufgabe-bg); }
-.lk-zahl--ergebnis { --lk-farbe: var(--gk-ergebnis); --lk-farbe-fg: var(--gk-ergebnis-fg); --lk-farbe-bg: var(--gk-ergebnis-bg); }
+.lk-farbe--rolle { --lk-farbe: var(--gk-rolle); --lk-farbe-fg: var(--gk-rolle-fg); --lk-farbe-bg: var(--gk-rolle-bg); }
+.lk-farbe--aufgabe { --lk-farbe: var(--gk-aufgabe); --lk-farbe-fg: var(--gk-aufgabe-fg); --lk-farbe-bg: var(--gk-aufgabe-bg); }
+.lk-farbe--ergebnis { --lk-farbe: var(--gk-ergebnis); --lk-farbe-fg: var(--gk-ergebnis-fg); --lk-farbe-bg: var(--gk-ergebnis-bg); }
 
 /* --- Lage 0: Zahlen ------------------------------------------------------------ */
 
@@ -119,8 +126,8 @@ body[data-route="landkarte"] .unterleiste__inner { padding-inline: 12px; }
   transform-origin: 0 0;
   transition: opacity .15s ease;
 }
-.lk-zahl { display: flex; align-items: center; gap: 4px; height: 22px; color: var(--lk-farbe); }
-.lk-zahl .kat-ikone { width: 14px; height: 14px; flex: 0 0 auto; }
+.lk-zahlzeile { display: flex; align-items: center; gap: 4px; height: 22px; color: var(--lk-farbe); }
+.lk-zahlzeile .kat-ikone { width: 14px; height: 14px; flex: 0 0 auto; }
 .lk-kreis {
   display: inline-grid;
   place-items: center;
@@ -216,8 +223,8 @@ body[data-route="landkarte"] .unterleiste__inner { padding-inline: 12px; }
 
 /* Lage 1: die Ergebnisse als Liste in Spalten wie die Kästen der Abbildung. */
 .lk-lage--1 { display: grid; align-content: start; gap: 4px; }
-.lk-liste { column-width: 108px; column-gap: 10px; }
-.lk-liste > .lk-k { break-inside: avoid; margin-bottom: 4px; }
+.lk-knotenliste { column-width: 108px; column-gap: 10px; }
+.lk-knotenliste > .lk-k { break-inside: avoid; margin-bottom: 4px; }
 
 /* Lage 2: je Aufgabe ein Block — Rolle, Aufgabe, eingerückt die Ergebnisse. */
 .lk-bloecke { column-width: 108px; column-gap: 10px; }
@@ -241,8 +248,8 @@ body[data-route="landkarte"] .unterleiste__inner { padding-inline: 12px; }
 
 .lk-koepfe { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
 .lk-kopfleiste { position: absolute; left: 0; right: 0; top: 0; height: 34px; }
-.lk-kopfleiste[hidden], .lk-kopf[hidden] { display: none; }
-.lk-kopf {
+.lk-kopfleiste[hidden], .lk-modulkopf[hidden] { display: none; }
+.lk-modulkopf {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -262,9 +269,9 @@ body[data-route="landkarte"] .unterleiste__inner { padding-inline: 12px; }
   pointer-events: auto;
   cursor: pointer;
 }
-.lk-kopf__text { width: 100%; text-align: left; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; hyphens: auto; overflow-wrap: break-word; }
-.lk-kopf:hover { color: var(--akzent-text); border-bottom-color: var(--akzent); }
-.lk-kopfleiste.ist-klebend .lk-kopf { background: rgba(255, 255, 255, .94); }
+.lk-modulkopf__text { width: 100%; text-align: left; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; hyphens: auto; overflow-wrap: break-word; }
+.lk-modulkopf:hover { color: var(--akzent-text); border-bottom-color: var(--akzent); }
+.lk-kopfleiste.ist-klebend .lk-modulkopf { background: rgba(255, 255, 255, .94); }
 
 .lk-phase {
   position: absolute;

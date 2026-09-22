@@ -20,7 +20,11 @@
    daneben zeigt statt der Karte die Liste aller Karten: nach Kategorie, darin
    alphabetisch, je mit dem Verlauf; ein Klick legt die Karte zuoberst auf den
    Stapel und zeigt sie. Jede Karte trägt eine feste Nummer — auf beiden
-   Seiten und in der Liste —, damit man sie dort wiederfindet. */
+   Seiten und in der Liste —, damit man sie dort wiederfindet.
+   Die fünf Punkte gibt es auch ausserhalb des Trainers: HT.lernkarten.marke(id)
+   liefert sie als Link auf #/trainer?teil=lernkarten&karte=<id>, und das
+   Handbuch stellt sie über js/karte.js an den Fuss jeder Karte, die eine
+   Lernkarte hat (Aufgaben und Ergebnisse). */
 (function (global) {
   'use strict';
 
@@ -231,6 +235,16 @@
     return HT.daten.eintragMitId(id)
       || HT.daten.eintraegeDerKategorie('grundbegriff').filter(function (e) { return e.id === id; })[0]
       || null;
+  }
+
+  /* Gibt es zu diesem Element eine Karte? Dieselbe Bedingung wie
+     kartenDerKategorie, aber für ein einzelnes Element — Rollen, Phasen,
+     Module und Szenarien haben nie eine, Sammelkarten wie «Checklisten»
+     und «Meilensteine» mangels Bezügen auch nicht. */
+  function karteFuer(id) {
+    var e = eintragFuer(id);
+    if (!e || KATEGORIEN.indexOf(e.kategorie) === -1) { return null; }
+    return e.definition && (istGrundbegriff(e) || bezuege(e).length > 0) ? e : null;
   }
 
   /* Feste Nummer je Karte, gezählt in der Reihenfolge der Liste über alle
@@ -547,20 +561,30 @@
     return { el: zeile, sperren: kombi.sperren };
   }
 
-  /** Rechts neben den Verweisen die letzten fünf Versuche als Punkte:
-      «Gewusst» grün, «Nochmals» rot, ältester links; noch freie Plätze als
-      leere Ringe rechts davon. */
-  function verlaufAnzeige(e) {
-    var v = verlaufVon(e.id);
-    var text = v.length
-      ? (v.length === 1 ? 'Letzter Versuch: ' : 'Letzte ' + v.length + ' Versuche, ältester zuerst: ')
-        + v.map(function (w) { return w === 'gewusst' ? 'gewusst' : 'nochmals'; }).join(', ')
-      : 'Noch kein Versuch mit dieser Karte';
+  /* Die fünf Punkte einer Karte: «Gewusst» grün, «Nochmals» rot, ältester
+     links; noch freie Plätze als leere Ringe rechts davon. */
+  function verlaufPunkte(id) {
+    var v = verlaufVon(id);
     var punkte = [];
     for (var i = 0; i < VERLAUF_LAENGE; i++) {
       punkte.push(h('span', { class: 'lk-verlauf__punkt' + (v[i] ? ' lk-verlauf__punkt--' + v[i] : '') }));
     }
-    return h('span', { class: 'lk-verlauf', role: 'img', title: text, 'aria-label': text }, punkte);
+    return punkte;
+  }
+
+  /* Was die Punkte sagen, in Worten — für Tooltip und Vorlesesoftware. */
+  function verlaufText(id) {
+    var v = verlaufVon(id);
+    return v.length
+      ? (v.length === 1 ? 'Letzter Versuch: ' : 'Letzte ' + v.length + ' Versuche, ältester zuerst: ')
+        + v.map(function (w) { return w === 'gewusst' ? 'gewusst' : 'nochmals'; }).join(', ')
+      : 'Noch kein Versuch mit dieser Karte';
+  }
+
+  /** Rechts neben den Verweisen die letzten fünf Versuche als Punkte. */
+  function verlaufAnzeige(e) {
+    var text = verlaufText(e.id);
+    return h('span', { class: 'lk-verlauf', role: 'img', title: text, 'aria-label': text }, verlaufPunkte(e.id));
   }
 
   /** Am Fuss beider Seiten die drei Wege weiter: das Element im Überblick, im
@@ -1009,12 +1033,40 @@
     neuZeichnen(true);
   }
 
+  /* Fortschrittsseite und Handbuch können offen sein, bevor die Lernkarten je
+     gezeichnet wurden; wer von aussen fragt, füllt den Zustand notfalls
+     selbst aus dem Speicher. */
+  function standLesen() {
+    if (zustand.initialisiert) { return; }
+    wiederherstellen();
+    zustand.initialisiert = true;
+  }
+
+  /** Die Adresse einer einzelnen Karte: #/trainer?teil=lernkarten&karte=… */
+  function karteAdresse(id) {
+    return '#/trainer?teil=lernkarten&karte=' + encodeURIComponent(id);
+  }
+
+  /* Was das Handbuch (über js/karte.js) braucht: die fünf Punkte einer Karte
+     als Link auf sie. Zurück kommt null, wo es keine Karte gibt — dann steht
+     auf der Handbuchkarte nichts. */
+  function marke(id) {
+    var e = karteFuer(id);
+    if (!e) { return null; }
+    standLesen();
+    var nr = nummerVon(id);
+    var text = verlaufText(id) + '. Lernkarte' + (nr ? ' Nr. ' + nr : '') + ' üben';
+    return h('a', {
+      class: 'lk-verlauf lk-verlauf--link', href: karteAdresse(id),
+      title: text, 'aria-label': text
+    }, verlaufPunkte(id));
+  }
+
   /* Was die Fortschrittseite (js/fortschritt.js) braucht: ihr «Fortschritt
      zurücksetzen» leert beides — die Zähler der Tafel und die Einschätzung
-     der Karten —, denn für den Sponsor ist beides ein Lernstand (2026-09-18).
-     Sie kann offen sein, bevor die Lernkarten je gezeichnet wurden; darum
-     lesen beide Funktionen notfalls selbst aus dem Speicher. */
+     der Karten —, denn für den Sponsor ist beides ein Lernstand (2026-09-18). */
   HT.lernkarten = {
+    marke: marke,
     eingeschaetzt: function () {
       if (zustand.initialisiert) { return Object.keys(zustand.fortschritt).length; }
       var g = HT.store.lies('lernkarten', null);
@@ -1023,7 +1075,7 @@
         : 0;
     },
     leeren: function () {
-      if (!zustand.initialisiert) { wiederherstellen(); zustand.initialisiert = true; }
+      standLesen();
       einschaetzungenLoeschen();
       /* Die Karten stehen gerade woanders im Dokument nicht; nur eine noch
          hängende Ansicht wird nachgeführt. */
@@ -1188,6 +1240,17 @@
 
   /* --- Render ------------------------------------------------------------- */
 
+  /* «&karte=…»: diese Karte zuoberst auf den Stapel — der Weg von den Punkten
+     auf einer Handbuchkarte hierher (marke()). Die Adresse ist danach wieder
+     die gewöhnliche: die Karte liegt im Stapel, sie ist keine Einstellung. */
+  function karteAusAdresse(e) {
+    zustand.ansicht = 'karte';
+    zustand.stapel = [e.id].concat(zustand.stapel.filter(function (s) { return s !== e.id; }));
+    neueKarte();
+    speichern();
+    global.history.replaceState(null, '', '#/trainer?teil=lernkarten');
+  }
+
   function render(behaelter, params, leiste) {
     if (!zustand.initialisiert) {
       wiederherstellen();
@@ -1196,7 +1259,15 @@
     if (params && params.kat && KATEGORIEN.indexOf(params.kat) !== -1) {
       zustand.filter = [params.kat];
     }
+    /* Eine Karte, die ausserhalb der gewählten Kategorien liegt, setzt den
+       Filter auf «Alle»: mit «Nur Aufgaben» käme man sonst nie zu einem
+       Ergebnis, das im Handbuch angeklickt wurde. */
+    var gewuenscht = params && params.karte ? karteFuer(params.karte) : null;
+    if (gewuenscht && zustand.filter.length && zustand.filter.indexOf(gewuenscht.kategorie) === -1) {
+      zustand.filter = [];
+    }
     stapelAufbauen(false);
+    if (gewuenscht) { karteAusAdresse(gewuenscht); }
 
     /* Was die Lernkarten sind, steht vorn in der Karte hinter dem Info-Icon der Leiste. */
     if (leiste) {
@@ -1229,6 +1300,13 @@
           ]),
           h('p', { text: 'Am Fuss der Karte führen drei Verweise weiter, vorn wie hinten: das Element im Überblick, im Handbuch und auf '
             + 'der offiziellen Seite (bei Grundbegriffen nur diese).' }),
+          h('p', {}, [
+            'Der Weg führt auch zurück: dieselben fünf Punkte stehen im ',
+            h('a', { href: '#/handbuch', text: 'Handbuch' }),
+            ' rechts in der Verweiszeile jeder Aufgabe und jedes Ergebnisses. Ein Klick dort legt die Karte hier zuoberst auf den '
+              + 'Stapel; liegt sie ausserhalb der gewählten Kategorien, geht die Auswahl dafür auf «Alle». Grundbegriffe stehen nicht '
+              + 'im Handbuch, ihre Punkte gibt es nur hier.'
+          ]),
           h('p', { text: 'Unter der Karte blättert man mit ‹ und ›: ‹ zeigt die zuvor gezeigte Karte wieder, auch eine schon '
             + 'eingeschätzte; › überspringt die Karte ohne Einschätzung, sie kommt ans Ende des Stapels (eine gewusste fällt heraus). '
             + 'Das Icon daneben zeigt alle Karten der gewählten Kategorien als Liste, nach Kategorie und alphabetisch, je mit den '

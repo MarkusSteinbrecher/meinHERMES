@@ -308,6 +308,8 @@
    * optionen.bloecke: Handbuchtext als Blöcke (Seite «Handbuch», aus dem PDF) — dann
    *   wird nichts nachgeladen
    * optionen.pdf: { url, seite } — Link auf die Seite im Referenzhandbuch (PDF)
+   * optionen.lernstand: rechts in der Verweiszeile die fünf Punkte der Lernkarte
+   *   dieses Elements (js/lernkarten.js) — wo es keine Karte gibt, steht nichts
    */
   function bauen(e, optionen) {
     optionen = optionen || {};
@@ -380,7 +382,10 @@
         stufen,
         quelle || h('span', { class: 'chip__zahl', text: 'Kein Quellenlink hinterlegt' }),
         pdfLink,
-        optionen.zusatz || null
+        optionen.zusatz || null,
+        /* Ganz rechts der Lernstand — dieselbe Stelle wie am Fuss der
+           Lernkarte selbst, wo die Punkte hinter den Verweisen stehen. */
+        optionen.lernstand && HT.lernkarten && HT.lernkarten.marke ? HT.lernkarten.marke(e.id) : null
       ]),
       optionen.nurHandbuch ? null : kern,
       handbuch
