@@ -141,6 +141,7 @@
     graph: { art: 'ansicht', form: istObjekt },
     handbuch: { art: 'ansicht', form: istObjekt },
     'ueberblick-drill': { art: 'ansicht', form: istObjekt },
+    lernpfad: { art: 'ansicht', form: istObjekt },      // Notizen offen, letzte Folie (js/lernpfad.js)
     willkommen: { art: 'ansicht', form: istObjekt }        // «Nicht mehr anzeigen» (js/ueber.js)
   };
 

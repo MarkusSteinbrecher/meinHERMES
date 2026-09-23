@@ -1,316 +1,663 @@
 /* ==========================================================================
-   meinHERMES — Lernpfad: der Stoff als Schulung (Entwurf, js/lernpfad.js)
-   Lesebreite wie die Prosa der Über-Seite; die Lektion ist eine Spalte aus
-   Zielen, Einführung, Abbildung, Wortlaut und Verweisen.
+   meinHERMES — Lernpfad als Präsentation (Entwurf, js/lernpfad.js)
+   Die Seite füllt den Platz unter der Kopfzeile: Bühne mit der Folie, darunter
+   die Steuerleiste und, aufgeklappt, die Notizen mit dem Handbuchtext. Die
+   Folie selbst ist 1280 × 720 Punkte gross (hoch 640 breit, Höhe nach Schirm) und wird als
+   Ganzes skaliert — alle Masse in .lp-f sind Punkte dieser Leinwand.
    ========================================================================== */
 
-.lp-seite { max-width: 46rem; margin: 0 auto; }
-
-/* --- Kopf ---------------------------------------------------------------- */
-
-.lp-kopf { margin-bottom: 26px; }
-
-.lp-kopf__titel {
-  font-size: 27px;
-  line-height: 1.2;
-  margin: 0 0 6px;
-  text-wrap: balance;
-}
-
-.lp-kopf__kurz {
-  margin: 0;
-  color: var(--text-weich);
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-.lp-brot {
+body[data-route="lernpfad"] {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  flex-direction: column;
+}
+body[data-route="lernpfad"] .topbar { position: static; flex: 0 0 auto; }
+body[data-route="lernpfad"] main { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
+body[data-route="lernpfad"] .view { flex: 1 1 auto; min-width: 0; min-height: 0; max-width: none; margin: 0; padding: 0; display: flex; }
+body[data-route="lernpfad"] .fusszeile { display: none; }
+
+.lp-hinweis { color: var(--akzent-text); }
+
+/* --- Rahmen: Bühne, Steuerleiste, Notizen -------------------------------- */
+
+.lp-praes {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-gedaempft);
+}
+.lp-praes:focus { outline: none; }
+
+.lp-buehne {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 14px 16px 0;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.lp-leinwand {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  background: var(--weiss);
+  border: 1px solid var(--rand);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(45, 43, 43, .06), 0 8px 28px rgba(45, 43, 43, .08);
+}
+
+.lp-praes.ist-vollbild { background: #1f1d1d; }
+.lp-praes.ist-ersatzvollbild { position: fixed; inset: 0; z-index: 100; padding-bottom: env(safe-area-inset-bottom, 0px); }
+body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
+.lp-praes.ist-vollbild .lp-buehne { margin: 16px 16px 0; }
+.lp-praes.ist-vollbild .lp-leinwand { border-color: transparent; box-shadow: none; }
+.lp-praes.ist-vollbild .lp-steuer { color: #d7d3d3; }
+.lp-praes.ist-vollbild .lp-steuer__zaehler { color: #bdb8b8; }
+.lp-praes.ist-vollbild .lp-steuer__knopf { color: #d7d3d3; }
+.lp-praes.ist-vollbild .lp-steuer__knopf:hover:not(:disabled) { background: rgba(255, 255, 255, .1); color: #fff; }
+.lp-praes.ist-vollbild .lp-fortschritt__seg { background-color: #4a4646; }
+.lp-praes.ist-vollbild .lp-notizen { border-top-color: #4a4646; }
+
+/* Steuerleiste: zurück und Stand links, Kapitelbalken in der Mitte,
+   Werkzeuge und weiter rechts. */
+.lp-steuer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+  padding: 6px 16px;
+}
+.lp-steuer__links, .lp-steuer__rechts { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.lp-steuer__zaehler {
+  min-width: 9.5rem;
+  padding-left: 6px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-weich);
+  white-space: nowrap;
+}
+
+.lp-steuer__knopf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 6px;
-  margin: 0 0 8px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-weich);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.lp-steuer__knopf:hover:not(:disabled) { background: var(--flaeche); color: var(--text); }
+.lp-steuer__knopf:disabled { opacity: .35; cursor: default; }
+.lp-steuer__knopf[aria-pressed="true"] { color: var(--akzent-text); background: var(--akzent-schwach); }
+.lp-steuer__knopf--pfeil { width: 40px; padding: 0; }
+.lp-steuer__knopf--weiter:not(:disabled) { background: var(--akzent); color: var(--akzent-auf); }
+.lp-steuer__knopf--weiter:hover:not(:disabled) { background: var(--akzent-hover); color: var(--akzent-auf); }
+
+/* Ein Segment je Kapitel, so breit wie seine Folienzahl. Die Linie ist 6 px,
+   die Klickfläche 20 px hoch. */
+.lp-fortschritt { flex: 1 1 auto; min-width: 60px; display: flex; gap: 4px; }
+.lp-fortschritt__seg {
+  position: relative;
+  flex-basis: 0;
+  height: 20px;
+  padding: 7px 0;
+  border: 0;
+  border-radius: 3px;
+  background: var(--rand) content-box;
+  cursor: pointer;
+}
+.lp-fortschritt__fuell {
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  border-radius: 3px;
+  background: var(--akzent);
+}
+.lp-fortschritt__seg.ist-aktiv { background-color: var(--rand-stark); }
+
+.lp-notizen {
+  flex: 0 0 34%;
+  min-height: 120px;
+  overflow: auto;
+  border-top: 1px solid var(--linie-stark);
+  background: var(--weiss);
+  padding: 0 24px 24px;
+}
+.lp-notizen[hidden] { display: none; }
+.lp-notizen__kopf {
+  position: sticky;
+  top: 0;
+  margin: 0 -24px 6px;
+  padding: 10px 24px;
+  background: var(--weiss);
+  border-bottom: 1px solid var(--rand-fein);
   font-size: 12px;
+  font-weight: 600;
   letter-spacing: .06em;
   text-transform: uppercase;
   color: var(--text-leise);
 }
+.lp-notizen__inhalt { max-width: 52rem; margin: 0 auto; }
+.lp-notizen__titel { margin: 18px 0 6px; font-size: 16px; }
+.lp-notizen__leer { color: var(--text-leise); font-size: 14px; }
 
-.lp-brot a { color: inherit; }
-.lp-brot__trenner { color: var(--text-leise-hell); }
-.lp-brot__stand { color: var(--akzent-text); }
-
-/* Solange die Seite nicht abgenommen ist, sagt sie es selbst. */
-.lp-entwurf {
-  margin: 14px 0 0;
-  padding: 10px 12px;
-  border: 1px solid var(--akzent-schwach-2);
-  border-radius: var(--radius);
-  background: var(--akzent-schwach);
-  color: var(--text-weich);
-  font-size: 14px;
-  line-height: 1.5;
+/* Übersicht aller Folien: legt sich über Bühne und Leiste. */
+.lp-raster {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: auto;
+  background: var(--bg);
+  padding: 0 20px 28px;
 }
-
-.lp-hinweis { color: var(--akzent-text); }
-
-/* --- Übersicht ----------------------------------------------------------- */
-
-.lp-block { margin-top: 30px; }
-
-.lp-block__titel {
+.lp-raster[hidden] { display: none; }
+.lp-raster__kopf {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 10px;
-  margin: 0 0 6px;
-  padding-top: 12px;
-  border-top: 1px solid var(--rand);
-  font-size: 20px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 -20px;
+  padding: 10px 20px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--rand);
 }
-
-.lp-block__zahl { color: var(--text-leise); font-size: 13px; font-weight: 400; }
-
-.lp-block__text {
-  margin: 0 0 16px;
-  color: var(--text-weich);
-  font-size: 15px;
-  line-height: 1.6;
+.lp-raster__kopf h2 { margin: 0; font-size: 18px; }
+.lp-raster__zu {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--text-weich); cursor: pointer;
 }
-
-.lp-karten { display: grid; gap: 10px; }
-
-.lp-karte {
-  display: flex;
-  gap: 14px;
-  padding: 14px 16px;
-  border: 1px solid var(--rand);
-  border-radius: var(--radius);
-  background: var(--weiss);
-  color: inherit;
-  text-decoration: none;
-}
-
-.lp-karte:hover { border-color: var(--rand-stark); background: var(--flaeche-2); }
-
-.lp-karte__nr {
-  flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
+.lp-raster__zu:hover { background: var(--flaeche-2); color: var(--text); }
+.lp-raster__inhalt {
   display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--akzent-schwach);
-  color: var(--akzent-text);
-  font-size: 13px;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 20px 24px;
+  max-width: 90rem;
+  margin: 16px auto 0;
+}
+.lp-raster__titel { margin: 0 0 8px; font-size: 14px; }
+.lp-raster__liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.lp-raster__folie {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text-weich);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.lp-raster__folie:hover { background: var(--flaeche-2); color: var(--text); }
+.lp-raster__folie.ist-aktiv { background: var(--akzent-schwach); color: var(--akzent-text); }
+.lp-raster__folie--kapitel { font-weight: 600; color: var(--text); }
+.lp-raster__folie--frage, .lp-raster__folie--merke { color: var(--text-leise); }
+.lp-raster__nr { flex: 0 0 1.6rem; color: var(--text-leise-hell); font-variant-numeric: tabular-nums; }
+
+/* --- Folie: gemeinsame Bausteine (Punkte der Leinwand) -------------------- */
+
+.lp-f {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 52px 72px 58px;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1.4;
+}
+.lp-f.ist-neu { animation: lp-rein .24s ease-out; }
+.lp-f.ist-neu.ist-zurueck { animation-name: lp-rein-zurueck; }
+@keyframes lp-rein { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes lp-rein-zurueck { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .lp-f.ist-neu { animation: none; } }
+
+.lp-f__kopf { flex: 0 0 auto; }
+.lp-f__marke {
+  margin: 0;
+  font-size: 16px;
   font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--text-leise);
+}
+.lp-f__titel {
+  margin: 10px 0 0;
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -.01em;
+  text-wrap: balance;
+}
+.lp-f__titel--gross { margin: 0; font-size: 58px; }
+.lp-f__kern {
+  margin: 0;
+  max-width: 34em;
+  font-size: 29px;
+  font-weight: 500;
+  line-height: 1.34;
+  text-wrap: pretty;
+}
+.lp-f__kern--klein { font-size: 23px; font-weight: 400; color: var(--text-weich); max-width: none; }
+
+.lp-f__punkte { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.lp-f__punkte li { position: relative; padding-left: 30px; font-size: 22px; line-height: 1.38; color: var(--text-weich); text-wrap: pretty; }
+.lp-f__punkte li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: .5em;
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  background: var(--akzent);
 }
 
-.lp-karte__text { display: grid; gap: 3px; min-width: 0; }
-.lp-karte__titel { font-size: 16px; font-weight: 600; }
-.lp-karte__kurz { color: var(--text-weich); font-size: 14px; line-height: 1.5; }
-.lp-karte__fuss { color: var(--text-leise); font-size: 12px; }
+.lp-f__koerper {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 48px;
+}
+.lp-f__text { display: flex; flex-direction: column; gap: 26px; min-height: 0; }
 
-/* --- Lektion ------------------------------------------------------------- */
+.lp-f__fuss {
+  position: absolute;
+  left: 72px;
+  right: 72px;
+  bottom: 20px;
+  font-size: 14px;
+  color: var(--text-leise-hell);
+}
 
-.lp-marke {
-  margin: 0 0 8px;
-  font-size: 12px;
+/* Handbuchabbildung: nimmt den Platz, den sie bekommt, und bleibt ganz. */
+.lp-f__bild {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.lp-f__bild img { flex: 1 1 auto; min-height: 0; width: 100%; object-fit: contain; }
+.lp-f__bild.ist-leer { display: none; }
+.lp-f__bildtext { flex: 0 0 auto; margin: 0; font-size: 14px; color: var(--text-leise); text-align: center; }
+.lp-f__bild-laden { font-size: 16px; color: var(--text-leise-hell); }
+
+/* --- Folientypen ---------------------------------------------------------- */
+
+.lp-f--mitbild .lp-f__koerper { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: center; }
+.lp-f--mitbild .lp-f__text { justify-content: flex-start; padding-top: 18px; }
+
+.lp-f--bild { gap: 16px; }
+.lp-f--bild .lp-f__koerper:has(.lp-f__punkte--seite) { grid-template-columns: minmax(0, 1fr) 290px; gap: 36px; }
+.lp-f__punkte--seite { align-self: center; }
+.lp-f__punkte--seite li { font-size: 19px; }
+
+/* Element: Phase, Modul, Szenario — links die Aussage, rechts die Zahlen. */
+.lp-f--element { gap: 16px; }
+.lp-f--element .lp-f__koerper { grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: 44px; }
+.lp-f--element .lp-f__text { gap: 18px; justify-content: safe center; }
+.lp-f__band { flex: 0 0 auto; height: 64px; }
+.lp-f__band .lp-f__bild { height: 64px; align-items: stretch; }
+.lp-f__band .lp-f__bildtext { display: none; }
+.lp-f__art {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--akzent-text);
+}
+.lp-pflicht {
+  margin-left: 6px;
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: var(--akzent-schwach);
+  font-size: 13px;
+  letter-spacing: .05em;
+}
+
+.lp-fakten {
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px 30px;
+  border-radius: 14px;
+  background: var(--flaeche);
+}
+.lp-fakten__zahlen { display: flex; flex-wrap: wrap; gap: 18px 34px; }
+.lp-fakten__titel {
+  margin: 6px 0 0;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--text-leise);
 }
+.lp-fakten__link { font-size: 16px; color: var(--akzent-text); }
 
-.lp-ziele {
-  margin-bottom: 24px;
-  padding: 14px 16px;
-  border-left: 3px solid var(--akzent-schwach-2);
-  background: var(--flaeche-2);
-  border-radius: var(--radius-s);
-}
+.lp-zahl { display: flex; flex-direction: column; }
+.lp-zahl__wert { font-size: 56px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.lp-zahl__label { margin-top: 6px; font-size: 18px; font-weight: 600; }
+.lp-zahl__zusatz { font-size: 15px; color: var(--text-leise); }
 
-.lp-ziele__liste { margin: 0; padding-left: 1.1rem; }
-.lp-ziele__liste li { margin-bottom: 4px; font-size: 15px; line-height: 1.5; }
-.lp-ziele__liste li:last-child { margin-bottom: 0; }
-
-.lp-worum { margin-bottom: 22px; }
-
-.lp-text {
-  margin: 0 0 12px;
+.lp-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 7px; }
+.lp-chip {
+  padding: 4px 12px;
+  border: 1px solid var(--rand-stark);
+  border-radius: 999px;
+  background: var(--weiss);
   font-size: 16px;
-  line-height: 1.65;
-  text-wrap: pretty;
+  line-height: 1.3;
 }
+.lp-chips--meilenstein .lp-chip { border-color: var(--akzent-schwach-2); background: var(--akzent-schwach); }
 
-.lp-text:last-child { margin-bottom: 0; }
-
-.lp-bild:not(:empty) { margin: 0 0 22px; }
-
-/* Hat das Handbuch zu einem Thema keine Abbildung (den Modulen fehlt sie),
-   zeichnet die Lektion das Bild aus unseren eigenen Daten — dasselbe wie im
-   Überblick (.mb, css/ueberblick.css). Hier steht es in der Lesespalte: ohne
-   Mindestbreite, ohne den Platz für die Steuerung und mit stehenden statt
-   klebenden Spaltentiteln (die Kopfzeile klebt schon). */
-.lp-bild--eigen {
-  padding: 4px 16px 12px;
-  border: 1px solid var(--rand);
-  border-radius: var(--radius);
-  background: var(--weiss);
+/* Spalten */
+.lp-spalten {
+  display: grid;
+  grid-template-columns: repeat(var(--spalten, 2), minmax(0, 1fr));
+  gap: 30px;
+  min-height: 0;
 }
+.lp-spalte { display: flex; flex-direction: column; gap: 14px; padding-top: 16px; border-top: 5px solid var(--akzent); min-width: 0; }
+.lp-spalte__titel { margin: 0; font-size: 26px; line-height: 1.2; }
+.lp-spalte .lp-f__punkte { gap: 10px; }
+.lp-spalte .lp-f__punkte li { font-size: 20px; }
+.lp-f--spalten .lp-spalten { flex: 1 1 auto; align-content: start; }
 
-/* Grosse Module werden lang (Projektführung 33 Zeilen, schmal über 6000 px).
-   Das Bild bleibt darum auf Schirmhöhe gedeckelt und rollt in seinem Rahmen —
-   wie die Bühne des Überblicks. Der Fuss mit der Herkunft bleibt stehen. */
-.lp-bild__rahmen { position: relative; }
+/* Ergebnisarten */
+.lp-typ { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 18px; align-items: baseline; }
+.lp-typ .lp-zahl__wert { grid-row: 1 / span 2; }
+.lp-typ__name { font-size: 22px; font-weight: 600; }
+.lp-typ__bsp { font-size: 16px; color: var(--text-leise); }
+.lp-typ + .lp-typ { margin-top: 12px; padding-top: 16px; border-top: 1px solid var(--rand-fein); }
 
-.lp-bild--eigen .mb { min-width: 0; }
+/* Ergebnisse je Phase */
+.lp-balken { flex: 1 1 auto; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.lp-balken__legende { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 16px; color: var(--text-weich); }
+.lp-balken__muster { display: inline-block; width: 16px; height: 16px; border-radius: 3px; background: var(--rand-stark); margin-left: 12px; }
+.lp-balken__muster--minimal { background: var(--akzent); margin-left: 0; }
+.lp-balken__liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.lp-balken__zeile { display: grid; grid-template-columns: 200px 1fr 90px; align-items: center; gap: 18px; }
+.lp-balken__name { font-size: 20px; font-weight: 600; }
+.lp-balken__spur { display: flex; gap: 2px; height: 30px; }
+.lp-balken__teil { background: var(--rand-stark); border-radius: 0 4px 4px 0; }
+.lp-balken__teil--minimal { background: var(--akzent); border-radius: 4px 0 0 4px; }
+.lp-balken__teil[style*="width:0%"] { display: none; }
+.lp-balken__wert { font-size: 18px; font-variant-numeric: tabular-nums; color: var(--text-weich); }
 
-.lp-bild--eigen[data-rollt="ja"] .mb {
-  max-height: 68vh;
-  overflow: auto;
-}
-
-/* Rollt es, läuft der untere Rand weich aus (wie die zweite Leiste). */
-.lp-bild--eigen[data-rollt="ja"] .lp-bild__rahmen::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 30px;
-  background: linear-gradient(to top, var(--weiss), transparent);
-  pointer-events: none;
-}
-
-/* Die Lektion zeigt genau ein Modul; sein Name stünde sonst unter jeder
-   Phase noch einmal (im Überblick trennt er mehrere Module). */
-.lp-bild--eigen .mb-modul__titel { display: none; }
-
-/* Die Spaltentitel kleben im Rahmen, nicht am Fensterrand: Hier rollt das
-   Bild selbst, und die Kopfzeile der Seite klebt schon oben. Die Farbe kommt
-   aus dem Rahmen (im Überblick liegt das Bild auf weissem Papier). */
-.lp-bild--eigen .mb-spalten {
-  top: 0;
-  padding: 14px 0 8px;
-  background: var(--weiss);
-}
-
-.lp-bild__quelle {
-  margin: 12px 0 0;
-  padding-top: 10px;
-  border-top: 1px solid var(--rand-fein);
-  color: var(--text-leise);
-  font-size: 12.5px;
-  line-height: 1.5;
-}
-
-/* --- Ergebnisse und Aufgaben aus unseren Daten --------------------------- */
-
-.lp-listen { margin-bottom: 24px; }
-
-.lp-listen__titel {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 16px 0 8px;
-  font-size: 15px;
-}
-
-.lp-listen__titel:first-of-type { margin-top: 0; }
-.lp-listen__titel svg { flex: 0 0 auto; }
-.lp-listen__titel .gswatch, .lp-listen__titel svg { color: var(--text-leise); }
-
-.lp-listen__zahl {
-  color: var(--text-leise);
-  font-size: 12.5px;
-  font-weight: 400;
-}
-
-.lp-liste {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 9px;
+/* Rollen einer Ebene */
+.lp-f--ebene .lp-f__koerper { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 40px; }
+.lp-f--ebene .lp-f__kern { font-size: 24px; }
+.lp-f--ebene .lp-f__punkte li { font-size: 19px; }
+.lp-rollen {
+  list-style: none;
   margin: 0;
   padding: 0;
-  list-style: none;
-  font-size: 14.5px;
-  line-height: 1.55;
+  display: grid;
+  grid-template-columns: repeat(var(--spalten, 3), minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 12px;
+  align-self: center;
 }
-
-.lp-liste > li { display: flex; align-items: baseline; gap: 9px; }
-.lp-liste > li + li::before { content: "·"; color: var(--text-leise-hell); }
-
-.lp-listen__mehr { margin: 8px 0 0; font-size: 13.5px; }
-
-/* --- Wortlaut zum Nachlesen ---------------------------------------------- */
-
-.lp-quelle {
-  margin-bottom: 24px;
+.lp-rolle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
   border: 1px solid var(--rand);
-  border-radius: var(--radius);
+  border-radius: 12px;
   background: var(--weiss);
 }
+.lp-rolle__name { display: flex; align-items: flex-start; gap: 8px; font-size: 19px; font-weight: 700; line-height: 1.2; }
+.lp-rolle__name span { min-width: 0; hyphens: auto; overflow-wrap: anywhere; }
+.lp-rolle__name svg { flex: 0 0 auto; margin-top: 1px; color: var(--akzent); }
+.lp-rolle__text { font-size: 15px; line-height: 1.35; color: var(--text-weich); }
+.lp-rolle__zahl { margin-top: auto; font-size: 13px; color: var(--text-leise); }
 
-.lp-quelle__kopf {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 16px;
-  cursor: pointer;
-  font-size: 15px;
+/* Deckblatt und Schluss */
+.lp-f--deck { flex-direction: row; align-items: center; gap: 64px; padding: 64px 80px; }
+.lp-deck__text { flex: 1 1 0; display: flex; flex-direction: column; gap: 22px; }
+.lp-deck__titel { margin: 0; font-size: 64px; line-height: 1.05; letter-spacing: -.015em; text-wrap: balance; }
+.lp-deck__kurz { margin: 0; font-size: 24px; line-height: 1.45; color: var(--text-weich); }
+.lp-deck__tasten { margin: 0; font-size: 17px; color: var(--text-leise); word-spacing: .15em; }
+.lp-deck__tasten kbd {
+  display: inline-block;
+  min-width: 1.8em;
+  padding: 1px 7px;
+  border: 1px solid var(--rand-stark);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  font: inherit;
   font-weight: 600;
-  border-radius: var(--radius);
+  text-align: center;
+  color: var(--text);
 }
-
-.lp-quelle[open] .lp-quelle__kopf { border-bottom: 1px solid var(--rand-fein); border-radius: var(--radius) var(--radius) 0 0; }
-.lp-quelle__kopf:hover { background: var(--flaeche-2); }
-.lp-quelle__nummern { color: var(--text-leise); font-size: 13px; font-weight: 400; }
-.lp-quelle__inhalt { padding: 4px 16px 16px; }
-
-.lp-quelle__titel {
-  margin: 18px 0 6px;
-  font-size: 15px;
-  color: var(--text-weich);
-}
-
-.lp-quelle__inhalt > .lp-quelle__titel:first-child { margin-top: 8px; }
-
-/* --- Üben und Weiter ------------------------------------------------------ */
-
-.lp-ueben { margin-bottom: 24px; }
-.lp-ueben__links { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.lp-weiter {
+.lp-deck__knoepfe { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; }
+.lp-deck__kapitel { flex: 0 0 440px; list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.lp-deck__kap {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 28px;
-  padding-top: 16px;
-  border-top: 1px solid var(--rand);
+  gap: 16px;
+  width: 100%;
+  padding: 11px 16px;
+  border: 1px solid var(--rand);
+  border-radius: 12px;
+  background: var(--weiss);
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
 }
-
-.lp-weiter__link {
+.lp-deck__kap:hover { border-color: var(--akzent); background: var(--akzent-schwach); }
+.lp-deck__nr {
+  flex: 0 0 36px;
+  height: 36px;
   display: grid;
-  gap: 2px;
-  max-width: 17rem;
-  color: inherit;
-  text-decoration: none;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--akzent);
+  color: var(--akzent-auf);
+  font-size: 17px;
+  font-weight: 700;
 }
+.lp-deck__kaptitel { flex: 1 1 auto; font-size: 21px; font-weight: 600; }
+.lp-deck__kapzahl { font-size: 15px; color: var(--text-leise); white-space: nowrap; }
 
-.lp-weiter__link--vor { text-align: right; }
-.lp-weiter__marke { font-size: 12px; color: var(--akzent-text); font-weight: 600; }
-.lp-weiter__titel { font-size: 14px; color: var(--text-weich); }
-.lp-weiter__link:hover .lp-weiter__titel { color: var(--text); text-decoration: underline; }
-.lp-weiter__uebersicht { flex: 0 0 auto; font-size: 13px; color: var(--text-leise); }
+.lp-f .btn { min-height: 54px; padding: 0 24px; border: 2px solid var(--rand-stark); border-radius: 10px; font-size: 19px; font-weight: 600; color: var(--text); text-decoration: none; background: var(--weiss); }
+.lp-f .btn:hover { border-color: var(--text-leise); }
+.lp-f .btn--primaer { border-color: var(--akzent); background: var(--akzent); color: var(--akzent-auf); }
+.lp-f .btn--primaer:hover:not(:disabled) { background: var(--akzent-hover); border-color: var(--akzent-hover); }
+.lp-f .btn--primaer:disabled { opacity: .4; }
+.lp-f .btn--klein { min-height: 44px; padding: 0 18px; font-size: 17px; }
 
-@media (max-width: 699px) {
-  .lp-kopf__titel { font-size: 22px; }
-  .lp-bild--eigen { padding: 4px 12px 12px; }
-  .lp-karte { padding: 12px 13px; gap: 11px; }
-  .lp-weiter { flex-wrap: wrap; gap: 10px; }
-  .lp-weiter__link { max-width: none; }
-  .lp-weiter__uebersicht { order: 3; width: 100%; text-align: center; }
+/* Kapitelanfang: rote Kante links, rechts die Ziele. */
+.lp-f--kapitel {
+  flex-direction: row;
+  align-items: center;
+  gap: 64px;
+  padding: 64px 80px;
+  border-left: 18px solid var(--akzent);
+}
+.lp-kap__links { flex: 1 1 0; display: flex; flex-direction: column; gap: 18px; }
+.lp-kap__nr { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--akzent-text); }
+.lp-kap__titel { margin: 0; font-size: 80px; line-height: 1; letter-spacing: -.02em; }
+.lp-kap__kurz { margin: 0; font-size: 25px; line-height: 1.42; color: var(--text-weich); text-wrap: pretty; }
+.lp-kap__meta { margin: 0; font-size: 17px; color: var(--text-leise); }
+.lp-kap__ziele {
+  flex: 0 0 470px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 30px 32px;
+  border-radius: 14px;
+  background: var(--flaeche);
+}
+.lp-f__punkte--ziele li { font-size: 21px; color: var(--text); }
+
+/* Zusammenfassung */
+.lp-merke { list-style: none; counter-reset: merke; margin: 0; padding: 0; display: grid; gap: 18px; flex: 1 1 auto; align-content: center; }
+.lp-merke li { counter-increment: merke; position: relative; padding-left: 64px; font-size: 25px; line-height: 1.35; text-wrap: pretty; }
+.lp-merke li::before {
+  content: counter(merke);
+  position: absolute;
+  left: 0;
+  top: -2px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--akzent-schwach);
+  color: var(--akzent-text);
+  font-size: 20px;
+  font-weight: 700;
+}
+.lp-merke__ueben { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.lp-merke__ueben .lp-f__marke { margin-right: 8px; }
+
+/* Kontrollfrage */
+.lp-f--frage { gap: 18px; padding-bottom: 36px; }
+.lp-frage__situation { margin: 10px 0 0; font-size: 19px; color: var(--text-weich); }
+.lp-frage__frage { font-size: 34px; line-height: 1.2; }
+.lp-frage__hinweis { margin: 8px 0 0; font-size: 16px; color: var(--text-leise); }
+.lp-frage__antworten { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.lp-antwort {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 12px 18px;
+  border: 2px solid var(--rand);
+  border-radius: 12px;
+  background: var(--weiss);
+  font: inherit;
+  font-size: 20px;
+  line-height: 1.3;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+}
+.lp-antwort:hover:not(:disabled) { border-color: var(--rand-stark); background: var(--flaeche); }
+.lp-antwort[aria-pressed="true"] { border-color: var(--akzent); background: var(--akzent-schwach); }
+.lp-antwort:disabled { cursor: default; }
+.lp-antwort.ist-richtig { border-color: var(--gut); background: var(--gut-bg); }
+.lp-antwort.ist-falsch { border-color: var(--schlecht); background: var(--schlecht-bg); }
+.lp-antwort__nr {
+  flex: 0 0 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--flaeche-2);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-weich);
+}
+.lp-antwort[aria-pressed="true"] .lp-antwort__nr { background: var(--akzent); color: var(--akzent-auf); }
+.lp-frage__fuss { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.lp-frage__fuss > .btn { align-self: flex-start; }
+.lp-frage__erklaerung { min-height: 0; overflow: auto; }
+.lp-frage__erklaerung[hidden] { display: none; }
+.lp-frage__urteil { margin: 0 0 4px; font-size: 21px; font-weight: 700; }
+.lp-frage__urteil.ist-gut { color: var(--gut); }
+.lp-frage__urteil.ist-schlecht { color: var(--schlecht); }
+.lp-frage__text { margin: 0; font-size: 18px; line-height: 1.45; color: var(--text-weich); }
+
+/* --- Hohe Leinwand (Telefon hochkant): alles untereinander ---------------- */
+
+.lp-leinwand.ist-hoch .lp-f { padding: 48px 40px 60px; gap: 24px; }
+.lp-leinwand.ist-hoch .lp-f__fuss { left: 40px; right: 40px; }
+.lp-leinwand.ist-hoch .lp-f__titel { font-size: 50px; }
+.lp-leinwand.ist-hoch .lp-f__titel--gross { font-size: 58px; }
+.lp-leinwand.ist-hoch .lp-f__kern { font-size: 34px; }
+.lp-leinwand.ist-hoch .lp-f__punkte li { font-size: 27px; }
+.lp-leinwand.ist-hoch .lp-f__koerper,
+.lp-leinwand.ist-hoch .lp-f--mitbild .lp-f__koerper,
+.lp-leinwand.ist-hoch .lp-f--element .lp-f__koerper,
+.lp-leinwand.ist-hoch .lp-f--ebene .lp-f__koerper,
+.lp-leinwand.ist-hoch .lp-f--bild .lp-f__koerper:has(.lp-f__punkte--seite) {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 30px;
+}
+.lp-leinwand.ist-hoch .lp-f--bild .lp-f__koerper:has(.lp-f__punkte--seite) { grid-template-rows: minmax(0, 1fr) auto; }
+.lp-leinwand.ist-hoch .lp-fakten { align-self: start; }
+.lp-leinwand.ist-hoch .lp-spalten { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+.lp-leinwand.ist-hoch .lp-spalte .lp-f__punkte li { font-size: 24px; }
+.lp-leinwand.ist-hoch .lp-rollen { grid-template-columns: repeat(2, minmax(0, 1fr)); align-self: start; }
+.lp-leinwand.ist-hoch .lp-rolle__text { font-size: 17px; }
+.lp-leinwand.ist-hoch .lp-balken__zeile { grid-template-columns: 170px 1fr 80px; }
+.lp-leinwand.ist-hoch .lp-f--deck,
+.lp-leinwand.ist-hoch .lp-f--kapitel { flex-direction: column; align-items: stretch; justify-content: center; gap: 40px; padding: 56px 40px; }
+.lp-leinwand.ist-hoch .lp-deck__kapitel { flex: 0 0 auto; }
+.lp-leinwand.ist-hoch .lp-kap__ziele { flex: 0 0 auto; }
+.lp-leinwand.ist-hoch .lp-kap__titel { font-size: 72px; }
+.lp-leinwand.ist-hoch .lp-antwort { font-size: 24px; }
+.lp-leinwand.ist-hoch .lp-frage__frage { font-size: 36px; }
+.lp-leinwand.ist-hoch .lp-merke li { font-size: 28px; }
+
+/* Einpassen (js/lernpfad.js): zu viel Inhalt macht die Schrift dichter —
+   quer und hochkant, darum nach den Regeln der hohen Leinwand. */
+.lp-leinwand .lp-f.ist-dicht { gap: 16px; }
+.lp-leinwand .lp-f.ist-dicht .lp-f__titel { font-size: 40px; }
+.lp-leinwand .lp-f.ist-dicht .lp-f__titel--gross { font-size: 50px; }
+.lp-leinwand .lp-f.ist-dicht .lp-f__kern { font-size: 25px; }
+.lp-leinwand .lp-f.ist-dicht .lp-f__text { gap: 18px; }
+.lp-leinwand .lp-f.ist-dicht .lp-f__punkte { gap: 10px; }
+.lp-leinwand .lp-f.ist-dicht .lp-f__punkte li { font-size: 19px; }
+.lp-leinwand .lp-f.ist-dicht .lp-rolle { padding: 10px 14px; gap: 4px; }
+.lp-leinwand .lp-f.ist-dicht .lp-rolle__text { font-size: 14px; }
+.lp-leinwand .lp-f.ist-dicht .lp-antwort { padding: 9px 16px; font-size: 18px; }
+.lp-leinwand .lp-leinwand .lp-f.ist-dichter .lp-f__kern { font-size: 22px; }
+.lp-leinwand .lp-leinwand .lp-f.ist-dichter .lp-f__punkte li { font-size: 17px; }
+.lp-leinwand .lp-leinwand .lp-f.ist-dichter .lp-f__punkte { gap: 7px; }
+.lp-leinwand .lp-leinwand .lp-f.ist-dichter .lp-rolle__name { font-size: 17px; }
+.lp-leinwand .lp-f.ist-dichter .lp-rolle__text { font-size: 13px; }
+.lp-leinwand .lp-f.ist-dichter .lp-rollen { gap: 8px; }
+.lp-leinwand .lp-leinwand .lp-f.ist-dichter .lp-frage__frage { font-size: 28px; }
+
+/* --- Schmal: Steuerleiste verdichten --------------------------------------- */
+
+@media (max-width: 699.98px) {
+  .lp-buehne { margin: 10px 8px 0; }
+  .lp-steuer { gap: 8px; padding: 4px 8px; min-height: 52px; }
+  .lp-steuer__zaehler { display: none; }
+  .lp-steuer__knopf span { display: none; }
+  .lp-steuer__knopf { min-width: 38px; padding: 0 8px; }
+  .lp-notizen { padding: 0 16px 20px; }
+  .lp-notizen__kopf { margin: 0 -16px 6px; padding: 10px 16px; }
 }

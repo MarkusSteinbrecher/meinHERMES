@@ -10,7 +10,8 @@
    fünf Prüfungen, wie die Punkte der Lernkarten). Die Auswahl nimmt zuerst
    neue und zuletzt falsch beantwortete Fragen, dann einmal richtige, zuletzt
    die mindestens zweimal in Folge richtigen. HT.quiz liefert den Stand für
-   die Seite «Fortschritt».
+   die Seite «Fortschritt» und nimmt die Kontrollfragen des Lernpfads in
+   den Verlauf auf (erfassen).
    Oben auf der Einstellungsseite steht, dass die Fragen nicht geprüft sind und
    keinen Bezug zur offiziellen Prüfung haben. */
 (function (global) {
@@ -611,7 +612,11 @@
     zeichnen();
   }
 
-  HT.quiz = { stand: lernstand, leeren: leeren };
+  HT.quiz = {
+    stand: lernstand,
+    leeren: leeren,
+    erfassen: function (id, richtig) { verlaufErgaenzen(id, richtig ? 'richtig' : 'falsch'); }
+  };
 
   HT.trainerTeile.quiz = {
     id: 'quiz',
