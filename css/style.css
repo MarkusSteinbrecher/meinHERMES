@@ -1796,6 +1796,14 @@ html:has(.willkommen[open]) { overflow: hidden; }
    Modulnamen. */
 .hb-tabelle .hb-mitte { text-align: center; vertical-align: middle; }
 .hb-tabelle .hb-schmal { width: 1%; }
+/* Die agile Phase Umsetzung: das Referenzhandbuch legt diese Spalte in den
+   Modultabellen rot hinterlegt heraus, damit man klassisch und agil
+   auseinanderhält. Hier dunkelgrau — Rot gehört in dieser Anwendung den
+   Haken. Die Haarlinien zwischen den Zeilen bleiben und trennen das Band
+   wie im Original. */
+.hb-tabelle .hb-umsetzung { background: var(--text-weich); color: #fff; }
+.hb-tabelle th.hb-umsetzung { color: #fff; }
+.hb-tabelle .hb-x.hb-umsetzung { color: #fff; }
 .hb-abb { margin: 10px 0 16px; }
 .hb-abb img {
   display: block;

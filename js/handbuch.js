@@ -121,6 +121,9 @@
       h('p', { text: 'Das Referenzhandbuch Projektmanagement von HERMES als Text — Kapitel für Kapitel in seiner Gliederung, mit den Nummern und Seitenzahlen des PDF. Phasen, Szenarien, Module, Ergebnisse, Aufgaben und Rollen stehen als Karten an ihrer Stelle.' }),
       h('p', { text: 'Quelle ist das offizielle PDF von hermes.admin.ch' + (q.ausgabe ? ' (' + q.ausgabe + ')' : '')
         + '. Der Text ist daraus maschinell gelesen und 1:1 übernommen, ohne Verzeichnisse und Index; jede Seitenzahl öffnet die Seite im PDF. Massgebend ist die offizielle Fassung.' }),
+      h('p', { text: 'In den Tabellen steht ein Kreuz des Handbuchs als Haken, und die Spalte der agilen Phase Umsetzung («U») ist '
+        + 'dunkelgrau hinterlegt, damit klassisch und agil auf einen Blick auseinandergehen. Im Referenzhandbuch ist diese Spalte rot '
+        + 'hinterlegt; Rot gehört hier den Haken.' }),
       h('p', {}, [
         'Bei Aufgaben und Ergebnissen stehen rechts in der Verweiszeile ihrer Karte fünf Punkte: die letzten fünf Versuche mit der '
           + 'zugehörigen Lernkarte im ',

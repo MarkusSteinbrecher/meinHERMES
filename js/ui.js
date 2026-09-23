@@ -442,7 +442,7 @@
   function kopfGruppen(zeile, kreuz) {
     var raus = [];
     for (var i = 0; i < zeile.length;) {
-      if (!kreuz[i]) { raus.push({ zelle: zeile[i], spalten: 1, kreuz: false }); i++; continue; }
+      if (!kreuz[i]) { raus.push({ zelle: zeile[i], spalten: 1, kreuz: false, index: i }); i++; continue; }
       var ende = i;
       while (ende < zeile.length && kreuz[ende]) { ende++; }
       var gefuellt = [];
@@ -450,12 +450,31 @@
         if (String(zeile[j].text || '').trim()) { gefuellt.push(zeile[j]); }
       }
       if (gefuellt.length <= 1) {
-        raus.push({ zelle: gefuellt[0] || zeile[i], spalten: ende - i, kreuz: true });
+        raus.push({ zelle: gefuellt[0] || zeile[i], spalten: ende - i, kreuz: true, index: i });
       } else {
-        for (var k = i; k < ende; k++) { raus.push({ zelle: zeile[k], spalten: 1, kreuz: true }); }
+        for (var k = i; k < ende; k++) { raus.push({ zelle: zeile[k], spalten: 1, kreuz: true, index: k }); }
       }
       i = ende;
     }
+    return raus;
+  }
+
+  /* Die Spalte der agilen Phase Umsetzung. Das Referenzhandbuch hebt sie in
+     den Tabellen der Module hervor — dort ist sie rot hinterlegt, damit man
+     klassisch und agil auseinanderhält. Hier steht sie dunkelgrau: Rot gehört
+     in dieser Anwendung den Haken. Erkannt wird sie am Spaltentitel «U» bzw.
+     «Umsetzung» in einer Kopfzeile; so bekommt auch Tabelle 3, die im PDF
+     ohne Hervorhebung auskommt, dieselbe Marke. */
+  function umsetzungSpalten(zeilen, koepfe, kreuz) {
+    var raus = kreuz.map(function () { return false; });
+    zeilen.forEach(function (z, nr) {
+      if (!koepfe[nr].kopf) { return; }
+      z.forEach(function (zelle, i) {
+        if (!kreuz[i]) { return; }
+        var t = String(zelle.text || '').trim().toLowerCase();
+        if (t === 'u' || t === 'umsetzung') { raus[i] = true; }
+      });
+    });
     return raus;
   }
 
@@ -465,13 +484,14 @@
     var zeilen = block.zeilen || [];
     var koepfe = kopfZeilen(zeilen);
     var kreuz = kreuzSpalten(zeilen, koepfe);
+    var umsetzung = umsetzungSpalten(zeilen, koepfe, kreuz);
     var koerper = h('tbody');
     zeilen.forEach(function (zeile, nr) {
       var istKopf = koepfe[nr].kopf;
       var tr = h('tr');
       var felder = istKopf
         ? kopfGruppen(zeile, kreuz)
-        : zeile.map(function (z, i) { return { zelle: z, spalten: 1, kreuz: !!kreuz[i] }; });
+        : zeile.map(function (z, i) { return { zelle: z, spalten: 1, kreuz: !!kreuz[i], index: i }; });
       felder.forEach(function (feld) {
         var text = feld.zelle.text || '';
         var x = istKreuz(text);
@@ -481,6 +501,8 @@
            einzelne Kreuzspalte bleibt zudem so schmal wie ihr Inhalt. */
         if (feld.kreuz) { klassen.push('hb-mitte'); }
         if (feld.kreuz && feld.spalten === 1) { klassen.push('hb-schmal'); }
+        /* Nur die einzelne Spalte, nicht die verbundene Zelle «Phasen» darüber. */
+        if (feld.spalten === 1 && umsetzung[feld.index]) { klassen.push('hb-umsetzung'); }
         var td = h(istKopf ? 'th' : 'td', {
           class: klassen.length ? klassen.join(' ') : null,
           colspan: feld.spalten > 1 ? String(feld.spalten) : null,
