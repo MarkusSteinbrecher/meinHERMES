@@ -1340,11 +1340,39 @@ fieldset.feldgruppe { border: 0; padding: 0; margin-inline: 0; }
   font-weight: 800;
   letter-spacing: .06em;
 }
-.antwort--richtig { border-color: var(--gut); background: var(--gut-bg); }
-.antwort--richtig .antwort__marke { border-color: var(--gut); background: var(--gut); color: #fff; }
+/* Angekreuzt, noch nicht geprüft: die Marke gefüllt wie ein Kreuz. */
+.antwort--gewaehlt { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text); }
+.antwort--gewaehlt .antwort__marke { border-color: var(--text); background: var(--text); color: var(--bg); }
+.antwort__text { display: grid; gap: 4px; min-width: 0; }
+/* Geprüft: jede Aussage mit ihrem Stand und der Begründung darunter.
+   Richtig angekreuzt grün, übersehen grün gestrichelt, falsch angekreuzt rot,
+   zu Recht weggelassen neutral. */
+div.antwort { cursor: default; }
+.antwort--getroffen { border-color: var(--gut); background: var(--gut-bg); }
+.antwort--getroffen .antwort__marke { border-color: var(--gut); background: var(--gut); color: #fff; }
+.antwort--uebersehen { border: 1px dashed var(--gut); }
+.antwort--uebersehen .antwort__marke { border-color: var(--gut); color: var(--gut); }
 .antwort--falsch { border-color: var(--schlecht); background: var(--schlecht-bg); }
 .antwort--falsch .antwort__marke { border-color: var(--schlecht); background: var(--schlecht); color: #fff; }
-.antwort--blass { opacity: .6; }
+.antwort__stand { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-leise); }
+.antwort--getroffen .antwort__stand, .antwort--uebersehen .antwort__stand { color: var(--gut); }
+.antwort--falsch .antwort__stand { color: var(--schlecht); }
+.antwort__begruendung { font-size: 14px; line-height: 1.5; color: var(--text); }
+.rueckmeldung__bilanz { font-weight: 700; }
+
+/* Der Fall vor einer Frage. */
+.quiz-situation {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--text);
+  background: var(--flaeche-2);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.quiz-situation p { margin: 0; }
+.quiz-situation__kopf { display: block; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--text-leise); margin-bottom: 3px; }
+.fehler-eintrag .quiz-situation { margin: 0 0 8px; font-size: 14px; }
+.fehler-eintrag .antwort-liste { margin: 8px 0 10px; }
 
 .rueckmeldung {
   padding: 14px 16px;
@@ -1383,17 +1411,6 @@ fieldset.feldgruppe { border: 0; padding: 0; margin-inline: 0; }
   margin: 14px 0 16px;
   overflow-wrap: break-word;
   text-wrap: pretty;
-}
-.frage__zitat {
-  display: block;
-  font-weight: 400;
-  font-size: 15px;
-  letter-spacing: 0;
-  line-height: 1.55;
-  margin-top: 10px;
-  padding: 10px 14px;
-  border-radius: var(--radius-s);
-  background: var(--akzent-schwach);
 }
 
 .ergebnis-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }

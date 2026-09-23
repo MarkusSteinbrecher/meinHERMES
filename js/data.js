@@ -23,7 +23,7 @@
   /* Bei jeder Inhaltsänderung erhöhen: hängt an alle Datenabrufe eine
      Versionsangabe, damit Browser keine veralteten JSON-Dateien aus dem
      Cache verwenden. */
-  var DATEN_VERSION = '2026-09-22a';
+  var DATEN_VERSION = '2026-09-23a';
 
   /* Nur für die Lernkarten: die Grundbegriffe (kuratiert aus den
      Übersichtsseiten von hermes.admin.ch, im Referenzhandbuch kein eigener
@@ -239,16 +239,31 @@
     };
   }
 
+  /**
+   * Quizfrage mit einer oder mehreren richtigen Antworten: «richtig» ist die
+   * Liste der Indizes (eine einzelne Zahl gilt als Liste mit einem Eintrag).
+   * «begruendungen» sagt zu jeder Antwort, warum sie stimmt oder nicht, und
+   * zählt nur, wenn es so viele sind wie Antworten; «situation» ist der Fall
+   * vor der Frage.
+   */
   function normQuizfrage(roh, index) {
     if (!roh || typeof roh !== 'object') { return null; }
     var frage = alsText(roh.frage);
     var antworten = Array.isArray(roh.antworten)
       ? roh.antworten.map(alsText).filter(function (a) { return !!a; })
       : [];
-    var richtig = typeof roh.richtig === 'number' ? roh.richtig : parseInt(roh.richtig, 10);
-
     if (!frage || antworten.length < 2) { return null; }
-    if (!isFinite(richtig) || richtig < 0 || richtig >= antworten.length) { return null; }
+
+    var richtig = (Array.isArray(roh.richtig) ? roh.richtig : [roh.richtig])
+      .map(function (r) { return typeof r === 'number' ? r : parseInt(r, 10); })
+      .filter(function (r, i, alle) {
+        return isFinite(r) && r >= 0 && r < antworten.length && alle.indexOf(r) === i;
+      })
+      .sort(function (a, b) { return a - b; });
+    if (!richtig.length) { return null; }
+
+    var begruendungen = Array.isArray(roh.begruendungen) ? roh.begruendungen.map(alsText) : [];
+    if (begruendungen.length !== antworten.length) { begruendungen = []; }
 
     var quelle = null;
     if (roh.quelle && typeof roh.quelle === 'object' && alsText(roh.quelle.url)) {
@@ -259,13 +274,13 @@
     }
 
     return {
-      id: alsText(roh.id) || ('q-kuratiert-' + index),
-      herkunft: 'kuratiert',
+      id: alsText(roh.id) || ('q-' + index),
       kategorie: alsText(roh.kategorie) || '',
+      situation: alsText(roh.situation),
       frage: frage,
-      zitat: '',
       antworten: antworten,
       richtig: richtig,
+      begruendungen: begruendungen,
       erklaerung: alsText(roh.erklaerung),
       beleg: normBeleg(roh.beleg),
       quelle: quelle

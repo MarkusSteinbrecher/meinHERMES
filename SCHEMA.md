@@ -13,7 +13,7 @@ Verbindlicher Kontrakt zwischen Inhalt und Frontend. Alle Inhalte liegen als JSO
 | `data/ergebnisse.json` | `ergebnis` | Alle Ergebnisse |
 | `data/rollen.json` | `rolle` | Alle Rollen |
 | `data/grundbegriffe.json` | `grundbegriff` | Nur für die Lernkarten: 39 Grundbegriffe des Methodenverständnisses (Ergebnisorientierung, Meilenstein, Entscheidungspunkt, Sizing, Tailoring usw.), kuratiert aus den Übersichtsseiten von hermes.admin.ch mit `quelle` je Eintrag. Geladen, aber nicht in `alleEintraege()` und `eintragMitId` — Suche, Handbuch, Überblick, Graph und Quiz kennen sie nicht; Zugriff über `eintraegeDerKategorie('grundbegriff')`. Genutzt werden `begriff`, `definition` und `quelle` |
-| `data/quizfragen.json` | — | Kuratierte Prüfungsfragen (eigenes Schema, siehe unten) |
+| `data/quizfragen.json` | — | Verständnisfragen des Quiz (eigenes Schema, siehe unten) |
 | `data/handbuch/*.json` | — | Importierte Handbuchtexte von hermes.admin.ch (generiert von `tools/handbuch-import.py`, nicht von Hand pflegen) |
 | `data/handbuch/rhb/*.json` | — | Das Referenzhandbuch (PDF) als Text, ein Kapitel je Datei (generiert von `tools/rhb-import.py`, nicht von Hand pflegen) |
 
@@ -68,22 +68,28 @@ Umlaute im Slug: ä→ae, ö→oe, ü→ue. Übersichtsseiten: `…/de/projektma
 
 ## Quizfragen (`data/quizfragen.json`)
 
+Eine Liste geschriebener Verständnisfragen; je Frage sind eine oder mehrere Antworten richtig.
+
 ```json
 {
-  "id": "q-001",
-  "frage": "Welche Rolle trägt die Gesamtverantwortung für das Projekt?",
-  "antworten": ["Projektleiter", "Auftraggeber", "Projektausschuss", "Anwendervertreter"],
-  "richtig": 1,
-  "erklaerung": "Der Auftraggeber steuert das Projekt und trägt die Gesamtverantwortung.",
+  "id": "q-121",
+  "situation": "Die Projektleiterin eines kantonalen Amtes … (nur bei Praxissituationen)",
+  "frage": "Welche Aussagen sind mit HERMES vereinbar?",
+  "antworten": ["Aussage A", "Aussage B", "Aussage C", "Aussage D"],
+  "richtig": [0, 2],
+  "begruendungen": ["Stimmt: … (RHB 4.2.1, S. 54)", "Stimmt nicht: …", "Stimmt: …", "Stimmt nicht: …"],
+  "erklaerung": "Der Zusammenhang, den die Frage prüft.",
   "quelle": { "url": "…", "bezeichnung": "…" },
-  "kategorie": "rolle",
-  "beleg": { "zitat": "Wörtlicher Satz aus dem Referenzhandbuch, der die richtige Antwort belegt.", "kapitel": "6.2.1 Standardrollen", "seite": 166 }
+  "kategorie": "ergebnis",
+  "beleg": { "zitat": "Wörtlicher Satz aus dem Referenzhandbuch, der den Kern belegt.", "kapitel": "4.2.1 Titel", "seite": 54 }
 }
 ```
 
-- Genau eine richtige Antwort, `richtig` ist der 0-basierte Index; genau vier Antworten.
-- Fragen zielen auf Begriffsverständnis und exakte Ausdrücke (Verwechslungskandidaten als Distraktoren). Nur fragen, was das Handbuch explizit sagt — keine eigenen Zählungen oder Schlussfolgerungen.
-- `beleg` ist Pflicht: wörtliches Zitat (Silbentrennung aufgelöst), Kapitelnummer mit Titel und Seitenzahl des Referenzhandbuchs (Ausgabe 2022, 3. Auflage). Tabelleninhalte dürfen als «Tabelle N: …» paraphrasiert werden. `tools/quiz-pruefen.py --pdf-text rhb.txt` prüft Form und Zitate.
+- `richtig` ist die Liste der 0-basierten Indizes, aufsteigend, mindestens einer; vier oder fünf Antworten.
+- `begruendungen` (Pflicht ab q-121): je Antwort ein Satz, der mit «Stimmt:» oder «Stimmt nicht:» beginnt, passend zu `richtig`, mit Verweis auf die Stelle im Referenzhandbuch. q-001–q-120 haben nur `erklaerung` (je genau eine richtige Antwort).
+- `situation` ist optional: ein erfundener Fall in der dritten Person, der über der Frage steht.
+- Nur fragen, was das Handbuch ausdrücklich sagt; falsche Aussagen sind plausible Verwechslungen, die dem Handbuch klar widersprechen.
+- `beleg` ist Pflicht: wörtliches Zitat (Silbentrennung aufgelöst), Kapitelnummer mit Titel und Seitenzahl des Referenzhandbuchs (Ausgabe 2022, 3. Auflage). Tabelleninhalte dürfen als «Tabelle N: …» paraphrasiert werden. `tools/quiz-pruefen.py --rhb` prüft Form und Zitate gegen den Text in `data/handbuch/rhb/`.
 
 ## Handbuchtexte (`data/handbuch/`, generiert)
 

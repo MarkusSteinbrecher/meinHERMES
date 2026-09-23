@@ -60,7 +60,7 @@
     var teil = teilInfo ? teilInfo() : [];
     return teil.concat(teil.length ? [h('h3', { class: 'gpop__abschnitt', text: 'Trainer' })] : [], [
       h('p', { text: 'Üben für die Prüfung auf drei Arten: Rollen, Aufgaben und Ergebnisse einander zuordnen, Lernkarten umdrehen und selbst einschätzen, Quizfragen beantworten. Der Fortschritt zeigt nach Phase und Modul, was davon schon sitzt.' }),
-      h('p', { text: 'Zuordnen und Lernkarten entstehen aus den Querverweisen der offiziellen Dokumentation. Die kuratierten Quizfragen sind eigene Texte mit Belegzitat aus dem Referenzhandbuch, weitere Fragen entstehen maschinell aus den erfassten Daten; sie sind nicht geprüft und haben keinerlei Bezug zur offiziellen Prüfung.' }),
+      h('p', { text: 'Zuordnen und Lernkarten entstehen aus den Querverweisen der offiziellen Dokumentation. Die Quizfragen sind eigene Texte mit Belegzitat aus dem Referenzhandbuch; sie sind nicht geprüft und haben keinerlei Bezug zur offiziellen Prüfung.' }),
       h('p', { text: 'Der Lernstand bleibt in diesem Browser; auf der Seite «Über» lässt er sich exportieren und wieder einlesen.' }),
       h('p', { class: 'hb-verweis' }, [
         h('a', { class: 'hb-online', href: '#/ueber', text: 'Lernstand sichern →' }),
