@@ -1345,12 +1345,13 @@ fieldset.feldgruppe { border: 0; padding: 0; margin-inline: 0; }
 .antwort--gewaehlt .antwort__marke { border-color: var(--text); background: var(--text); color: var(--bg); }
 .antwort__text { display: grid; gap: 4px; min-width: 0; }
 /* Geprüft: jede Aussage mit ihrem Stand und der Begründung darunter.
-   Richtig angekreuzt grün, übersehen grün gestrichelt, falsch angekreuzt rot,
-   zu Recht weggelassen neutral. */
+   Alle richtigen Aussagen hellgrün hinterlegt — angekreuzt mit vollem Rand,
+   übersehen mit gestricheltem; falsch angekreuzt rot, zu Recht weggelassen
+   neutral. */
 div.antwort { cursor: default; }
 .antwort--getroffen { border-color: var(--gut); background: var(--gut-bg); }
 .antwort--getroffen .antwort__marke { border-color: var(--gut); background: var(--gut); color: #fff; }
-.antwort--uebersehen { border: 1px dashed var(--gut); }
+.antwort--uebersehen { border: 1px dashed var(--gut); background: var(--gut-bg); }
 .antwort--uebersehen .antwort__marke { border-color: var(--gut); color: var(--gut); }
 .antwort--falsch { border-color: var(--schlecht); background: var(--schlecht-bg); }
 .antwort--falsch .antwort__marke { border-color: var(--schlecht); background: var(--schlecht); color: #fff; }
