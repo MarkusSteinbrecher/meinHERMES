@@ -777,9 +777,7 @@
   /* Adressen: ?kapitel=<id>[&teil=<nr>] · ?id=<element> (Karte im Kapitel
      seiner Kategorie) · ?kat=<kategorie> · ohne Parameter das zuletzt
      gelesene Kapitel. Alte Adressen (#/methode, #/lexikon) leiten hierher. */
-  function render(behaelter, params) {
-    if (!zustand.initialisiert) { wiederherstellen(); zustand.initialisiert = true; }
-    params = params || {};
+  function zielVon(params) {
     var meta = null, zielId = null;
     if (params.kapitel) { meta = kapitelMeta(params.kapitel); }
     if (meta && meta.id === 'methodenueberblick' && params.teil && /^B(\.|$)/.test(String(params.teil))) {
@@ -793,12 +791,172 @@
       }
     }
     if (!meta && params.kat) { meta = kapitelDerKategorie(params.kat); }
-    if (!meta) { meta = kapitelMeta(zustand.kapitel) || KAPITEL[1]; }
+    return { meta: meta, zielId: zielId };
+  }
+
+  function render(behaelter, params) {
+    if (!zustand.initialisiert) { wiederherstellen(); zustand.initialisiert = true; }
+    params = params || {};
+    var ziel = zielVon(params);
+    var meta = ziel.meta || kapitelMeta(zustand.kapitel) || KAPITEL[1];
     zustand.kapitel = meta.id;
     speichern();
     suche.api = HT.app.suchmodus(MODUS);
-    renderKapitel(behaelter, meta, params, zielId);
+    renderKapitel(behaelter, meta, params, ziel.zielId);
+  }
+
+  /* --- Handbuch im Fenster ------------------------------------------------- */
+
+  /* Zum Nachschlagen, ohne die Seite zu verlassen (seit 2026-09-23 im
+     Lernpfad): das Kapitel als modaler Dialog über der Seite, gerollt an den
+     Abschnitt oder die Karte. Die Adressen sind die der Seite
+     (#/handbuch?kapitel=…&teil=… oder ?id=…); Links dieser Art öffnen im
+     Fenster, andere Links in die App schliessen es und gehen dorthin. Die
+     Suche und die Leiste der Seite gibt es hier nicht; «Als Seite öffnen»
+     führt ins Handbuch. Gemerkt wird nichts — das Handbuch öffnet danach
+     weiter beim zuletzt dort gelesenen Kapitel. */
+
+  var fenster = null;   // { dialog, titel, marke, seite, inhalt }
+
+  function adresseLesen(href) {
+    var params = {};
+    var roh = String(href || '').split('?')[1] || '';
+    roh.split('&').forEach(function (paar) {
+      var kv = paar.split('=');
+      if (!kv[0]) { return; }
+      try { params[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1] || '').replace(/\+/g, ' ')); } catch (e) { /* ungültig */ }
+    });
+    return params;
+  }
+
+  function fensterBauen() {
+    var titel = h('h1', { class: 'hb-fenster__titel', id: 'hb-fenster-titel' });
+    var marke = h('span', { class: 'detail__label' });
+    var seite = h('a', {
+      class: 'btn btn--klein hb-fenster__seite', href: '#/handbuch', dataset: { seite: '1' },
+      title: 'Diese Stelle auf der Seite «Handbuch» öffnen (verlässt die aktuelle Seite)', text: 'Als Seite öffnen'
+    });
+    var inhalt = h('div', { class: 'hb-fenster__inhalt', tabindex: '-1' });
+    var dialog = h('dialog', { class: 'hb-fenster', 'aria-labelledby': 'hb-fenster-titel' }, [
+      h('div', { class: 'hb-fenster__kopf' }, [
+        h('div', { class: 'hb-fenster__name' }, [marke, titel]),
+        seite,
+        h('button', { type: 'button', class: 'graph-schliessen', 'aria-label': 'Schliessen (Esc)', title: 'Schliessen (Esc)', text: '✕', on: { click: function () { dialog.close(); } } })
+      ]),
+      inhalt
+    ]);
+
+    function draussen(ev) {
+      var r = dialog.getBoundingClientRect();
+      return ev.target === dialog && (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom);
+    }
+    /* Klick daneben schliesst, wenn er dort auch begann (wie Willkommen). */
+    var vonDraussen = false;
+    dialog.addEventListener('pointerdown', function (ev) { vonDraussen = draussen(ev); });
+    dialog.addEventListener('click', function (ev) {
+      if (vonDraussen && draussen(ev)) { dialog.close(); return; }
+      var a = ev.target.closest && ev.target.closest('a[href^="#"]');
+      if (!a) { return; }
+      var href = a.getAttribute('href');
+      if (/^#\/handbuch(\?|$)/.test(href) && !a.dataset.seite) {
+        ev.preventDefault();
+        fensterZeigen(adresseLesen(href));
+        return;
+      }
+      dialog.close();   // ein Link in die App: Fenster zu, dann dorthin
+    });
+    /* Tasten gehören dem Fenster: die Pfeile blätterten sonst die Folie
+       dahinter um. */
+    dialog.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
+    dialog.addEventListener('close', function () {
+      /* Der Fokus geht zurück an den Knopf oder die Seite, die geöffnet hat. */
+      var vorher = fenster.vorher;
+      fenster.vorher = null;
+      if (vorher && document.body.contains(vorher)) { try { vorher.focus({ preventScroll: true }); } catch (e) { /* egal */ } }
+    });
+    document.body.appendChild(dialog);
+    return { dialog: dialog, titel: titel, marke: marke, seite: seite, inhalt: inhalt, version: 0, vorher: null };
+  }
+
+  function fensterZeigen(params) {
+    var ziel = zielVon(params);
+    var meta = ziel.meta || kapitelMeta(zustand.kapitel) || KAPITEL[1];
+    var f = fenster;
+    var version = ++f.version;
+    f.marke.textContent = meta.nummer ? 'Handbuch · Kapitel ' + meta.nummer : 'Handbuch';
+    f.titel.textContent = meta.titel;
+    f.seite.setAttribute('href', ziel.zielId ? '#/handbuch?id=' + encodeURIComponent(ziel.zielId)
+      : kapitelAdresse(meta.id, params.teil || null));
+    HT.ui.leeren(f.inhalt);
+    f.inhalt.appendChild(h('p', { class: 'trefferzahl', role: 'status', text: 'Kapitel wird geladen …' }));
+
+    Promise.all([HT.daten.rhbIndex(), HT.daten.rhbKapitel(meta.id)]).then(function (res) {
+      if (version !== f.version) { return; }
+      var idx = res[0], kap = res[1];
+      quelle = idx && idx.quelle ? idx.quelle : quelle;
+      HT.ui.leeren(f.inhalt);
+      if (!kap) {
+        f.inhalt.appendChild(HT.ui.leerZustand('Handbuchtext nicht verfügbar', 'Die Datei data/handbuch/rhb/' + meta.id + '.json konnte nicht geladen werden.'));
+        return;
+      }
+      var blatt = h('div', { class: 'hb-blatt' });
+      var verweis = verweisZeile({ nummer: meta.nummer || null, seite: kap.seite, url: kap.url }, true);
+      if (verweis) { blatt.appendChild(h('div', { class: 'hb-kapitelkopf' }, verweis)); }
+      var toc = inhaltsverzeichnis(kap, idx);
+      if (toc) { blatt.appendChild(toc); }
+      var koerper = kapitelKoerper(kap, meta);
+      blatt.appendChild(koerper);
+      var i = KAPITEL.indexOf(meta);
+      var vorher = i > 0 ? KAPITEL[i - 1] : null, nachher = i < KAPITEL.length - 1 ? KAPITEL[i + 1] : null;
+      blatt.appendChild(h('div', { class: 'btn-reihe kapitel-nav' }, [
+        vorher ? h('a', { class: 'btn', href: kapitelAdresse(vorher.id), text: '← ' + (vorher.nummer ? 'Kapitel ' + vorher.nummer + ' ' : '') + vorher.titel }) : null,
+        nachher ? h('a', { class: 'btn', href: kapitelAdresse(nachher.id), text: (nachher.nummer ? 'Kapitel ' + nachher.nummer + ' ' : '') + nachher.titel + ' →' }) : null
+      ]));
+      f.inhalt.appendChild(blatt);
+
+      var sprungZiel = null;
+      if (ziel.zielId) {
+        sprungZiel = koerper.querySelector('#eintrag-' + cssId(ziel.zielId));
+        if (sprungZiel) { sprungZiel.classList.add('ist-hervorgehoben'); }
+      } else if (params.teil) {
+        sprungZiel = koerper.querySelector('#hb-' + cssId(params.teil)) || koerper.querySelector('#teil-' + cssId(params.teil));
+      }
+      /* Abbildungen und Schrift, die danach laden, verschieben den Text:
+         dann nachrücken, solange niemand gerollt hat. */
+      var gesetzt = 0;
+      function hinrollen(erst) {
+        if (version !== f.version || (erst !== true && f.inhalt.scrollTop !== gesetzt)) { return; }
+        f.inhalt.scrollTop = 0;
+        if (sprungZiel) { f.inhalt.scrollTop = sprungZiel.getBoundingClientRect().top - f.inhalt.getBoundingClientRect().top - 12; }
+        gesetzt = f.inhalt.scrollTop;
+      }
+      hinrollen(true);
+      if (sprungZiel) {
+        Array.prototype.forEach.call(blatt.querySelectorAll('img'), function (img) {
+          if (!img.complete) { img.addEventListener('load', hinrollen); }
+        });
+        if (document.fonts && document.fonts.status !== 'loaded') { document.fonts.ready.then(hinrollen); }
+      }
+      try { f.inhalt.focus({ preventScroll: true }); } catch (e) { /* egal */ }
+    });
+  }
+
+  /**
+   * Öffnet das Handbuch im Fenster. ziel: eine Adresse wie
+   * '#/handbuch?kapitel=ergebnisse&teil=4.4.1' oder die Parameter als Objekt
+   * ({ kapitel, teil } oder { id }).
+   */
+  function imFenster(ziel) {
+    if (!global.HTMLDialogElement) { global.location.hash = typeof ziel === 'string' ? ziel : '#/handbuch'; return; }
+    if (!fenster) { fenster = fensterBauen(); }
+    var params = typeof ziel === 'string' ? adresseLesen(ziel) : (ziel || {});
+    if (!fenster.dialog.open) {
+      fenster.vorher = document.activeElement;
+      fenster.dialog.showModal();
+    }
+    fensterZeigen(params);
   }
 
   HT.views.handbuch = { titel: 'Handbuch', render: render };
+  HT.handbuch = { imFenster: imFenster, adresse: kapitelAdresse };
 }(window));

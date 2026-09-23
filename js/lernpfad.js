@@ -33,7 +33,10 @@
    Der geprüfte Wortlaut steht nicht auf der Folie, sondern in der
    Notizenleiste darunter (Taste N): die Handbuchabschnitte aus `quelle`,
    gezeichnet mit HT.ui.bloecke wie im Handbuch. Später der Platz für Ton
-   und Video.
+   und Video. Die Abschnittsnummern im Fuss der Folie, die Titel in den
+   Notizen und jeder andere Link auf #/handbuch öffnen das Handbuch im
+   Fenster über der Folie (HT.handbuch.imFenster, Taste H), damit man
+   nachschlägt, ohne den Lernpfad zu verlassen.
 
    Die Bühne ist 1280 × 720 Punkte gross (auf hohen Schirmen 640 breit und
    so hoch wie das Verhältnis des Schirms, 900 bis 1400) und
@@ -193,16 +196,27 @@
     });
   }
 
-  /** Die Abschnitte der Quelle in ihrer Reihenfolge. */
+  /** Die Abschnitte der Quelle in ihrer Reihenfolge, je mit `kapitel` (id). */
   function abschnitteDer(quelle, texte) {
     var aus = [];
     (quelle || []).forEach(function (q) {
       var kap = texte[q.kapitel];
       var nach = {};
       ((kap && kap.abschnitte) || []).forEach(function (a) { if (a.nummer) { nach[a.nummer] = a; } });
-      (q.abschnitte || []).forEach(function (n) { if (nach[n]) { aus.push(nach[n]); } });
+      (q.abschnitte || []).forEach(function (n) {
+        if (nach[n]) { aus.push({ kapitel: q.kapitel, nummer: n, seite: nach[n].seite, titel: nach[n].titel, bloecke: nach[n].bloecke }); }
+      });
     });
     return aus;
+  }
+
+  /* Links ins Handbuch öffnen es im Fenster über der Folie
+     (HT.handbuch.imFenster) — so bleibt man im Lernpfad. */
+  function handbuchLink(a, text, klasse) {
+    return h('a', {
+      class: klasse, href: HT.handbuch.adresse(a.kapitel, a.nummer), text: text,
+      title: 'Abschnitt ' + a.nummer + ' im Handbuch nachlesen'
+    });
   }
 
   /**
@@ -233,12 +247,28 @@
     return inListe(alle);
   }
 
+  function seitenText(abschnitte) {
+    var seiten = abschnitte.map(function (a) { return a.seite; }).filter(Boolean);
+    return seiten.length ? ' · S. ' + seiten[0] + (seiten[seiten.length - 1] !== seiten[0] ? '–' + seiten[seiten.length - 1] : '') : '';
+  }
+
   function quellText(folie, texte) {
     var abschnitte = abschnitteDer(folie.quelle, texte);
     if (!abschnitte.length) { return ''; }
-    var seiten = abschnitte.map(function (a) { return a.seite; }).filter(Boolean);
-    return 'Handbuch ' + abschnitte.map(function (a) { return a.nummer; }).join(', ')
-      + (seiten.length ? ' · S. ' + seiten[0] + (seiten[seiten.length - 1] !== seiten[0] ? '–' + seiten[seiten.length - 1] : '') : '');
+    return 'Handbuch ' + abschnitte.map(function (a) { return a.nummer; }).join(', ') + seitenText(abschnitte);
+  }
+
+  /* Die Quelle im Fuss der Folie: jede Abschnittsnummer ein Link ins Handbuch. */
+  function quellZeile(platz, folie, texte, hinweis) {
+    HT.ui.leeren(platz);
+    var abschnitte = abschnitteDer(folie.quelle, texte);
+    if (!abschnitte.length) { return; }
+    platz.appendChild(document.createTextNode('Handbuch '));
+    abschnitte.forEach(function (a, i) {
+      if (i) { platz.appendChild(document.createTextNode(', ')); }
+      platz.appendChild(handbuchLink(a, a.nummer, 'lp-f__quelle'));
+    });
+    platz.appendChild(document.createTextNode(seitenText(abschnitte) + hinweis));
   }
 
   /* --- Bausteine der Folien ----------------------------------------------- */
@@ -333,7 +363,7 @@
         h('p', { class: 'lp-deck__kurz', text: (kurs.deckKurz ? kurs.deckKurz + ' ' : '') + summe + ' Folien.' }),
         h('p', { class: 'lp-deck__tasten' }, [
           h('kbd', { text: '→' }), ' weiter  ', h('kbd', { text: '←' }), ' zurück  ',
-          h('kbd', { text: 'F' }), ' Vollbild  ', h('kbd', { text: 'N' }), ' Handbuchtext'
+          h('kbd', { text: 'F' }), ' Vollbild  ', h('kbd', { text: 'N' }), ' Handbuchtext  ', h('kbd', { text: 'H' }), ' Handbuch'
         ]),
         h('div', { class: 'lp-deck__knoepfe' }, [
           weiter,
@@ -481,7 +511,10 @@
           punkteListe(f.punkte)
         ]),
         eintrag ? h('aside', { class: 'lp-fakten' }, elementFakten(f.art, eintrag).concat([
-          h('a', { class: 'lp-fakten__link', href: '#/ueberblick?id=' + encodeURIComponent(eintrag.id), text: 'Im Überblick ansehen' })
+          h('p', { class: 'lp-fakten__links' }, [
+            h('a', { class: 'lp-fakten__link', href: '#/handbuch?id=' + encodeURIComponent(eintrag.id), text: 'Im Handbuch nachlesen' }),
+            h('a', { class: 'lp-fakten__link', href: '#/ueberblick?id=' + encodeURIComponent(eintrag.id), text: 'Im Überblick ansehen' })
+          ])
         ])) : null
       ]),
       ctx.fuss
@@ -1431,7 +1464,8 @@
       return;
     }
     abschnitte.forEach(function (a) {
-      platz.appendChild(h('h3', { class: 'lp-notizen__titel', text: (a.nummer ? a.nummer + ' ' : '') + (a.titel || '') }));
+      platz.appendChild(h('h3', { class: 'lp-notizen__titel' },
+        handbuchLink(a, a.nummer + ' ' + (a.titel || ''), 'lp-notizen__link')));
       if ((a.bloecke || []).length) {
         platz.appendChild(HT.ui.bloecke(a.bloecke, { verlinken: true, ebene: 4, seite: a.seite }));
       }
@@ -1492,6 +1526,9 @@
         + 'Kontrollfragen; den Kurs wechseln Sie rechts in dieser Leiste.' }),
       h('p', { text: 'Blättern mit den Pfeiltasten, der Leertaste, den Knöpfen unter der Folie oder durch Wischen. '
         + 'F schaltet das Vollbild ein und aus, N die Notizen, Ü (oder O) die Übersicht aller Folien.' }),
+      h('p', { text: 'Die Abschnittsnummern unter der Folie und die Titel in den Notizen führen ins Handbuch: Es öffnet sich '
+        + 'als Fenster über der Folie, an dieser Stelle, und schliesst mit Esc — Sie bleiben im Lernpfad. H öffnet es beim '
+        + 'Abschnitt der aktuellen Folie.' }),
       h('p', { text: 'Die Folientexte sind von uns und knapp gehalten. Der geprüfte Wortlaut steht in den Notizen unter der '
         + 'Folie: dieselben Absätze, Abbildungen und Seitenzahlen wie im Handbuch; im Deep Dive stehen dort auch die '
         + 'Einzelheiten zur Folie. Kennzahlen, Karten und Listen '
@@ -1560,6 +1597,24 @@
     ]);
     var wurzel = h('div', { class: 'lp-praes' + (notizenOffen ? ' mit-notizen' : ''), tabindex: '-1' }, [buehne, steuer, notizen, raster]);
     behaelter.appendChild(wurzel);
+
+    /* Links ins Handbuch — in der Quelle unter der Folie, in den Notizen,
+       im Faktenkasten — öffnen es im Fenster über der Präsentation, auch im
+       Vollbild; mit gedrückter Taste (neuer Tab) bleiben sie Links. */
+    wurzel.addEventListener('click', function (ev) {
+      if (ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) { return; }
+      var a = ev.target.closest && ev.target.closest('a[href^="#/handbuch"]');
+      if (!a) { return; }
+      ev.preventDefault();
+      HT.handbuch.imFenster(a.getAttribute('href'));
+    });
+
+    /* Taste H: das Handbuch beim ersten Abschnitt der Quelle dieser Folie. */
+    function handbuchZurFolie() {
+      var f = folge[jetzt] && folge[jetzt].folie;
+      var q = f && (f.quelle || [])[0];
+      HT.handbuch.imFenster(q && (q.abschnitte || []).length ? { kapitel: q.kapitel, teil: q.abschnitte[0] } : {});
+    }
 
     /* Segmente je Kapitel, breit nach ihrer Folienzahl; ein Klick springt an
        den Anfang des Kapitels. */
@@ -1686,7 +1741,7 @@
       texteWarten.then(function (texte) {
         if (jetzt !== i) { return; }
         var q = e.folie ? quellText(e.folie, texte) : '';
-        quelleZeile.textContent = q ? q + (folie.punkteInNotizen ? '  ·  N für Details und Wortlaut' : '  ·  N für den Wortlaut') : '';
+        quellZeile(quelleZeile, e.folie || {}, texte, folie.punkteInNotizen ? '  ·  N für Details und Wortlaut' : '  ·  N für den Wortlaut');
         notizenKopf.textContent = q || 'Handbuch';
         notizenFuellen(notizenInhalt, e, texte, folie.punkteInNotizen);
         notizenInhalt.scrollTop = 0;
@@ -1789,6 +1844,7 @@
       else if (k === 'End') { ev.preventDefault(); gehe(folge.length - 1); }
       else if (k === 'f' || k === 'F') { ev.preventDefault(); vollbild(); }
       else if (k === 'n' || k === 'N') { ev.preventDefault(); notizenSchalten(); }
+      else if (k === 'h' || k === 'H') { ev.preventDefault(); handbuchZurFolie(); }
       else if (k === 'ü' || k === 'Ü' || k === 'o' || k === 'O') { ev.preventDefault(); rasterSchalten(true); }
     }
 

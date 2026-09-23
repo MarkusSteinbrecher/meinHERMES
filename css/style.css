@@ -1579,6 +1579,43 @@ html:has(.willkommen[open]) { overflow: hidden; }
   .willkommen__inhalt, .willkommen__fuss { padding-inline: 16px; }
   .willkommen__fuss { column-gap: 8px; }             /* Haken und Knopf nebeneinander bis 360 px */
 }
+/* Handbuch im Fenster (HT.handbuch.imFenster, aus dem Lernpfad): ein Kapitel
+   zum Nachschlagen über der Seite, Kopf fest, darunter rollt das Blatt —
+   so breit wie auf der Seite, damit Tabellen und Abbildungen ganz stehen. */
+.hb-fenster {
+  width: min(1360px, calc(100vw - 48px));
+  max-width: none;
+  height: calc(100dvh - 48px);
+  max-height: none;
+  padding: 0;
+  border: 1px solid var(--rand-stark);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--schatten-stark);
+  overflow: hidden;
+}
+.hb-fenster[open] { display: flex; flex-direction: column; }
+.hb-fenster::backdrop { background: rgba(32, 30, 29, .45); }
+html:has(.hb-fenster[open]) { overflow: hidden; }
+.hb-fenster__kopf {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px 10px 24px;
+  border-bottom: 1px solid var(--rand);
+}
+.hb-fenster__name { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.hb-fenster__titel { margin: 0; font-size: 20px; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-fenster__seite { flex: 0 0 auto; }
+.hb-fenster__inhalt { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; outline: none; padding: 16px; }
+.hb-fenster .hb-blatt { margin: 0 auto; }
+@media (max-width: 699.98px) {
+  .hb-fenster { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
+  .hb-fenster__kopf { padding-left: 16px; }
+  .hb-fenster__titel { font-size: 17px; }
+  .hb-fenster__inhalt { padding: 0; }
+}
 .import { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rand); }
 .import__meldung { margin: 0 0 10px; }
 .import__meldung--fehler { color: var(--schlecht); }

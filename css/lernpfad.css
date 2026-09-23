@@ -156,6 +156,9 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 }
 .lp-notizen__inhalt { max-width: 52rem; margin: 0 auto; }
 .lp-notizen__titel { margin: 18px 0 6px; font-size: 16px; }
+/* Titel und Quelle führen ins Handbuch (Fenster über der Folie). */
+.lp-notizen__link { color: inherit; text-decoration: none; }
+.lp-notizen__link:hover { color: var(--akzent-text); text-decoration: underline; }
 .lp-notizen__leer { color: var(--text-leise); font-size: 14px; }
 
 /* Übersicht aller Folien: legt sich über Bühne und Leiste. */
@@ -295,6 +298,8 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
   font-size: 14px;
   color: var(--text-leise-hell);
 }
+.lp-f__quelle { color: var(--akzent-text); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 2px; }
+.lp-f__quelle:hover { text-decoration-color: currentColor; }
 
 /* Handbuchabbildung: nimmt den Platz, den sie bekommt, und bleibt ganz. */
 .lp-f__bild {
@@ -367,6 +372,7 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
   text-transform: uppercase;
   color: var(--text-leise);
 }
+.lp-fakten__links { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; }
 .lp-fakten__link { font-size: 16px; color: var(--akzent-text); }
 
 .lp-zahl { display: flex; flex-direction: column; }
