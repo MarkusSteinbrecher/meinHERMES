@@ -352,6 +352,8 @@ body.tr-zieht, body.tr-zieht * { cursor: grabbing; }
 .fs-seite .chips { margin-bottom: 8px; }
 .fs-stand { margin: 0 0 8px; font-size: 13px; color: var(--text-leise); }
 .fs-stand b { font-size: 19px; font-weight: 800; letter-spacing: -.02em; color: var(--text); }
+/* Das Quiz zählt nicht auf der Tafel; seine Zeile steht darunter. */
+.fs-quiz { margin: 12px 0 0; }
 
 /* Schmal rollt das Raster zur Seite; auf dem Schirm steht es ganz da.
    position: relative hält die unsichtbaren Screenreader-Texte (.nur-sr,

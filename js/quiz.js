@@ -6,6 +6,11 @@
    die Erläuterung zur ganzen Frage. Manche Fragen beginnen mit einer
    Praxissituation. Eine Frage zählt als richtig, wenn genau die richtigen
    Aussagen angekreuzt sind.
+   Jede geprüfte Frage kommt in ihren Verlauf (quiz-verlauf, die letzten
+   fünf Prüfungen, wie die Punkte der Lernkarten). Die Auswahl nimmt zuerst
+   neue und zuletzt falsch beantwortete Fragen, dann einmal richtige, zuletzt
+   die mindestens zweimal in Folge richtigen. HT.quiz liefert den Stand für
+   die Seite «Fortschritt».
    Oben auf der Einstellungsseite steht, dass die Fragen nicht geprüft sind und
    keinen Bezug zur offiziellen Prüfung haben. */
 (function (global) {
@@ -16,6 +21,7 @@
 
   var h = HT.ui.h;
   var BUCHSTABEN = ['A', 'B', 'C', 'D', 'E', 'F'];
+  var VERLAUF_LAENGE = 5;
 
   var konfig = {
     anzahl: 10,
@@ -69,6 +75,70 @@
     HT.store.schreib('quiz-statistik', s);
   }
 
+  /* --- Verlauf je Frage -------------------------------------------------- */
+
+  /* Immer frisch aus dem Speicher: ein Import oder das Zurücksetzen auf der
+     Seite «Fortschritt» gilt so ohne Umweg auch hier. */
+  function verlaufAlle() {
+    var g = HT.store.lies('quiz-verlauf', null);
+    return (g && typeof g === 'object' && g.verlauf && typeof g.verlauf === 'object') ? g.verlauf : {};
+  }
+
+  /** Die letzten Prüfungen einer Frage, älteste zuerst: 'richtig' | 'falsch'. */
+  function verlaufVon(id, alle) {
+    var v = (alle || verlaufAlle())[id];
+    return Array.isArray(v)
+      ? v.filter(function (w) { return w === 'richtig' || w === 'falsch'; }).slice(-VERLAUF_LAENGE)
+      : [];
+  }
+
+  function verlaufErgaenzen(id, wert) {
+    var alle = verlaufAlle();
+    alle[id] = verlaufVon(id, alle).concat([wert]).slice(-VERLAUF_LAENGE);
+    HT.store.schreib('quiz-verlauf', { verlauf: alle });
+  }
+
+  /** Rang in der Auswahl: 0 neu oder zuletzt falsch, 1 zuletzt einmal
+      richtig, 2 zuletzt mindestens zweimal in Folge richtig. */
+  function rang(v) {
+    if (!v.length || v[v.length - 1] === 'falsch') { return 0; }
+    return (v.length >= 2 && v[v.length - 2] === 'richtig') ? 2 : 1;
+  }
+
+  /** Stand über alle Fragen: beantwortet, zuletzt richtig, zuletzt falsch. */
+  function lernstand() {
+    var alle = verlaufAlle();
+    var s = { gesamt: 0, beantwortet: 0, richtig: 0, falsch: 0 };
+    HT.daten.quizfragen().forEach(function (f) {
+      var v = verlaufVon(f.id, alle);
+      s.gesamt++;
+      if (!v.length) { return; }
+      s.beantwortet++;
+      if (v[v.length - 1] === 'richtig') { s.richtig++; } else { s.falsch++; }
+    });
+    return s;
+  }
+
+  function leeren() {
+    HT.store.loesche('quiz-verlauf');
+    HT.store.loesche('quiz-statistik');
+  }
+
+  /* Die fünf Punkte einer Frage in der Form der Lernkarten: richtig grün,
+     falsch rot, älteste links, freie Plätze als leere Ringe. */
+  function verlaufAnzeige(id) {
+    var v = verlaufVon(id);
+    var punkte = [];
+    for (var i = 0; i < VERLAUF_LAENGE; i++) {
+      var w = v[i] === 'richtig' ? ' lk-verlauf__punkt--gewusst' : v[i] === 'falsch' ? ' lk-verlauf__punkt--nochmals' : '';
+      punkte.push(h('span', { class: 'lk-verlauf__punkt' + w }));
+    }
+    var text = v.length
+      ? (v.length === 1 ? 'Letzte Prüfung: ' : 'Letzte ' + v.length + ' Prüfungen, älteste zuerst: ') + v.join(', ')
+      : 'Diese Frage wurde noch nie geprüft';
+    return h('span', { class: 'lk-verlauf quiz-verlauf', role: 'img', title: text, 'aria-label': text }, punkte);
+  }
+
   /* --- Fragen ------------------------------------------------------------- */
 
   /** Fragen ohne Kategorie (Methodenfragen) stehen in jeder Auswahl. */
@@ -97,8 +167,18 @@
 
   /* --- Ablauf ------------------------------------------------------------- */
 
+  /* Je Rang gemischt, die Ränge hintereinander; die gezogenen Fragen dann
+     noch einmal gemischt, damit die Reihenfolge im Lauf den Rang nicht verrät. */
+  function fragenZiehen() {
+    var alle = verlaufAlle();
+    var raenge = [[], [], []];
+    fragenPool().forEach(function (f) { raenge[rang(verlaufVon(f.id, alle))].push(f); });
+    var folge = raenge.reduce(function (acc, r) { return acc.concat(HT.ui.mischen(r)); }, []);
+    return HT.ui.mischen(folge.slice(0, konfig.anzahl));
+  }
+
   function starten() {
-    var fragen = HT.ui.mischen(fragenPool()).slice(0, konfig.anzahl);
+    var fragen = fragenZiehen();
     if (!fragen.length) {
       lauf = null;
       hinweis = 'Für diese Auswahl gibt es keine Fragen. Bitte weitere Kategorien zulassen.';
@@ -126,6 +206,8 @@
   function pruefen() {
     if (!lauf || lauf.beantwortet || !lauf.gewaehlt[lauf.index].length) { return; }
     lauf.beantwortet = true;
+    var f = lauf.fragen[lauf.index];
+    verlaufErgaenzen(f.id, istRichtig(f, lauf.gewaehlt[lauf.index]) ? 'richtig' : 'falsch');
     zeichnen();
   }
 
@@ -218,10 +300,15 @@
       function (w) { return String(konfig.anzahl) === w; },
       function (w) { konfig.anzahl = w; }));
 
+    var sq = lernstand();
     behaelter.appendChild(h('p', {
       class: 'trefferzahl',
-      text: 'Im Bestand: ' + HT.daten.quizfragen().length + ' Fragen mit Belegstelle im Referenzhandbuch'
+      text: 'Im Bestand: ' + sq.gesamt + ' Fragen mit Belegstelle im Referenzhandbuch'
         + ' · je Frage sind eine oder mehrere Antworten richtig.'
+        + (sq.beantwortet
+          ? ' Schon geprüft: ' + sq.beantwortet + ', davon ' + sq.falsch + ' zuletzt falsch. '
+            + 'Neue und zuletzt falsche Fragen kommen zuerst.'
+          : '')
     }));
 
     /* Kategorienfilter */
@@ -283,12 +370,12 @@
       on: { click: starten }
     }));
 
-    if (st.fragen > 0) {
+    if (st.fragen > 0 || sq.beantwortet) {
       behaelter.appendChild(h('p', { class: 'mehr-laden' }, h('button', {
-        type: 'button', class: 'btn btn--klein', text: 'Statistik zurücksetzen',
+        type: 'button', class: 'btn btn--klein', text: 'Quiz zurücksetzen',
         on: { click: function () {
-          if (global.confirm('Quiz-Statistik wirklich zurücksetzen?')) {
-            HT.store.loesche('quiz-statistik');
+          if (global.confirm('Quiz-Statistik und den Verlauf aller Fragen wirklich zurücksetzen?')) {
+            leeren();
             zeichnen();
           }
         } }
@@ -364,7 +451,10 @@
 
     behaelter.appendChild(h('div', { class: 'quiz-kopf' }, [
       h('span', { text: 'Frage ' + (lauf.index + 1) + ' von ' + lauf.fragen.length }),
-      h('span', { text: 'Eine oder mehrere richtig' })
+      h('span', { class: 'quiz-kopf__rechts' }, [
+        h('span', { text: 'Eine oder mehrere richtig' }),
+        verlaufAnzeige(f.id)
+      ])
     ]));
 
     var anteil = HT.ui.prozent(lauf.index, lauf.fragen.length);
@@ -458,7 +548,7 @@
       behaelter.appendChild(h('ul', { class: 'ergebnis-liste' }, fehler.map(function (x) {
         return h('li', { class: 'fehler-eintrag' }, [
           situationElement(x.f),
-          h('p', { class: 'fehler-eintrag__frage', text: x.f.frage }),
+          h('p', { class: 'fehler-eintrag__frage' }, [h('span', { text: x.f.frage }), verlaufAnzeige(x.f.id)]),
           aussagenGeprueft(x.f, x.gewaehlt),
           x.f.erklaerung ? h('p', { class: 'fehler-eintrag__zeile', text: x.f.erklaerung }) : null,
           belegElement(x.f.beleg),
@@ -504,7 +594,8 @@
       leiste(null, function () {
         return [
           h('h3', { class: 'gpop__abschnitt', text: 'Quiz' }),
-          h('p', { text: 'Zu jeder Frage vier oder fünf Aussagen, eine oder mehrere sind richtig. Ankreuzen und prüfen: danach steht an jeder Aussage, ob sie stimmt und warum, darunter der Beleg im Referenzhandbuch.' })
+          h('p', { text: 'Zu jeder Frage vier oder fünf Aussagen, eine oder mehrere sind richtig. Ankreuzen und prüfen: danach steht an jeder Aussage, ob sie stimmt und warum, darunter der Beleg im Referenzhandbuch.' }),
+          h('p', { text: 'Die fünf Punkte zeigen die letzten Prüfungen einer Frage: grün ganz richtig, rot nicht ganz. Neue und zuletzt falsch beantwortete Fragen kommen zuerst, Fragen, die zweimal in Folge richtig waren, erst am Schluss.' })
         ];
       });
     }
@@ -519,6 +610,8 @@
     refs.behaelter = behaelter;
     zeichnen();
   }
+
+  HT.quiz = { stand: lernstand, leeren: leeren };
 
   HT.trainerTeile.quiz = {
     id: 'quiz',

@@ -1420,7 +1420,10 @@ div.antwort { cursor: default; }
   border-top: 1px solid var(--rand);
 }
 .ergebnis-liste > .fehler-eintrag:last-child { border-bottom: 1px solid var(--rand); }
-.fehler-eintrag__frage { font-weight: 700; margin-bottom: 6px; }
+.fehler-eintrag__frage { display: flex; gap: 12px; font-weight: 700; margin-bottom: 6px; }
+/* Die Punkte des Quiz-Verlaufs (Form aus den Lernkarten, .lk-verlauf). */
+.quiz-kopf__rechts { display: inline-flex; align-items: center; gap: 10px; }
+.quiz-verlauf { flex: 0 0 auto; }
 .fehler-eintrag__zeile { font-size: 14px; margin-bottom: 3px; }
 .fehler-eintrag__zeile b { font-weight: 700; }
 .tag-schlecht { color: var(--schlecht); }

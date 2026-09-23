@@ -241,16 +241,19 @@
         + 'was seit der letzten Prüfung neu drin liegt — ein zweites «Prüfen» ohne neue Zuordnung bringt nichts. '
         + 'Wer eine Art ausgefüllt stehen lässt, übt sie nicht; ihre Kästen bleiben hier offen.' }),
       h('p', { text: 'Bei den Lernkarten zählt die Einschätzung: «Gewusst» zählt, wenn die Karte auch Phase und Modul '
-        + 'richtig zugeordnet hat; «Nochmals» macht die Felder des Elements rot. Das Quiz zählt hier nicht mit.' }),
+        + 'richtig zugeordnet hat; «Nochmals» macht die Felder des Elements rot. Das Quiz zählt nicht auf der Tafel: '
+        + 'die Zeile darunter sagt, wie viele Quizfragen schon geprüft und wie viele zuletzt richtig sind.' }),
       h('p', {}, [
         'Ein Klick auf eine Phase oder ein Modul öffnet seine Übung im ',
         h('a', { href: '#/trainer', text: 'Zuordnen' }),
         '.'
       ]),
       h('p', {}, [
-        '«Fortschritt zurücksetzen» unten leert beides: die Zähler dieser Tafel und die Einschätzung aller ',
+        '«Fortschritt zurücksetzen» unten leert alles: die Zähler dieser Tafel, die Einschätzung aller ',
         h('a', { href: '#/trainer?teil=lernkarten', text: 'Lernkarten' }),
-        ' (gewusst/nicht gewusst) samt ihren Verlaufspunkten. Nur die Karten leert das Icon auf der Lernkartenseite.'
+        ' (gewusst/nicht gewusst) samt ihren Verlaufspunkten und den Verlauf und die Statistik des ',
+        h('a', { href: '#/trainer?teil=quiz', text: 'Quiz' }),
+        '. Nur die Karten leert das Icon auf der Lernkartenseite, nur das Quiz sein Knopf «Quiz zurücksetzen».'
       ])
     ];
   }
@@ -259,12 +262,27 @@
     return n + ' ' + (n === 1 ? ein : viele);
   }
 
-  /** Rückfrage vor dem Zurücksetzen: sie nennt beides mit Zahlen. */
-  function ruecksetzFrage(gezaehlt, karten) {
+  /** Rückfrage vor dem Zurücksetzen: sie nennt alles mit Zahlen. */
+  function ruecksetzFrage(gezaehlt, karten, quizfragen) {
     var teile = [];
     if (gezaehlt) { teile.push(zahlwort(gezaehlt, 'gezählte Zuordnung', 'gezählte Zuordnungen') + ' auf der Tafel'); }
     if (karten) { teile.push('die Einschätzung von ' + zahlwort(karten, 'Lernkarte', 'Lernkarten') + ' samt ihren Verlaufspunkten'); }
-    return 'Fortschritt wirklich zurücksetzen? Gelöscht werden: ' + teile.join(' und ') + '.';
+    if (quizfragen) { teile.push('der Verlauf von ' + zahlwort(quizfragen, 'Quizfrage', 'Quizfragen') + ' samt Quiz-Statistik'); }
+    var letzte = teile.pop();
+    return 'Fortschritt wirklich zurücksetzen? Gelöscht werden: ' + (teile.length ? teile.join(', ') + ' und ' : '') + letzte + '.';
+  }
+
+  /** Die Zeile zum Quiz unter der Tafel: geprüft, zuletzt richtig und falsch. */
+  function quizZeile(q) {
+    if (!q || !q.gesamt) { return null; }
+    return h('p', { class: 'fs-stand fs-quiz' }, [
+      h('b', { text: String(q.beantwortet) }),
+      ' von ' + q.gesamt + ' ',
+      h('a', { href: '#/trainer?teil=quiz', text: 'Quizfragen' }),
+      ' geprüft',
+      q.beantwortet ? ' · ' + q.richtig + ' zuletzt richtig' : '',
+      q.falsch ? ' · ' + q.falsch + ' zuletzt falsch' : ''
+    ]);
   }
 
   function adresse(vorgehen) {
@@ -299,6 +317,8 @@
        Lernstand, nicht zwei). Die Rückfrage sagt darum, was weggeht. */
     var gezaehlt = Object.keys(stand()).length;
     var karten = HT.lernkarten ? HT.lernkarten.eingeschaetzt() : 0;
+    var quiz = HT.quiz ? HT.quiz.stand() : null;
+    var quizfragen = quiz ? quiz.beantwortet : 0;
     behaelter.appendChild(h('section', { class: 'fs-seite' }, [
       HT.zuordnen.vorgehenGruppe(vorgehen, wechseln),
       h('p', { class: 'fs-stand', role: 'status' }, [
@@ -308,23 +328,25 @@
         g.weg ? ' · ' + g.weg + ' auf dem Weg' : ''
       ]),
       h('div', { class: 'fs-tafel' }, r.el),
+      quizZeile(quiz),
       h('div', { class: 'fs-fuss' }, [
         legende(),
-        gezaehlt || karten
+        gezaehlt || karten || quizfragen
           ? h('button', {
               type: 'button', class: 'btn btn--klein', text: 'Fortschritt zurücksetzen',
-              title: 'Zähler der Tafel und Einschätzung der Lernkarten löschen',
+              title: 'Zähler der Tafel, Einschätzung der Lernkarten und Verlauf des Quiz löschen',
               on: {
                 click: function () {
-                  if (!global.confirm(ruecksetzFrage(gezaehlt, karten))) { return; }
+                  if (!global.confirm(ruecksetzFrage(gezaehlt, karten, quizfragen))) { return; }
                   zuruecksetzen();
                   if (karten && HT.lernkarten) { HT.lernkarten.leeren(); }
+                  if (quizfragen && HT.quiz) { HT.quiz.leeren(); }
                   HT.ui.leeren(behaelter);
                   aufbauen(behaelter, vorgehen, leiste);
                 }
               }
             })
-          : h('p', { class: 'fs-hinweis', text: 'Noch nichts gezählt: Fortschritt entsteht beim Prüfen im Zuordnen und bei den Lernkarten.' })
+          : h('p', { class: 'fs-hinweis', text: 'Noch nichts gezählt: Fortschritt entsteht beim Prüfen im Zuordnen, bei den Lernkarten und im Quiz.' })
       ])
     ]));
   }

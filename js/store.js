@@ -132,6 +132,11 @@
       },
       menge: function (w) { return zahlwort(typeof w.laeufe === 'number' ? w.laeufe : 0, 'Quizlauf', 'Quizläufe'); }
     },
+    'quiz-verlauf': {
+      art: 'lernstand',
+      form: function (w) { return istObjekt(w) && istObjekt(w.verlauf); },
+      menge: function (w) { return zahlwort(Object.keys(w.verlauf).length, 'Quizfrage geprüft', 'Quizfragen geprüft'); }
+    },
     'quiz-konfig': { art: 'einstellung', form: istObjekt },
     graph: { art: 'ansicht', form: istObjekt },
     handbuch: { art: 'ansicht', form: istObjekt },
