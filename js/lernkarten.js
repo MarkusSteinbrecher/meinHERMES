@@ -347,6 +347,23 @@
     return HT.daten.normalisieren(wert).indexOf(HT.daten.normalisieren(suche)) !== -1;
   }
 
+  function istSchmal() {
+    return !!(global.matchMedia && global.matchMedia('(max-width: 699.98px)').matches);
+  }
+
+  /* Der Teil des Fensters, in dem eine Liste zu sehen ist: ohne Tastatur
+     (visualViewport), unter der Kopfzeile und über der unteren Leiste. */
+  function sichtbarerBereich() {
+    var vv = global.visualViewport;
+    var oben = vv ? vv.offsetTop : 0;
+    var unten = vv ? vv.offsetTop + vv.height : global.innerHeight;
+    var kopf = document.querySelector('.topbar');
+    if (kopf) { oben = Math.max(oben, kopf.getBoundingClientRect().bottom); }
+    var leiste = document.querySelector('.nav-bottom');
+    if (leiste && leiste.offsetHeight) { unten = Math.min(unten, leiste.getBoundingClientRect().top); }
+    return { oben: oben, unten: unten };
+  }
+
   /**
    * Kombinationsfeld: Liste zum Aufklappen, bei langen Listen mit Suche.
    * Mehrfachauswahl — was gewählt ist, verschwindet aus der Liste; die Zeile
@@ -372,12 +389,32 @@
     /* Die offene Liste schwebt (position: fixed) und hängt am body: in der
        Karte stünde sie im Fluss und würde sie auseinanderziehen — die Karte
        rollt bei max-height 70vh und schnitte die Liste ab. Geschlossen kehrt
-       sie in die Hülle zurück, damit ein Neuaufbau sie mitnimmt. */
-    function positionieren() {
+       sie in die Hülle zurück, damit ein Neuaufbau sie mitnimmt.
+       Auf dem Telefon steht sie immer unter dem Feld: fehlt dort der Platz
+       (Tastatur, untere Leiste), rollt die Seite das Feld nach oben, statt
+       die Liste nach oben zu klappen — oben verschwand sie am Fensterrand,
+       weil innerHeight die Tastatur nicht kennt. mitRollen nur beim Öffnen
+       und wenn die Tastatur kommt, nicht beim Rollen von Hand. */
+    function positionieren(mitRollen) {
+      var b = sichtbarerBereich();
       var r = feld.getBoundingClientRect();
-      var unten = global.innerHeight - r.bottom - 10;
-      var oben = r.top - 10;
-      var nachOben = unten < 170 && oben > unten;
+      var unten = b.unten - r.bottom - 10;
+      var oben = r.top - b.oben - 10;
+      var schmal = istSchmal();
+      if (schmal && mitRollen === true) {
+        var bedarf = Math.min(240, Math.max(110, liste.scrollHeight));
+        var weg = Math.min(bedarf - unten, oben);
+        if (weg > 0) {
+          /* instant: die Seite rollt sonst weich (scroll-behavior), und die
+             Liste stünde bis zum Ende des Rollens noch über dem Feld. */
+          global.scrollBy({ top: Math.ceil(weg), behavior: 'instant' });
+          r = feld.getBoundingClientRect();
+          unten = b.unten - r.bottom - 10;
+          oben = r.top - b.oben - 10;
+        }
+      }
+      /* Klappt nur noch, wenn die Seite nicht weiter rollen kann. */
+      var nachOben = schmal ? unten < 110 && oben > unten : unten < 170 && oben > unten;
       var hoehe = Math.max(110, Math.min(240, nachOben ? oben : unten));
       liste.style.left = Math.round(r.left) + 'px';
       liste.style.width = Math.round(r.width) + 'px';
@@ -390,6 +427,10 @@
         liste.style.top = Math.round(r.bottom + 4) + 'px';
       }
     }
+
+    function nachfuehren() { positionieren(false); }
+    /* Die Tastatur geht auf oder zu: Platz unter dem Feld neu schaffen. */
+    function platzSchaffen() { positionieren(true); }
 
     function zeichnen() {
       HT.ui.leeren(liste);
@@ -429,10 +470,14 @@
       liste.hidden = false;
       feld.setAttribute('aria-expanded', 'true');
       zeichnen();
-      positionieren();
+      positionieren(true);
       /* true: auch das Rollen der Karte selbst führt die Liste nach. */
-      global.addEventListener('scroll', positionieren, true);
-      global.addEventListener('resize', positionieren);
+      global.addEventListener('scroll', nachfuehren, true);
+      global.addEventListener('resize', platzSchaffen);
+      if (global.visualViewport) {
+        global.visualViewport.addEventListener('resize', platzSchaffen);
+        global.visualViewport.addEventListener('scroll', nachfuehren);
+      }
     }
 
     function schliessen() {
@@ -440,8 +485,12 @@
       offen = false;
       liste.hidden = true;
       el.appendChild(liste);
-      global.removeEventListener('scroll', positionieren, true);
-      global.removeEventListener('resize', positionieren);
+      global.removeEventListener('scroll', nachfuehren, true);
+      global.removeEventListener('resize', platzSchaffen);
+      if (global.visualViewport) {
+        global.visualViewport.removeEventListener('resize', platzSchaffen);
+        global.visualViewport.removeEventListener('scroll', nachfuehren);
+      }
       feld.setAttribute('aria-expanded', 'false');
       feld.removeAttribute('aria-activedescendant');
       if (offeneListe === schliessen) { offeneListe = null; }
