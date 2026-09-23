@@ -21,12 +21,14 @@
    Phase, ein Modul oder ein Szenario — Kennzahlen aus unseren Daten), ebene
    (die Rollen einer Hierarchieebene aus unseren Daten), ergebnistypen und
    jePhase (Zahlen zu den Ergebnissen aus unseren Daten). Für den Deep Dive
-   dazu: abschnitt (Trennfolie), lebenslauf (ein Ergebnis: Phasenleiste,
-   erarbeitende Aufgaben, «Grundlage für»), ergebnisliste (alle Ergebnisse
-   einiger Module), rollenweg und rollenphase (eine Rolle über alle Phasen
-   bzw. in einer), rolle (Karte) und entscheid (wer, wann, worauf gestützt,
-   was folgt) — die Fakten kommen aus aufgaben.ergebnisse/ergebnisPhasen/
-   grundlagen, der Text der Folie ergänzt sie.
+   dazu Folien mit einer Karte (Zeilen = Ergebnisse, Spalten = Phasen, seit
+   2026-09-23): karte (die ganze Karte des Kapitels), abschnitt (Zoom auf
+   eine Gruppe, ohne Karte eine Trennfolie), lebenslauf und entscheid (Zoom
+   auf eine Zeile), rollenweg und rolle (die Karte einer Rolle), rollenphase
+   (Zoom auf eine Phase der Rolle); dazu ergebnisliste (alle Ergebnisse
+   einiger Module). Zwischen Folien derselben Karte schwenkt die Ansicht.
+   Die Fakten kommen aus aufgaben.ergebnisse/ergebnisPhasen/grundlagen; die
+   `punkte` dieser Folien stehen in den Notizen, nicht auf der Folie.
 
    Der geprüfte Wortlaut steht nicht auf der Folie, sondern in der
    Notizenleiste darunter (Taste N): die Handbuchabschnitte aus `quelle`,
@@ -722,30 +724,11 @@
     return liste.filter(istEntscheid).concat(liste.filter(function (a) { return !istEntscheid(a); }));
   }
 
-  var BAND = ['Initialisierung', 'Konzept', 'Realisierung', 'Einführung', 'Abschluss', 'Umsetzung'];
-
-  /**
-   * Das Phasenband wie im Handbuch: oben die fünf Phasen der klassischen
-   * Vorgehensweise, darunter Umsetzung über Konzept bis Einführung.
-   * `werte[phase]` = { stufe: 'erst' | 'an' | 'mit', text }.
-   */
-  function phasenBand(werte) {
-    return h('ol', { class: 'lp-band' }, BAND.map(function (p, i) {
-      var w = werte[p] || {};
-      return h('li', { class: 'lp-band__phase lp-band__phase--' + i + (w.stufe ? ' ist-' + w.stufe : '') }, [
-        h('span', { class: 'lp-band__name', text: p }),
-        w.text ? h('span', { class: 'lp-band__text', text: w.text }) : null
-      ]);
-    }));
-  }
-
   /** Eine Liste mit Deckel: die ersten `max` Namen, dann «+ n weitere». */
   function gedeckelt(namen, max) {
     if (namen.length <= max) { return namen; }
     return namen.slice(0, max).concat(['+ ' + (namen.length - max) + ' weitere']);
   }
-
-  function faktTitel(text) { return h('p', { class: 'lp-fakten__titel', text: text }); }
 
   /* Aufgaben untereinander, Entscheide mit Raute; mehr als `max` werden
      zu «+ n weitere». */
@@ -761,71 +744,520 @@
     return h('ul', { class: 'lp-aufgaben' }, zeilen);
   }
 
-  function kopfMitArt(e, art, zusatz, titel, pflicht) {
-    return [
-      kopfzeile(e, null),
-      h('div', { class: 'lp-f__titelzeile' }, [
-        h('p', { class: 'lp-f__art' }, [
-          HT.ui.katSymbol(art, 18),
-          h('span', { text: zusatz }),
-          pflicht ? h('span', { class: 'lp-pflicht', text: pflicht }) : null
-        ]),
-        h('h2', { class: 'lp-f__titel lp-f__titel--gross', text: titel })
-      ])
-    ];
+  /* --- Deep Dive: die Karte ------------------------------------------------
+     Eine Zeile je Ergebnis (im Kapitel Entscheide: je Entscheid), von links
+     nach rechts durch die fünf Phasen der klassischen Vorgehensweise:
+     kräftig die Phase, in der es erstmals entsteht, hell die, in denen es
+     nachgeführt wird; die feine Linie unter Konzept bis Einführung ist die
+     agile Umsetzung. Übersichtsfolien zeigen die ganze Karte, die Folien
+     danach zoomen auf eine Gruppe, eine Zeile oder eine Phase. Zwischen zwei
+     Folien derselben Karte schwenkt die Ansicht vom alten zum neuen
+     Ausschnitt (letzteKarte) — so bewegt man sich durch die Methode. */
+
+  var SPALTE = 200;          // Breite einer Phase, in Punkten der Karte
+  var ZEILE = 17;            // Zeilenabstand
+  var BALKEN = 13;           // Höhe eines Balkens
+  var LUECKE = 8;            // Abstand zwischen zwei Gruppen
+  var UNTEN = 30;            // Platz der Legende unten im Fenster
+  var KLASSISCH = ['Initialisierung', 'Konzept', 'Realisierung', 'Einführung', 'Abschluss'];
+  var ZOOM_ZEILE = 1.9;
+  var ZOOM_MAX = 1.6;        // Gruppe, Phase, kleine Karten
+  var letzteKarte = null;    // { schluessel, t: { x, y, s }, b, h }
+  var kartenJeKapitel = typeof WeakMap === 'function' ? new WeakMap() : null;
+
+  function ergebnisArt(name) {
+    if (/^Meilenstein /.test(name)) { return 'meilenstein'; }
+    var erg = HT.daten.eintragMitBegriff(name, 'ergebnis');
+    return erg && erg.typ === 'Zustand' ? 'zustand' : 'dokument';
+  }
+
+  function ergebnisZeile(name) {
+    var phasen = [];
+    erarbeitung(name).forEach(function (w) {
+      w.phasen.forEach(function (p) { if (phasen.indexOf(p) === -1) { phasen.push(p); } });
+    });
+    var erg = HT.daten.eintragMitBegriff(name, 'ergebnis');
+    if (!phasen.length && erg) { phasen = (erg.phasen || []).slice(); }
+    return { name: name, text: ohnePraefix(name), art: ergebnisArt(name), phasen: phasen };
+  }
+
+  function entscheidZeile(name) {
+    var a = HT.daten.eintragMitBegriff(name, 'aufgabe');
+    return { name: name, text: ohneTreffen(name).replace(/^Entscheid /, ''), art: 'meilenstein', phasen: (a && a.phasen) || [] };
+  }
+
+  /** Legt die Zeilen der Gruppen untereinander; leere Gruppen fallen weg. */
+  function karteBauen(schluessel, gruppen, mit) {
+    var zeilen = [], y = 0;
+    gruppen = gruppen.filter(function (g) { return g.zeilen.length; });
+    gruppen.forEach(function (g, gi) {
+      if (gi) { y += LUECKE; }
+      g.y = y;
+      g.zeilen.forEach(function (z) { z.y = y; z.gruppe = gi; z.index = zeilen.length; zeilen.push(z); y += ZEILE; });
+      g.h = y - g.y - (ZEILE - BALKEN);
+    });
+    return zeilen.length ? { schluessel: schluessel, gruppen: gruppen, zeilen: zeilen, b: SPALTE * KLASSISCH.length, h: y - (ZEILE - BALKEN), mit: !!mit } : null;
+  }
+
+  /** Die Karte eines Kapitels: seine Lebensläufe bzw. Entscheide, gruppiert
+      nach den Abschnittsfolien davor. */
+  function kapitelKarte(kapitel) {
+    if (kartenJeKapitel && kartenJeKapitel.has(kapitel)) { return kartenJeKapitel.get(kapitel); }
+    var gruppen = [], aktuelle = null;
+    (kapitel.folien || []).forEach(function (f) {
+      if (f.typ === 'abschnitt') { aktuelle = { titel: f.titel, folie: f, zeilen: [] }; gruppen.push(aktuelle); return; }
+      var z = f.typ === 'lebenslauf' ? ergebnisZeile(f.name) : (f.typ === 'entscheid' ? entscheidZeile(f.name) : null);
+      if (!z) { return; }
+      if (!aktuelle) { aktuelle = { titel: '', zeilen: [] }; gruppen.push(aktuelle); }
+      aktuelle.zeilen.push(z);
+    });
+    var karte = karteBauen('kapitel:' + kapitel.id, gruppen);
+    if (kartenJeKapitel) { kartenJeKapitel.set(kapitel, karte); }
+    return karte;
+  }
+
+  var ARTFOLGE = { dokument: 0, zustand: 1, meilenstein: 2 };
+
+  /** Die Karte einer Rolle: die Ergebnisse der Aufgaben, die sie
+      verantwortet, in den Phasen, in denen sie dort entstehen (ohne
+      Checklisten). Verantwortet sie keine, die Ergebnisse der Aufgaben, an
+      denen sie mitwirkt — grau. Gruppiert nach der ersten Phase. */
+  function rolleKarte(rolle) {
+    var nach = {}, namen = [];
+    aufgaben().forEach(function (a) {
+      var ver = verantwortet(a, rolle);
+      var mit = !ver && (a.beteiligt || []).indexOf(rolle) !== -1;
+      if (!ver && !mit) { return; }
+      (a.ergebnisse || []).forEach(function (n) {
+        if (/^Checkliste /.test(n)) { return; }
+        var ph = (a.ergebnisPhasen && a.ergebnisPhasen[n] && a.ergebnisPhasen[n].length) ? a.ergebnisPhasen[n] : (a.phasen || []);
+        if (!nach[n]) { nach[n] = { name: n, ver: [], mit: [] }; namen.push(n); }
+        var liste = ver ? nach[n].ver : nach[n].mit;
+        ph.forEach(function (p) { if (liste.indexOf(p) === -1) { liste.push(p); } });
+      });
+    });
+    var eigene = namen.filter(function (n) { return nach[n].ver.length; });
+    var nurMit = !eigene.length;
+    var zeilen = (nurMit ? namen : eigene).map(function (n) {
+      return { name: n, text: ohnePraefix(n), art: ergebnisArt(n), phasen: nurMit ? nach[n].mit : nach[n].ver, mit: nurMit };
+    });
+    var reihen = KLASSISCH.slice(0, 4).concat(['Umsetzung', 'Abschluss']);
+    var gruppen = reihen.map(function (p) { return { titel: p, zeilen: [] }; });
+    zeilen.forEach(function (z) {
+      var erste = KLASSISCH.filter(function (p) { return z.phasen.indexOf(p) !== -1; })[0]
+        || (z.phasen.indexOf('Umsetzung') !== -1 ? 'Umsetzung' : null);
+      if (erste) { gruppen[reihen.indexOf(erste)].zeilen.push(z); }
+    });
+    gruppen.forEach(function (g) {
+      g.zeilen.sort(function (a, b) { return (ARTFOLGE[a.art] - ARTFOLGE[b.art]) || a.text.localeCompare(b.text, 'de'); });
+    });
+    return karteBauen('rolle:' + rolle, gruppen, nurMit);
+  }
+
+  /** Die klassischen Phasen einer Zeile als Spaltennummern. */
+  function spaltenVon(z) {
+    var aus = [];
+    KLASSISCH.forEach(function (p, i) { if (z.phasen.indexOf(p) !== -1) { aus.push(i); } });
+    return aus;
+  }
+
+  function istAgil(z) { return z.phasen.indexOf('Umsetzung') !== -1; }
+
+  /** Waagrechte Ausdehnung einer Zeile, Umsetzung eingeschlossen. */
+  function zeilenSpanne(z) {
+    var sp = spaltenVon(z);
+    var von = sp.length ? sp[0] : 1, bis = sp.length ? sp[sp.length - 1] + 1 : 4;
+    if (istAgil(z)) { von = Math.min(von, 1); bis = Math.max(bis, 4); }
+    return { x: von * SPALTE, b: (bis - von) * SPALTE };
+  }
+
+  /** Die Zeilen, die aus einem Ergebnis hervorgehen: Ergebnisse der
+      Aufgaben, die es als Grundlage nennen. */
+  function nachfolger(name) {
+    var aus = [];
+    grundlageFuer(name).forEach(function (a) {
+      (a.ergebnisse || []).forEach(function (n) { if (n !== name && aus.indexOf(n) === -1) { aus.push(n); } });
+    });
+    return aus;
+  }
+
+  /* Zeichnen: Spalten, dann je Zeile die Zellen, die agile Linie und der
+     Name in der ersten Zelle. `ziel` bestimmt, was hell bleibt. */
+  function karteZeichnen(karte, ziel) {
+    var flaeche = h('div', { class: 'lp-karte__flaeche', style: 'width:' + karte.b + 'px;height:' + karte.h + 'px' });
+    KLASSISCH.forEach(function (p, i) {
+      flaeche.appendChild(h('div', {
+        class: 'lp-karte__spalte' + (ziel.art === 'phase' && ziel.phase === p ? ' ist-fokus' : ''),
+        style: 'left:' + (i * SPALTE) + 'px;width:' + SPALTE + 'px'
+      }));
+    });
+    if (ziel.art === 'phase' && ziel.phase === 'Umsetzung') {
+      flaeche.appendChild(h('div', { class: 'lp-karte__spalte ist-fokus ist-agil', style: 'left:' + SPALTE + 'px;width:' + (3 * SPALTE) + 'px' }));
+    }
+    var nachher = ziel.art === 'zeile' ? nachfolger(karte.zeilen[ziel.index].name) : [];
+    karte.zeilen.forEach(function (z) {
+      var hell = ziel.art === 'alles'
+        || (ziel.art === 'zeile' && z.index === ziel.index)
+        || (ziel.art === 'gruppe' && z.gruppe === ziel.index)
+        || (ziel.art === 'phase' && z.phasen.indexOf(ziel.phase) !== -1);
+      var klasse = 'lp-kz lp-kz--' + z.art + (karte.mit ? ' ist-mit' : '')
+        + (ziel.art === 'zeile' && z.index === ziel.index ? ' ist-fokus' : '')
+        + (nachher.indexOf(z.name) !== -1 ? ' ist-nachher' : '')
+        + (hell || nachher.indexOf(z.name) !== -1 ? '' : ' ist-gedimmt');
+      var zeile = h('div', { class: klasse, style: 'top:' + z.y + 'px' });
+      var sp = spaltenVon(z);
+      sp.forEach(function (c, i) {
+        zeile.appendChild(h('span', {
+          class: 'lp-kz__zelle' + (i === 0 ? ' ist-erst' : '') + (ziel.art === 'phase' && KLASSISCH[c] === ziel.phase ? ' ist-phase' : ''),
+          style: 'left:' + (c * SPALTE + 2) + 'px;width:' + (SPALTE - 4) + 'px'
+        }));
+      });
+      if (istAgil(z)) {
+        zeile.appendChild(h('span', {
+          class: 'lp-kz__agil' + (sp.length ? '' : ' ist-allein'),
+          style: 'left:' + (SPALTE + 2) + 'px;width:' + (3 * SPALTE - 4) + 'px'
+        }));
+      }
+      zeile.appendChild(h('span', {
+        class: 'lp-kz__name' + (sp.length ? '' : ' ist-agil') + (z.text.length > 30 ? ' ist-lang' : ''),
+        title: z.text,
+        style: 'left:' + ((sp.length ? sp[0] : 1) * SPALTE + 2) + 'px;width:' + (SPALTE - 4) + 'px',
+        text: z.text
+      }));
+      flaeche.appendChild(zeile);
+    });
+    return flaeche;
+  }
+
+  /* Das Lineal über der Karte: die Phasen in der Breite, in der die Karte
+     sie gerade zeigt — oben die klassischen, darunter die Umsetzung. */
+  function linealBauen(ziel, anPhasen) {
+    function klasse(p, zusatz) {
+      return 'lp-lineal__phase' + (zusatz || '')
+        + (ziel.art === 'phase' && ziel.phase === p ? ' ist-fokus' : '')
+        + (anPhasen && anPhasen.indexOf(p) !== -1 ? ' ist-an' : '');
+    }
+    var spalten = KLASSISCH.map(function (p) { return h('span', { class: klasse(p), text: p }); });
+    var agil = h('span', { class: klasse('Umsetzung', ' lp-lineal__phase--agil'), text: 'Umsetzung (agil)' });
+    return { el: h('div', { class: 'lp-lineal', 'aria-hidden': 'true' }, spalten.concat([agil])), spalten: spalten, agil: agil };
+  }
+
+  function klemmen(wert, min, max) { return min > max ? (min + max) / 2 : Math.max(min, Math.min(max, wert)); }
+
+  /** Massstab und Verschiebung, damit `ziel` im Fenster (b × h) steht. */
+  function zielTransform(karte, ziel, b, h) {
+    var rand = 16;
+    h -= UNTEN;
+    var passt = Math.min((b - 2 * rand) / karte.b, (h - 2 * rand) / karte.h);
+    var s = Math.min(passt, ZOOM_MAX), cx = karte.b / 2, cy = karte.h / 2, fx = 0.5, fy = 0.5;
+    function zeilenBereich(liste) {
+      var x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      liste.forEach(function (z) {
+        var sp = zeilenSpanne(z);
+        x0 = Math.min(x0, sp.x); x1 = Math.max(x1, sp.x + sp.b);
+        y0 = Math.min(y0, z.y); y1 = Math.max(y1, z.y + BALKEN);
+      });
+      return liste.length ? { x0: x0, x1: x1, y0: y0, y1: y1 } : null;
+    }
+    if (ziel.art === 'zeile') {
+      var z = karte.zeilen[ziel.index];
+      s = Math.max(passt, ZOOM_ZEILE);
+      cx = zeilenSpanne(z).x; fx = 0.08;
+      cy = z.y + BALKEN / 2; fy = 0.45;
+    } else if (ziel.art === 'gruppe') {
+      /* Auf die Stelle, an der die Ergebnisse der Gruppe beginnen — lange
+         Zeilen sollen den Ausschnitt nicht auf die ganze Breite ziehen. */
+      var g = karte.gruppen[ziel.index];
+      var r = zeilenBereich(g.zeilen);
+      var anfaenge = g.zeilen.map(function (z) { return zeilenSpanne(z).x; });
+      var ax0 = Math.min.apply(null, anfaenge), ax1 = Math.max.apply(null, anfaenge) + 2 * SPALTE;
+      s = klemmen(Math.min((b - 2 * rand) / (ax1 - ax0), (h - 6 * rand) / (r.y1 - r.y0)), passt, ZOOM_MAX);
+      cx = ax0; fx = 0.08; cy = (r.y0 + r.y1) / 2;
+    } else if (ziel.art === 'phase') {
+      var agil = ziel.phase === 'Umsetzung';
+      var i = KLASSISCH.indexOf(ziel.phase);
+      var x0 = agil ? SPALTE : i * SPALTE, x1 = agil ? 4 * SPALTE : (i + 1) * SPALTE;
+      var q = zeilenBereich(karte.zeilen.filter(function (z) { return z.phasen.indexOf(ziel.phase) !== -1; }));
+      var y0 = q ? q.y0 : 0, y1 = q ? q.y1 : karte.h;
+      s = klemmen(Math.min((b - 2 * rand) / (x1 - x0 + SPALTE), (h - 2 * rand) / (y1 - y0)), passt, ZOOM_MAX);
+      cx = (x0 + x1) / 2; cy = (y0 + y1) / 2;
+    }
+    var t = { s: s, x: b * fx - cx * s, y: h * fy - cy * s };
+    t.x = klemmen(t.x, b - karte.b * s - rand, rand);
+    t.y = klemmen(t.y, h - karte.h * s - rand, rand);
+    return t;
+  }
+
+  function bewegungArm() {
+    return !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+
+  /**
+   * Eine Folie mit Karte: links (hochkant oben) das Fenster auf die Karte,
+   * rechts die Tafel mit Titel, Kernsatz und Fakten — auch auf Übersichten
+   * (`ueberblick`: die ganze Karte), damit das Fenster beim Schwenken gleich
+   * bleibt.
+   * `folie.karte.zeigen(vorher)` richtet die Karte aus — mit `vorher`
+   * (letzteKarte vor dem Blättern) schwenkt sie von dort, ohne springt sie.
+   */
+  function karteFolie(opt) {
+    var karte = opt.karte, ziel = opt.ziel;
+    var fenster = h('div', { class: 'lp-karte__fenster' });
+    var flaeche = karteZeichnen(karte, ziel);
+    fenster.appendChild(flaeche);
+    var lineal = linealBauen(ziel, opt.anPhasen);
+    var legende = h('p', { class: 'lp-karte__legende' + (karte.mit ? ' ist-mit' : '') }, [
+      h('span', { class: 'lp-leg lp-leg--erst' }), karte.mit ? 'wirkt mit, erstmals' : 'erstmals',
+      h('span', { class: 'lp-leg lp-leg--an' }), karte.mit ? 'wirkt mit, danach' : 'nachgeführt',
+      h('span', { class: 'lp-leg lp-leg--agil' }), 'in der Umsetzung (agil)',
+      karte.zeilen.some(function (z) { return z.art === 'meilenstein'; }) ? h('span', { class: 'lp-leg lp-leg--raute' }) : null,
+      karte.zeilen.some(function (z) { return z.art === 'meilenstein'; }) ? 'Meilenstein' : null,
+      opt.legende ? h('span', { class: 'lp-leg lp-leg--nachher' }) : null,
+      opt.legende || null
+    ]);
+    var kasten = h('div', { class: 'lp-karte' }, [lineal.el, fenster, legende]);
+    var tafel = h('div', { class: 'lp-tafel' }, opt.tafel);
+    var folie = h('div', { class: 'lp-f lp-f--karte' + (opt.ueberblick ? ' ist-ueberblick' : '') }, [kasten, tafel, opt.fuss]);
+
+    function anwenden(t) {
+      flaeche.style.transform = 'translate(' + t.x.toFixed(1) + 'px,' + t.y.toFixed(1) + 'px) scale(' + t.s.toFixed(4) + ')';
+      lineal.spalten.forEach(function (sp, i) {
+        sp.style.left = (t.x + i * SPALTE * t.s).toFixed(1) + 'px';
+        sp.style.width = (SPALTE * t.s).toFixed(1) + 'px';
+      });
+      lineal.agil.style.left = (t.x + SPALTE * t.s).toFixed(1) + 'px';
+      lineal.agil.style.width = (3 * SPALTE * t.s).toFixed(1) + 'px';
+    }
+
+    folie.punkteInNotizen = true;
+    folie.karte = {
+      zeigen: function (vorher) {
+        var b = fenster.clientWidth, hoehe = fenster.clientHeight;
+        if (!b || !hoehe) { return; }
+        var t = zielTransform(karte, ziel, b, hoehe);
+        var start = null;
+        if (vorher !== undefined && !bewegungArm()) {
+          start = vorher && vorher.schluessel === karte.schluessel && vorher.b === b && vorher.h === hoehe
+            ? vorher.t : zielTransform(karte, { art: 'alles' }, b, hoehe);
+        }
+        kasten.classList.add('ohne-uebergang');
+        anwenden(start || t);
+        void flaeche.offsetWidth;   // Startlage festschreiben, dann gleiten
+        kasten.classList.remove('ohne-uebergang');
+        if (start) { anwenden(t); }
+        letzteKarte = { schluessel: karte.schluessel, t: t, b: b, h: hoehe };
+      }
+    };
+    return folie;
+  }
+
+  function tafelMarke(text, pflicht) {
+    return h('p', { class: 'lp-tafel__marke' }, [h('span', { text: text }), pflicht ? h('span', { class: 'lp-pflicht', text: pflicht }) : null]);
+  }
+
+  function tafelTitel(text) { return h('h2', { class: 'lp-tafel__titel', text: text }); }
+
+  function tafelKern(text) { return text ? h('p', { class: 'lp-tafel__kern', text: text }) : null; }
+
+  function tafelFakt(titel, inhalt) {
+    return inhalt ? h('div', { class: 'lp-tafel__fakt' }, [h('p', { class: 'lp-fakten__titel', text: titel }), inhalt]) : null;
+  }
+
+  function entscheideMarkieren(liste, aufgabenListe) {
+    Array.prototype.forEach.call(liste.children, function (li, i) {
+      if ((aufgabenListe && aufgabenListe[i] && istEntscheid(aufgabenListe[i])) || /^(Meilenstein|Entscheid) /.test(li.textContent)) {
+        li.classList.add('lp-chip--entscheid');
+      }
+    });
+    return liste;
+  }
+
+  function kleineZahlen(werte) {
+    return h('div', { class: 'lp-tafel__zahlen' }, werte.filter(Boolean).map(function (w) {
+      return h('div', { class: 'lp-tafel__zahl' }, [h('span', { class: 'lp-tafel__wert', text: String(w[0]) }), h('span', { text: w[1] })]);
+    }));
   }
 
   /* --- Deep Dive: Folientypen ---------------------------------------------- */
 
-  function abschnittFolie(e) {
+  /* Übersicht: die ganze Karte des Kapitels. */
+  function karteUeberblickFolie(e, ctx) {
     var f = e.folie;
-    return h('div', { class: 'lp-f lp-f--abschnitt' }, [
-      h('p', { class: 'lp-f__marke', text: 'Kapitel ' + e.kapNr + ' · ' + e.kapitel.titel }),
-      h('h1', { class: 'lp-abschnitt__titel', text: f.titel || '' }),
-      f.kern ? h('p', { class: 'lp-abschnitt__kern', text: f.kern }) : null
+    var karte = kapitelKarte(e.kapitel);
+    if (!karte) { return aussageFolie(e, ctx); }
+    return karteFolie({
+      karte: karte, ziel: { art: 'alles' }, ueberblick: true, fuss: ctx.fuss,
+      tafel: [
+        h('div', { class: 'lp-tafel__kopf' }, [tafelMarke('Kapitel ' + e.kapNr + ' · ' + e.kapitel.titel), tafelTitel(f.titel || 'Übersicht')]),
+        tafelKern(f.kern)
+      ]
+    });
+  }
+
+  /* Abschnitt: im Kapitel mit Karte ein Zoom auf seine Gruppe, sonst eine
+     Trennfolie. */
+  function abschnittFolie(e, ctx) {
+    var f = e.folie;
+    var karte = e.kapitel ? kapitelKarte(e.kapitel) : null;
+    var gi = -1;
+    if (karte) { karte.gruppen.forEach(function (g, i) { if (g.folie === f) { gi = i; } }); }
+    if (gi === -1) {
+      return h('div', { class: 'lp-f lp-f--abschnitt' }, [
+        h('p', { class: 'lp-f__marke', text: 'Kapitel ' + e.kapNr + ' · ' + e.kapitel.titel }),
+        h('h1', { class: 'lp-abschnitt__titel', text: f.titel || '' }),
+        f.kern ? h('p', { class: 'lp-abschnitt__kern', text: f.kern }) : null
+      ]);
+    }
+    var g = karte.gruppen[gi];
+    var entscheide = g.zeilen.every(function (z) { return z.art === 'meilenstein'; });
+    return karteFolie({
+      karte: karte, ziel: { art: 'gruppe', index: gi }, fuss: ctx.fuss,
+      tafel: [
+        tafelMarke('Abschnitt ' + (gi + 1) + ' von ' + karte.gruppen.length),
+        tafelTitel(f.titel || ''),
+        tafelKern(f.kern),
+        kleineZahlen([[g.zeilen.length, entscheide ? (g.zeilen.length === 1 ? 'Entscheid' : 'Entscheide') : (g.zeilen.length === 1 ? 'Kernergebnis' : 'Kernergebnisse')]])
+      ]
+    });
+  }
+
+  /* Lebenslauf eines Ergebnisses: die Karte zoomt auf seine Zeile; umrandet
+     die Kernergebnisse, die darauf aufbauen. Die Tafel nennt, wer es
+     verantwortet, wo es erarbeitet wird und wofür es Grundlage ist. */
+  function lebenslaufFolie(e, ctx) {
+    var f = e.folie;
+    var karte = kapitelKarte(e.kapitel);
+    var i = -1;
+    karte.zeilen.forEach(function (z, j) { if (z.name === f.name) { i = j; } });
+    var erg = HT.daten.eintragMitBegriff(f.name, 'ergebnis');
+    var wege = erarbeitung(f.name);
+    var fuer = grundlageFuer(f.name);
+    var darauf = nachfolger(f.name).filter(function (n) { return karte.zeilen.some(function (z) { return z.name === n; }); });
+    return karteFolie({
+      karte: karte, ziel: { art: 'zeile', index: i }, fuss: ctx.fuss,
+      anPhasen: karte.zeilen[i].phasen,
+      legende: darauf.length ? 'baut darauf auf' : null,
+      tafel: [
+        tafelMarke('Kernergebnis ' + (i + 1) + ' von ' + karte.zeilen.length + ' · ' + (erg && erg.typ ? erg.typ : 'Ergebnis'),
+          erg && erg.minimalGefordert ? 'minimal gefordert' : null),
+        tafelTitel(f.titel || f.name),
+        tafelKern(f.kern),
+        erg && erg.verantwortlich ? tafelFakt('Verantwortlich', chips(rollenVon(erg.verantwortlich))) : null,
+        tafelFakt('Erarbeitet in', wege.length ? aufgabenListe(wege.map(function (w) { return w.aufgabe; }), false, 3)
+          : h('p', { class: 'lp-fakten__leer', text: 'Keine Aufgabe nennt es als Ergebnis.' })),
+        fuer.length ? tafelFakt('Grundlage für', entscheideMarkieren(chips(gedeckelt(fuer.map(function (a) { return a.begriff; }), 3)), fuer)) : null
+      ]
+    });
+  }
+
+  function rollenZahlen(rolle) {
+    var alle = aufgaben();
+    var v = alle.filter(function (a) { return verantwortet(a, rolle); });
+    var m = alle.filter(function (a) { return !verantwortet(a, rolle) && (a.beteiligt || []).indexOf(rolle) !== -1; });
+    var erg = HT.daten.eintraegeDerKategorie('ergebnis').filter(function (x) { return verantwortet(x, rolle); });
+    return { verantwortet: v, mit: m, ergebnisse: erg, entscheide: v.filter(istEntscheid) };
+  }
+
+  /* Weg einer Rolle: alle Ergebnisse ihrer Aufgaben über die ganze Methode;
+     die Folien danach zoomen je auf eine Phase. */
+  function rollenwegFolie(e, ctx) {
+    var f = e.folie;
+    var r = HT.daten.eintragMitBegriff(f.rolle, 'rolle');
+    var z = rollenZahlen(f.rolle);
+    var karte = rolleKarte(f.rolle);
+    return karteFolie({
+      karte: karte, ziel: { art: 'alles' }, ueberblick: true, fuss: ctx.fuss,
+      tafel: [
+        h('div', { class: 'lp-tafel__kopf' }, [
+          tafelMarke('Rolle' + (r && r.ebene ? ' · Ebene ' + r.ebene : '')),
+          tafelTitel(f.titel || f.rolle)
+        ]),
+        tafelKern(f.kern),
+        kleineZahlen([
+          [z.verantwortet.length, 'Aufgaben verantwortet'],
+          [z.mit.length, 'Aufgaben wirkt mit'],
+          [karte ? karte.zeilen.filter(function (x) { return x.art !== 'meilenstein'; }).length : 0, 'Ergebnisse'],
+          [z.entscheide.length, z.entscheide.length === 1 ? 'Entscheid' : 'Entscheide']
+        ])
+      ]
+    });
+  }
+
+  /* Eine Rolle in einer Phase: die Karte der Rolle zoomt auf die Phase. */
+  function rollenphaseFolie(e, ctx) {
+    var f = e.folie;
+    var z = rollenZahlen(f.rolle);
+    var v = mitPhase(z.verantwortet, f.phase);
+    var m = mitPhase(z.mit, f.phase);
+    var d = v.filter(istEntscheid);
+    var karte = rolleKarte(f.rolle);
+    var entstehen = karte ? karte.zeilen.filter(function (x) { return x.phasen.indexOf(f.phase) !== -1 && x.art !== 'meilenstein'; }).length : 0;
+    var tafel = [
+      tafelMarke(f.rolle + ' · Phase ' + f.phase),
+      tafelTitel(f.titel || (f.rolle + ' in der ' + (f.phase === 'Abschluss' || f.phase === 'Initialisierung' ? 'Phase ' + f.phase : f.phase))),
+      tafelKern(f.kern),
+      kleineZahlen([[v.length, v.length === 1 ? 'Aufgabe' : 'Aufgaben'], [entstehen, entstehen === 1 ? 'Ergebnis' : 'Ergebnisse'], [d.length, d.length === 1 ? 'Entscheid' : 'Entscheide']]),
+      tafelFakt('Verantwortet', v.length ? aufgabenListe(v, false, 5) : h('p', { class: 'lp-fakten__leer', text: 'Keine Aufgabe in dieser Phase.' })),
+      m.length ? h('p', { class: 'lp-tafel__zusatz', text: 'Wirkt mit bei ' + anzahl(m.length, 'weiteren Aufgabe', 'weiteren Aufgaben') + '.' }) : null
+    ];
+    if (!karte) { return karteLosFolie(e, ctx, 'lp-f--rollenphase', tafel); }
+    return karteFolie({ karte: karte, ziel: { art: 'phase', phase: f.phase }, fuss: ctx.fuss, tafel: tafel });
+  }
+
+  /* Ohne Karte (eine Rolle ohne Aufgaben): nur die Tafel, breit, und die
+     Punkte stehen wieder auf der Folie. */
+  function karteLosFolie(e, ctx, klasse, tafel) {
+    return h('div', { class: 'lp-f lp-f--karte ist-ohne-karte ' + klasse }, [
+      h('div', { class: 'lp-tafel' }, tafel.concat([punkteListe(e.folie.punkte)])),
+      ctx.fuss
     ]);
   }
 
-  /* Lebenslauf eines Ergebnisses: in welchen Phasen es erarbeitet wird (das
-     erste Mal kräftig), durch welche Aufgaben, und wofür es Grundlage ist. */
-  function lebenslaufFolie(e, ctx) {
+  /* Die übrigen Rollen: ihre Karte als Ganzes. */
+  function rolleFolie(e, ctx) {
     var f = e.folie;
-    var erg = HT.daten.eintragMitBegriff(f.name, 'ergebnis');
-    var wege = erarbeitung(f.name);
-    var an = {};
-    wege.forEach(function (w) { w.phasen.forEach(function (p) { an[p] = true; }); });
-    if (!wege.length && erg) { (erg.phasen || []).forEach(function (p) { an[p] = true; }); }
-    var werte = {};
-    Object.keys(an).forEach(function (p) { werte[p] = { stufe: 'an' }; });
-    var erstK = ['Initialisierung', 'Konzept', 'Realisierung', 'Einführung', 'Abschluss'].filter(function (p) { return an[p]; })[0];
-    if (erstK) { werte[erstK] = { stufe: 'erst', text: 'erstmals' }; }
-    if (an.Umsetzung && !an.Initialisierung) { werte.Umsetzung = { stufe: 'erst', text: erstK === 'Konzept' || !erstK ? 'erstmals (agil)' : '' }; }
-    var fuer = grundlageFuer(f.name);
-    var typ = erg && erg.typ ? erg.typ : 'Ergebnis';
-    var fakten = [];
-    fakten.push(faktTitel('Erarbeitet in'));
-    fakten.push(wege.length ? aufgabenListe(wege.map(function (w) { return w.aufgabe; }), true, 5)
-      : h('p', { class: 'lp-fakten__leer', text: 'Keine Aufgabe nennt es als Ergebnis.' }));
-    if (erg && erg.verantwortlich) {
-      fakten.push(faktTitel('Verantwortlich für das Ergebnis'));
-      fakten.push(chips(rollenVon(erg.verantwortlich)));
+    var r = HT.daten.eintragMitBegriff(f.rolle, 'rolle');
+    var z = rollenZahlen(f.rolle);
+    var karte = rolleKarte(f.rolle);
+    var kopf = h('div', { class: 'lp-tafel__kopf' }, [
+      tafelMarke('Rolle' + (r && r.ebene ? ' · Ebene ' + r.ebene : '')),
+      tafelTitel(f.titel || f.rolle)
+    ]);
+    var zahlen = kleineZahlen([[z.verantwortet.length, 'Aufgaben verantwortet'], [z.mit.length, 'wirkt mit']]);
+    if (!karte) {
+      return karteLosFolie(e, ctx, 'lp-f--rolle', [kopf, tafelKern(f.kern), zahlen,
+        h('p', { class: 'lp-fakten__leer', text: 'In keiner Aufgabe als verantwortlich oder beteiligt genannt.' })]);
     }
-    if (fuer.length) {
-      fakten.push(faktTitel('Grundlage für'));
-      var namen = fuer.map(function (a) { return a.begriff; });
-      var liste = chips(gedeckelt(namen, 6));
-      Array.prototype.forEach.call(liste.children, function (li, i) { if (fuer[i] && istEntscheid(fuer[i])) { li.classList.add('lp-chip--entscheid'); } });
-      fakten.push(liste);
+    return karteFolie({ karte: karte, ziel: { art: 'alles' }, ueberblick: true, fuss: ctx.fuss, tafel: [kopf, tafelKern(f.kern), zahlen] });
+  }
+
+  /* Ein Entscheid: die Karte der Entscheide zoomt auf seine Zeile; die
+     Tafel nennt, wer entscheidet, worauf gestützt und was folgt. */
+  function entscheidFolie(e, ctx) {
+    var f = e.folie;
+    var a = HT.daten.eintragMitBegriff(f.name, 'aufgabe');
+    var karte = kapitelKarte(e.kapitel);
+    var i = -1;
+    karte.zeilen.forEach(function (z, j) { if (z.name === f.name) { i = j; } });
+    /* Die Ebene nach dem Entscheider: der Auftraggeber steuert (auch bei
+       Ausschreibung und Zuschlag aus dem Modul Beschaffung). */
+    var ebene = a && verantwortet(a, 'Auftraggeber') ? 'Steuerung' : 'Führung';
+    var tafel = [
+      tafelMarke('Entscheid ' + (i + 1) + ' von ' + karte.zeilen.length + ' · ' + ebene),
+      tafelTitel(f.titel || ohneTreffen(f.name)),
+      tafelKern(f.kern)
+    ];
+    if (a) {
+      var wer = rollenVon(a.verantwortlich);
+      tafel.push(h('div', { class: 'lp-entscheid__wer' }, [
+        h('span', { class: 'lp-fakten__titel', text: 'Entscheidet' }),
+        h('span', { class: 'lp-entscheid__rolle', text: wer.join(', ') })
+      ]));
+      if ((a.grundlagen || []).length) { tafel.push(tafelFakt('Gestützt auf', chips(gedeckelt(a.grundlagen, 5)))); }
+      var folgt = (a.ergebnisse || []).filter(function (n) { return /^Meilenstein /.test(n); });
+      if (folgt.length) { tafel.push(tafelFakt('Danach erreicht', entscheideMarkieren(chips(folgt)))); }
     }
-    return h('div', { class: 'lp-f lp-f--lebenslauf' }, kopfMitArt(e, 'ergebnis', 'Ergebnis · ' + typ, f.titel || f.name,
-      erg && erg.minimalGefordert ? 'minimal gefordert' : null).concat([
-      phasenBand(werte),
-      h('div', { class: 'lp-f__koerper' }, [
-        h('div', { class: 'lp-f__text' }, [kernSatz(f.kern), punkteListe(f.punkte)]),
-        h('aside', { class: 'lp-fakten' }, fakten)
-      ]),
-      ctx.fuss
-    ]));
+    return karteFolie({ karte: karte, ziel: { art: 'zeile', index: i }, fuss: ctx.fuss, anPhasen: karte.zeilen[i].phasen, tafel: tafel });
   }
 
   /* Alle Ergebnisse einiger Module, je Modul eine Spalte; minimal
@@ -862,153 +1294,6 @@
     ]);
   }
 
-  function rollenZahlen(rolle) {
-    var alle = aufgaben();
-    var v = alle.filter(function (a) { return verantwortet(a, rolle); });
-    var m = alle.filter(function (a) { return !verantwortet(a, rolle) && (a.beteiligt || []).indexOf(rolle) !== -1; });
-    var erg = HT.daten.eintraegeDerKategorie('ergebnis').filter(function (x) { return verantwortet(x, rolle); });
-    return { verantwortet: v, mit: m, ergebnisse: erg, entscheide: v.filter(istEntscheid) };
-  }
-
-  /* Weg einer Rolle: je Phase, wie viel sie verantwortet und wobei sie
-     mitwirkt; daneben die Summen. */
-  function rollenwegFolie(e, ctx) {
-    var f = e.folie;
-    var r = HT.daten.eintragMitBegriff(f.rolle, 'rolle');
-    var z = rollenZahlen(f.rolle);
-    var werte = {};
-    BAND.forEach(function (p) {
-      var v = mitPhase(z.verantwortet, p).length, m = mitPhase(z.mit, p).length, d = mitPhase(z.entscheide, p).length;
-      if (!v && !m) { return; }
-      werte[p] = {
-        stufe: v ? 'an' : 'mit',
-        text: (v ? v + ' verantw.' : '') + (v && m ? ' · ' : '') + (m ? m + ' mitwirkend' : '') + (d ? ' · ' + anzahl(d, 'Entscheid', 'Entscheide') : '')
-      };
-    });
-    return h('div', { class: 'lp-f lp-f--rollenweg' }, kopfMitArt(e, 'rolle', 'Rolle' + (r && r.ebene ? ' · Ebene ' + r.ebene : ''), f.titel || f.rolle).concat([
-      h('div', { class: 'lp-f__koerper' }, [
-        h('div', { class: 'lp-f__text' }, [kernSatz(f.kern), punkteListe(f.punkte)]),
-        h('aside', { class: 'lp-fakten' }, [
-          h('div', { class: 'lp-fakten__zahlen' }, [
-            zahl(z.verantwortet.length, 'Aufgaben', 'verantwortet'),
-            zahl(z.mit.length, 'Aufgaben', 'wirkt mit'),
-            zahl(z.ergebnisse.length, 'Ergebnisse', 'verantwortet'),
-            zahl(z.entscheide.length, 'Entscheide', 'trifft sie')
-          ])
-        ])
-      ]),
-      phasenBand(werte),
-      ctx.fuss
-    ]));
-  }
-
-  /* Eine Rolle in einer Phase: was sie verantwortet, was dabei entsteht,
-     wobei sie mitwirkt. */
-  function rollenphaseFolie(e, ctx) {
-    var f = e.folie;
-    var z = rollenZahlen(f.rolle);
-    var v = mitPhase(z.verantwortet, f.phase);
-    var m = mitPhase(z.mit, f.phase);
-    var liefert = [];
-    v.forEach(function (a) {
-      (a.ergebnisse || []).forEach(function (n) {
-        var ph = (a.ergebnisPhasen && a.ergebnisPhasen[n]) || a.phasen || [];
-        if (ph.indexOf(f.phase) !== -1 && liefert.indexOf(n) === -1) { liefert.push(n); }
-      });
-    });
-    var werte = {};
-    werte[f.phase] = { stufe: 'erst' };
-    var fakten = [faktTitel('Verantwortet (' + v.length + ')')];
-    fakten.push(v.length ? aufgabenListe(v, false, 6) : h('p', { class: 'lp-fakten__leer', text: 'Keine Aufgabe in dieser Phase.' }));
-    if (liefert.length) {
-      fakten.push(faktTitel('Dabei entstehen'));
-      var ch = chips(gedeckelt(liefert, 6));
-      Array.prototype.forEach.call(ch.children, function (li) { if (/^Meilenstein /.test(li.textContent)) { li.classList.add('lp-chip--entscheid'); } });
-      fakten.push(ch);
-    }
-    if (m.length) {
-      fakten.push(faktTitel('Wirkt mit bei (' + m.length + ')'));
-      fakten.push(chips(gedeckelt(m.map(function (a) { return a.begriff; }), 4), 'lp-chips--leise'));
-    }
-    return h('div', { class: 'lp-f lp-f--rollenphase' }, kopfMitArt(e, 'rolle', f.rolle + ' · Phase ' + f.phase,
-      f.titel || (f.rolle + ' in der ' + (f.phase === 'Abschluss' || f.phase === 'Initialisierung' ? 'Phase ' + f.phase : f.phase)))
-      .concat([
-        phasenBand(werte),
-        h('div', { class: 'lp-f__koerper' }, [
-          h('div', { class: 'lp-f__text' }, [kernSatz(f.kern), punkteListe(f.punkte)]),
-          h('aside', { class: 'lp-fakten' }, fakten)
-        ]),
-        ctx.fuss
-      ]));
-  }
-
-  function rolleFolie(e, ctx) {
-    var f = e.folie;
-    var r = HT.daten.eintragMitBegriff(f.rolle, 'rolle');
-    var z = rollenZahlen(f.rolle);
-    var fakten = [h('div', { class: 'lp-fakten__zahlen' }, [
-      zahl(z.verantwortet.length, 'Aufgaben', 'verantwortet'),
-      zahl(z.mit.length, 'Aufgaben', 'wirkt mit')
-    ])];
-    if (z.verantwortet.length) {
-      fakten.push(faktTitel('Verantwortet'));
-      fakten.push(chips(gedeckelt(z.verantwortet.map(function (a) { return a.begriff; }), 8)));
-    }
-    if (z.ergebnisse.length) {
-      fakten.push(faktTitel('Ergebnisse'));
-      fakten.push(chips(gedeckelt(z.ergebnisse.map(function (x) { return x.begriff; }), 8), 'lp-chips--leise'));
-    }
-    if (!z.verantwortet.length && !z.mit.length) {
-      fakten.push(h('p', { class: 'lp-fakten__leer', text: 'In keiner Aufgabe als verantwortlich oder beteiligt genannt.' }));
-    }
-    if (z.mit.length && z.verantwortet.length < 3) {
-      fakten.push(faktTitel('Wirkt mit bei'));
-      fakten.push(chips(gedeckelt(z.mit.map(function (a) { return a.begriff; }), 8), 'lp-chips--leise'));
-    }
-    return h('div', { class: 'lp-f lp-f--rolle' }, kopfMitArt(e, 'rolle', 'Rolle' + (r && r.ebene ? ' · Ebene ' + r.ebene : ''), f.titel || f.rolle).concat([
-      h('div', { class: 'lp-f__koerper' }, [
-        h('div', { class: 'lp-f__text' }, [kernSatz(f.kern), punkteListe(f.punkte)]),
-        h('aside', { class: 'lp-fakten' }, fakten)
-      ]),
-      ctx.fuss
-    ]));
-  }
-
-  /* Ein Entscheid: wer entscheidet, wann, worauf gestützt, was folgt. */
-  function entscheidFolie(e, ctx) {
-    var f = e.folie;
-    var a = HT.daten.eintragMitBegriff(f.name, 'aufgabe');
-    var werte = {};
-    ((a && a.phasen) || []).forEach(function (p) { werte[p] = { stufe: 'an' }; });
-    var fakten = [];
-    if (a) {
-      var wer = rollenVon(a.verantwortlich);
-      fakten.push(h('div', { class: 'lp-entscheid__wer' }, [
-        h('span', { class: 'lp-fakten__titel', text: 'Entscheidet' }),
-        h('span', { class: 'lp-entscheid__rolle', text: wer.join(', ') })
-      ]));
-      var beteiligt = (a.beteiligt || []).filter(function (b) { return wer.indexOf(b) === -1; });
-      if (beteiligt.length) { fakten.push(faktTitel('Beteiligt')); fakten.push(chips(beteiligt, 'lp-chips--leise')); }
-      if ((a.grundlagen || []).length) { fakten.push(faktTitel('Grundlagen')); fakten.push(chips(gedeckelt(a.grundlagen, 8))); }
-      if ((a.ergebnisse || []).length) {
-        fakten.push(faktTitel('Ergebnisse'));
-        var ch = chips(a.ergebnisse);
-        Array.prototype.forEach.call(ch.children, function (li) { if (/^(Meilenstein|Checkliste) /.test(li.textContent)) { li.classList.add('lp-chip--entscheid'); } });
-        fakten.push(ch);
-      }
-    }
-    var ebene = a && (a.module || []).indexOf('Projektsteuerung') !== -1 ? 'Steuerung' : 'Führung';
-    return h('div', { class: 'lp-f lp-f--entscheid' }, kopfMitArt(e, 'meilenstein', 'Entscheid · ' + ebene
-      + (a && (a.module || []).length ? ' · Modul ' + a.module.join(', ') : ''), f.titel || ohneTreffen(f.name)).concat([
-      phasenBand(werte),
-      h('div', { class: 'lp-f__koerper' }, [
-        h('div', { class: 'lp-f__text' }, [kernSatz(f.kern), punkteListe(f.punkte)]),
-        h('aside', { class: 'lp-fakten' }, fakten)
-      ]),
-      ctx.fuss
-    ]));
-  }
-
   var BAUER = {
     aussage: aussageFolie,
     bild: bildFolie,
@@ -1017,6 +1302,7 @@
     ebene: ebeneFolie,
     ergebnistypen: ergebnistypenFolie,
     abschnitt: abschnittFolie,
+    karte: karteUeberblickFolie,
     lebenslauf: lebenslaufFolie,
     ergebnisliste: ergebnislisteFolie,
     rollenweg: rollenwegFolie,
@@ -1028,11 +1314,19 @@
 
   /* --- Notizen: der Wortlaut des Handbuchs --------------------------------- */
 
-  function notizenFuellen(platz, e, texte) {
+  /* Auf Folien mit Karte stehen die Punkte nicht auf der Folie, sondern
+     hier, vor dem Wortlaut. */
+  function notizenFuellen(platz, e, texte, mitPunkten) {
     HT.ui.leeren(platz);
     var quelle = e.folie && e.folie.quelle;
     var abschnitte = quelle ? abschnitteDer(quelle, texte) : [];
+    var punkte = mitPunkten && e.folie ? (e.folie.punkte || []) : [];
+    if (punkte.length) {
+      platz.appendChild(h('h3', { class: 'lp-notizen__titel', text: 'Zur Folie' }));
+      platz.appendChild(h('ul', { class: 'lp-notizen__punkte' }, punkte.map(function (p) { return h('li', { text: p }); })));
+    }
     if (!abschnitte.length) {
+      if (punkte.length) { return; }
       platz.appendChild(h('p', { class: 'lp-notizen__leer', text: e.art === 'frage'
         ? 'Die Erklärung erscheint auf der Folie, sobald die Antwort geprüft ist.'
         : 'Zu dieser Folie gibt es keinen eigenen Handbuchtext.' }));
@@ -1094,13 +1388,15 @@
       h('h3', { class: 'gpop__abschnitt', text: 'Lernpfad' }),
       h('p', { text: 'Der Stoff des Referenzhandbuchs als Schulung, gezeigt wie eine Präsentation, in zwei Kursen. '
         + 'Der Grundkurs geht in sieben Kapiteln durch die Methode, eine Aussage pro Folie. Der Deep Dive vertieft aus drei '
-        + 'Perspektiven: der Lebenslauf jedes Kernergebnisses, der Weg von Auftraggeber, Projektleiter und Anwendervertreter '
-        + 'durch die Phasen, und die 17 Entscheide mit ihren Grundlagen. Jedes Kapitel endet mit einer Zusammenfassung und '
+        + 'Perspektiven — Ergebnisse, Rollen, Entscheide — auf einer Karte: Zeilen sind Ergebnisse, Spalten die Phasen. '
+        + 'Jedes Kapitel und jede Hauptrolle beginnt mit der ganzen Karte, die Folien danach zoomen auf einen Abschnitt, '
+        + 'ein Ergebnis oder eine Phase. Jedes Kapitel endet mit einer Zusammenfassung und '
         + 'Kontrollfragen; den Kurs wechseln Sie rechts in dieser Leiste.' }),
       h('p', { text: 'Blättern mit den Pfeiltasten, der Leertaste, den Knöpfen unter der Folie oder durch Wischen. '
         + 'F schaltet das Vollbild ein und aus, N die Notizen, Ü (oder O) die Übersicht aller Folien.' }),
       h('p', { text: 'Die Folientexte sind von uns und knapp gehalten. Der geprüfte Wortlaut steht in den Notizen unter der '
-        + 'Folie: dieselben Absätze, Abbildungen und Seitenzahlen wie im Handbuch. Kennzahlen, Phasenleisten und Listen '
+        + 'Folie: dieselben Absätze, Abbildungen und Seitenzahlen wie im Handbuch; im Deep Dive stehen dort auch die '
+        + 'Einzelheiten zur Folie. Kennzahlen, Karten und Listen '
         + '(welche Aufgabe ein Ergebnis erarbeitet, wofür es Grundlage ist, was eine Rolle in einer Phase verantwortet, '
         + 'worauf ein Entscheid sich stützt) sind aus unseren Daten erzeugt.' }),
       h('p', { text: 'Die Kontrollfragen stammen aus dem Quiz und zählen in dessen Verlauf.' }),
@@ -1215,9 +1511,13 @@
        grösser. Gemessen in
        Punkten der Leinwand (scrollHeight), unabhängig vom Massstab. */
     function skalieren() {
-      var folie = aktuelleFolie;
-      if (!folie) { return; }
-      var kaesten = [folie].concat(Array.prototype.slice.call(folie.querySelectorAll('.lp-f__koerper, .lp-f__text, .lp-fakten, .lp-frage__fuss, .lp-spalten, .lp-merke, .lp-balken')));
+      if (!aktuelleFolie) { return; }
+      einpassen(aktuelleFolie);
+      if (aktuelleFolie.karte) { aktuelleFolie.karte.zeigen(); }
+    }
+
+    function einpassen(folie) {
+      var kaesten = [folie].concat(Array.prototype.slice.call(folie.querySelectorAll('.lp-f__koerper, .lp-f__text, .lp-fakten, .lp-frage__fuss, .lp-spalten, .lp-merke, .lp-balken, .lp-tafel')));
       function laeuftUeber() {
         return kaesten.some(function (k) { return k.scrollHeight > k.clientHeight + 1; });
       }
@@ -1248,6 +1548,7 @@
       var richtung = i > jetzt ? 'vor' : 'zurueck';
       jetzt = i;
       var e = folge[i];
+      var karteVorher = letzteKarte;
 
       var texteWarten = kapitelTexte(e.folie ? e.folie.quelle : null);
       var nachLaden = [];
@@ -1272,6 +1573,7 @@
       folienPlatz.appendChild(folie);
       aktuelleFolie = folie;
       skalieren();
+      if (folie.karte) { folie.karte.zeigen(karteVorher); }
 
       zaehler.textContent = e.kapitel
         ? e.kapitel.titel + ' · ' + e.nrImKapitel + ' / ' + e.vonImKapitel
@@ -1286,9 +1588,9 @@
       texteWarten.then(function (texte) {
         if (jetzt !== i) { return; }
         var q = e.folie ? quellText(e.folie, texte) : '';
-        quelleZeile.textContent = q ? q + '  ·  N für den Wortlaut' : '';
+        quelleZeile.textContent = q ? q + (folie.punkteInNotizen ? '  ·  N für Details und Wortlaut' : '  ·  N für den Wortlaut') : '';
         notizenKopf.textContent = q || 'Handbuch';
-        notizenFuellen(notizenInhalt, e, texte);
+        notizenFuellen(notizenInhalt, e, texte, folie.punkteInNotizen);
         notizenInhalt.scrollTop = 0;
         nachLaden.forEach(function (f) { f(texte); });
       });

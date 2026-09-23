@@ -616,13 +616,6 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 }
 .lp-leinwand.ist-hoch .lp-f--bild .lp-f__koerper:has(.lp-f__punkte--seite) { grid-template-rows: minmax(0, 1fr) auto; }
 .lp-leinwand.ist-hoch .lp-fakten { align-self: start; }
-.lp-leinwand.ist-hoch .lp-f--lebenslauf .lp-f__koerper,
-.lp-leinwand.ist-hoch .lp-f--rollenweg .lp-f__koerper,
-.lp-leinwand.ist-hoch .lp-f--rollenphase .lp-f__koerper,
-.lp-leinwand.ist-hoch .lp-f--rolle .lp-f__koerper,
-.lp-leinwand.ist-hoch .lp-f--entscheid .lp-f__koerper { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; gap: 26px; }
-.lp-leinwand.ist-hoch .lp-band__name { font-size: 14px; }
-.lp-leinwand.ist-hoch .lp-band__phase { padding: 5px 7px; }
 .lp-leinwand.ist-hoch .lp-f--abschnitt { padding: 60px 48px; }
 .lp-leinwand.ist-hoch .lp-spalten { grid-template-columns: minmax(0, 1fr) !important; gap: 22px; }
 .lp-leinwand.ist-hoch .lp-ergliste { columns: 2; }
@@ -650,65 +643,8 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-abschnitt__titel { margin: 0; font-size: 64px; line-height: 1.05; letter-spacing: -.015em; text-wrap: balance; }
 .lp-abschnitt__kern { margin: 0; max-width: 32em; font-size: 26px; line-height: 1.42; color: var(--text-weich); text-wrap: pretty; }
 
-.lp-f__titelzeile { display: flex; flex-direction: column; gap: 8px; margin-top: -8px; }
-.lp-f--lebenslauf, .lp-f--rollenweg, .lp-f--rollenphase, .lp-f--rolle, .lp-f--entscheid { gap: 18px; }
-.lp-f--lebenslauf .lp-f__titel--gross,
-.lp-f--rollenweg .lp-f__titel--gross,
-.lp-f--rollenphase .lp-f__titel--gross,
-.lp-f--rolle .lp-f__titel--gross,
-.lp-f--entscheid .lp-f__titel--gross { font-size: 44px; }
-.lp-f--lebenslauf .lp-f__koerper,
-.lp-f--rollenphase .lp-f__koerper,
-.lp-f--rolle .lp-f__koerper,
-.lp-f--entscheid .lp-f__koerper { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 40px; }
-.lp-f--rollenweg .lp-f__koerper { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 40px; }
-.lp-f--lebenslauf .lp-f__kern,
-.lp-f--rollenweg .lp-f__kern,
-.lp-f--rollenphase .lp-f__kern,
-.lp-f--rolle .lp-f__kern,
-.lp-f--entscheid .lp-f__kern { font-size: 25px; }
-.lp-f--lebenslauf .lp-f__punkte li,
-.lp-f--rollenweg .lp-f__punkte li,
-.lp-f--rollenphase .lp-f__punkte li,
-.lp-f--rolle .lp-f__punkte li,
-.lp-f--entscheid .lp-f__punkte li { font-size: 19px; }
-.lp-f--lebenslauf .lp-fakten,
-.lp-f--rollenphase .lp-fakten,
-.lp-f--rolle .lp-fakten,
-.lp-f--entscheid .lp-fakten { align-self: start; gap: 8px; padding: 20px 24px; }
 .lp-fakten .lp-fakten__titel:first-child { margin-top: 0; }
 .lp-fakten__leer { margin: 0; font-size: 16px; color: var(--text-leise); }
-.lp-f--rollenweg .lp-fakten__zahlen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 28px; }
-.lp-f--rollenweg .lp-zahl__wert { font-size: 50px; }
-
-/* Phasenband: oben die fünf klassischen Phasen, darunter die Umsetzung
-   über Konzept bis Einführung — wie die Abbildungen des Handbuchs. */
-.lp-band {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 5px;
-}
-.lp-band__phase {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 42px;
-  padding: 5px 12px;
-  border: 1px solid var(--rand);
-  border-radius: 6px;
-  background: var(--weiss);
-  color: var(--text-leise-hell);
-}
-.lp-band__phase--5 { grid-column: 2 / span 3; grid-row: 2; }
-.lp-band__name { font-size: 16px; font-weight: 600; line-height: 1.2; }
-.lp-band__text { font-size: 13.5px; line-height: 1.25; }
-.lp-band__phase.ist-mit { border-color: var(--rand-stark); background: var(--flaeche); color: var(--text-weich); }
-.lp-band__phase.ist-an { border-color: var(--akzent-schwach-2); background: var(--akzent-schwach); color: var(--text); }
-.lp-band__phase.ist-erst { border-color: var(--akzent); background: var(--akzent); color: var(--akzent-auf); }
-
 .lp-aufgaben { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .lp-aufgaben li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; font-size: 17px; line-height: 1.3; }
 .lp-aufgaben li::before { content: ""; flex: 0 0 auto; width: 7px; height: 7px; margin-right: 2px; border-radius: 50%; background: var(--rand-stark); transform: translateY(-2px); }
@@ -745,6 +681,209 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-ergliste__legende { position: relative; margin: 0; padding-left: 16px; font-size: 15px; color: var(--text-leise); }
 .lp-ergliste__punkt { top: .5em; }
 
+/* --- Deep Dive: die Karte ------------------------------------------------
+   Links das Fenster auf die Karte (Zeilen = Ergebnisse, Spalten = Phasen),
+   rechts die Tafel — auf Übersichten wie auf Zoomfolien, damit der Schwenk
+   zwischen ihnen im selben Fenster bleibt. Die Fläche ist in Punkten der Karte gezeichnet (Spalte 200,
+   Zeile 17) und wird per transform gezoomt; js/lernpfad.js setzt die Lage. */
+
+.lp-f--karte {
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 452px;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+}
+.lp-f--karte.ist-ohne-karte { grid-template-columns: minmax(0, 1fr); }
+.lp-f--karte.ist-neu { animation: none; }
+.lp-f--karte.ist-neu .lp-tafel { animation: lp-tafel .35s ease-out; }
+/* Nur Deckkraft: eine Verschiebung zählte beim Einpassen als Überlauf. */
+@keyframes lp-tafel { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .lp-f--karte.ist-neu .lp-tafel { animation: none; } }
+
+.lp-karte {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 26px 0 26px 26px;
+  border: 1px solid var(--rand-fein);
+  border-radius: 12px;
+  background: var(--weiss);
+  overflow: hidden;
+  --kz-an: #f7bdb0;
+  --kz-agil: #f28b75;
+}
+
+.lp-lineal { position: relative; flex: 0 0 auto; height: 46px; border-bottom: 1px solid var(--rand-fein); }
+.lp-lineal__phase {
+  position: absolute;
+  top: 6px;
+  height: 22px;
+  padding: 0 8px;
+  overflow: hidden;
+  border-left: 1px solid var(--rand);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 22px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-leise);
+}
+.lp-lineal__phase--agil { top: 29px; height: 14px; font-size: 10.5px; line-height: 12px; font-weight: 500; color: var(--text-leise); border-left-color: transparent; border-top: 2px solid var(--kz-agil); }
+.lp-lineal__phase.ist-an { color: var(--text); }
+.lp-lineal__phase.ist-fokus { color: var(--akzent-text); }
+.lp-lineal__phase--agil.ist-fokus { border-top-color: var(--akzent); }
+
+.lp-karte__fenster { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.lp-karte__flaeche { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+.lp-karte__flaeche, .lp-lineal__phase { transition: transform .8s cubic-bezier(.45, 0, .2, 1), left .8s cubic-bezier(.45, 0, .2, 1), width .8s cubic-bezier(.45, 0, .2, 1); }
+.lp-karte.ohne-uebergang .lp-karte__flaeche, .lp-karte.ohne-uebergang .lp-lineal__phase { transition: none; }
+@media (prefers-reduced-motion: reduce) { .lp-karte__flaeche, .lp-lineal__phase { transition: none; } }
+
+.lp-karte__spalte { position: absolute; top: -600px; bottom: -600px; border-left: 1px solid var(--rand-fein); }
+.lp-karte__spalte:nth-child(even) { background: #faf8f8; }
+.lp-karte__spalte.ist-fokus { background: rgba(236, 48, 19, .06); }
+.lp-karte__spalte.ist-agil { border-left: 0; background: repeating-linear-gradient(135deg, rgba(236, 48, 19, .07) 0 6px, transparent 6px 12px); }
+
+/* Eine Zeile: Zellen je Phase (die erste kräftig), die agile Linie, der Name. */
+.lp-kz { position: absolute; left: 0; right: 0; height: 17px; transition: opacity .4s; }
+.lp-kz.ist-gedimmt { opacity: .28; }
+.lp-kz__zelle { position: absolute; top: 0; height: 13px; border-radius: 3px; background: var(--kz-an); }
+.lp-kz__zelle.ist-erst { background: var(--akzent); }
+.lp-kz--zustand .lp-kz__zelle { border-radius: 8px; }
+.lp-kz--meilenstein .lp-kz__zelle { background: transparent; box-shadow: inset 0 -2px 0 var(--kz-an); }
+.lp-kz--meilenstein .lp-kz__zelle.ist-erst { background: var(--akzent-schwach-2); box-shadow: none; }
+.lp-kz--meilenstein .lp-kz__zelle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  top: 2.5px;
+  width: 8px;
+  height: 8px;
+  background: var(--akzent);
+  transform: rotate(45deg);
+}
+.lp-kz__zelle.ist-phase { box-shadow: 0 0 0 1.5px var(--akzent-text); }
+.lp-kz__agil { position: absolute; top: 14px; height: 2.5px; border-radius: 2px; background: var(--kz-agil); }
+.lp-kz__agil.ist-allein { top: 0; height: 13px; background: repeating-linear-gradient(135deg, var(--kz-an) 0 5px, var(--akzent-schwach) 5px 10px); }
+.lp-kz__name {
+  position: absolute;
+  top: 0;
+  padding: 0 7px;
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--akzent-auf);
+}
+.lp-kz__name.ist-lang { font-size: 10px; letter-spacing: -.01em; }
+.lp-kz__name.ist-agil, .lp-kz--meilenstein .lp-kz__name { color: var(--akzent-text); }
+.lp-kz--meilenstein .lp-kz__name { padding-right: 16px; }
+.lp-kz.ist-mit .lp-kz__zelle { background: var(--rand); }
+.lp-kz.ist-mit .lp-kz__zelle.ist-erst { background: var(--text-leise); }
+.lp-kz.ist-mit .lp-kz__agil { background: var(--rand); }
+.lp-kz.ist-mit.lp-kz--meilenstein .lp-kz__zelle { background: transparent; box-shadow: inset 0 -2px 0 var(--rand); }
+.lp-kz.ist-mit.lp-kz--meilenstein .lp-kz__zelle.ist-erst { background: var(--rand); box-shadow: none; }
+.lp-kz.ist-mit .lp-kz__zelle::after { background: var(--text-leise); }
+.lp-kz.ist-mit.lp-kz--meilenstein .lp-kz__name, .lp-kz.ist-mit .lp-kz__name.ist-agil { color: var(--text); }
+.lp-kz.ist-fokus::before { content: ""; position: absolute; left: -2000px; right: -2000px; top: -2px; height: 17px; background: rgba(236, 48, 19, .1); }
+.lp-kz.ist-fokus .lp-kz__zelle.ist-erst { box-shadow: 0 0 0 2px var(--weiss), 0 0 0 3.5px var(--akzent-text); }
+.lp-kz.ist-nachher { opacity: .7; }
+.lp-kz.ist-nachher .lp-kz__zelle.ist-erst, .lp-kz.ist-nachher .lp-kz__agil.ist-allein { outline: 1.5px dashed var(--akzent-text); outline-offset: 1.5px; }
+
+.lp-karte__legende {
+  position: absolute;
+  left: 8px;
+  bottom: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .9);
+  font-size: 13px;
+  color: var(--text-leise);
+}
+.lp-leg { display: inline-block; width: 18px; height: 9px; margin-left: 8px; border-radius: 2px; background: var(--kz-an); }
+.lp-leg:first-child { margin-left: 0; }
+.lp-leg--erst { background: var(--akzent); }
+.lp-leg--agil { height: 3px; background: var(--kz-agil); }
+.lp-leg--raute { width: 8px; height: 8px; margin-right: 2px; background: var(--akzent); transform: rotate(45deg); }
+.lp-leg--nachher { background: transparent; outline: 1.5px dashed var(--akzent-text); outline-offset: -1.5px; }
+.lp-karte__legende.ist-mit .lp-leg { background: var(--rand); }
+.lp-karte__legende.ist-mit .lp-leg--erst, .lp-karte__legende.ist-mit .lp-leg--raute { background: var(--text-leise); }
+
+/* Die Tafel: Marke, Titel, Kernsatz, Fakten. */
+.lp-tafel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 50px 48px 62px 40px;
+  overflow: hidden;
+}
+.lp-f--karte.ist-ohne-karte .lp-tafel { justify-content: center; gap: 22px; padding: 56px 96px 62px; }
+.lp-f--karte.ist-ohne-karte .lp-tafel__titel { font-size: 52px; }
+.lp-f--karte.ist-ohne-karte .lp-tafel__kern { max-width: 34em; font-size: 26px; color: var(--text); }
+.lp-f--karte.ist-ohne-karte .lp-fakten__leer { font-size: 18px; }
+.lp-tafel__kopf { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.lp-tafel__marke {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--akzent-text);
+}
+.lp-tafel__marke .lp-pflicht { margin-left: 0; font-size: 12px; }
+.lp-tafel__titel { margin: 0; font-size: 38px; font-weight: 700; line-height: 1.1; letter-spacing: -.01em; text-wrap: balance; overflow-wrap: break-word; hyphens: auto; }
+.lp-tafel__kern { margin: 0; font-size: 21px; line-height: 1.4; color: var(--text-weich); text-wrap: pretty; }
+.lp-tafel__fakt { display: flex; flex-direction: column; gap: 7px; }
+.lp-tafel__fakt .lp-fakten__titel { margin: 0; font-size: 12.5px; }
+.lp-tafel .lp-chip { font-size: 15px; padding: 3px 11px; }
+.lp-tafel .lp-aufgaben li { font-size: 16px; }
+.lp-tafel__zahlen { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+.lp-tafel__zahl { display: flex; flex-direction: column; font-size: 14px; line-height: 1.2; color: var(--text-leise); }
+.lp-tafel__wert { font-size: 40px; font-weight: 700; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
+.lp-tafel__zusatz { margin: 0; font-size: 15px; color: var(--text-leise); }
+.lp-tafel .lp-entscheid__rolle { font-size: 22px; }
+.lp-f--karte .lp-f__fuss { left: auto; right: 48px; width: 364px; bottom: 18px; font-size: 13px; }
+.lp-f--karte.ist-ohne-karte .lp-f__fuss { left: 72px; right: 72px; width: auto; }
+
+.lp-leinwand .lp-f--karte.ist-dicht .lp-tafel { gap: 12px; }
+.lp-leinwand .lp-f--karte.ist-dicht .lp-tafel__titel { font-size: 34px; }
+.lp-leinwand .lp-f--karte.ist-dicht .lp-tafel__kern { font-size: 19px; }
+.lp-leinwand .lp-f--karte.ist-dicht .lp-tafel .lp-chip { font-size: 14px; padding: 2px 10px; }
+.lp-leinwand .lp-f--karte.ist-dichter .lp-tafel { gap: 10px; padding-top: 40px; }
+.lp-leinwand .lp-f--karte.ist-dichter .lp-tafel__titel { font-size: 30px; }
+.lp-leinwand .lp-f--karte.ist-dichter .lp-tafel__kern { font-size: 17.5px; }
+.lp-leinwand .lp-f--karte.ist-dichter .lp-tafel .lp-aufgaben li { font-size: 14.5px; }
+
+.lp-notizen__punkte { margin: 0 0 8px; padding-left: 1.3em; font-size: 15px; line-height: 1.5; }
+.lp-notizen__punkte li { margin-bottom: 4px; }
+
+/* Hochkant: Karte oben, Tafel darunter. */
+.lp-leinwand.ist-hoch .lp-f--karte { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(380px, 1fr) auto; }
+.lp-leinwand.ist-hoch .lp-f--karte.ist-ohne-karte { grid-template-rows: auto; }
+.lp-leinwand.ist-hoch .lp-karte { margin: 24px 24px 0; }
+.lp-leinwand.ist-hoch .lp-tafel { padding: 26px 32px 64px; gap: 14px; }
+.lp-leinwand.ist-hoch .lp-tafel__titel { font-size: 40px; }
+.lp-leinwand.ist-hoch .lp-tafel__kern { font-size: 23px; }
+.lp-leinwand.ist-hoch .lp-f--karte .lp-f__fuss { left: 32px; right: 32px; width: auto; }
+
 /* Einpassen (js/lernpfad.js): zu viel Inhalt macht die Schrift dichter —
    quer und hochkant, darum nach den Regeln der hohen Leinwand. */
 .lp-leinwand .lp-f.ist-dicht { gap: 16px; }
@@ -758,7 +897,6 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-leinwand .lp-f.ist-dicht .lp-rolle__text { font-size: 14px; }
 .lp-leinwand .lp-f.ist-dicht .lp-aufgaben li { font-size: 15.5px; }
 .lp-leinwand .lp-f.ist-dicht .lp-chip { font-size: 14.5px; padding: 3px 10px; }
-.lp-leinwand .lp-f.ist-dicht .lp-band__phase { min-height: 36px; }
 .lp-leinwand .lp-f.ist-dicht .lp-antwort { padding: 9px 16px; font-size: 18px; }
 .lp-leinwand .lp-leinwand .lp-f.ist-dichter .lp-f__kern { font-size: 22px; }
 .lp-leinwand .lp-leinwand .lp-f.ist-dichter .lp-f__punkte li { font-size: 17px; }

@@ -2037,13 +2037,14 @@
               ]
             },
             {
-              "typ": "aussage",
-              "titel": "So liest man einen Lebenslauf",
-              "kern": "Die Beziehungen eines Ergebnisses zeigen seinen Bezug zu Modulen, Rollen und Aufgaben. Die Lebenslauf-Folien stellen sie dar: wo es entsteht, wer es verantwortet, wofür es Grundlage ist.",
+              "typ": "karte",
+              "titel": "Die Kernergebnisse über die Phasen",
+              "kern": "28 Kernergebnisse, von links nach rechts durch das Projekt: kräftig die Phase, in der ein Ergebnis erstmals entsteht, hell die, in denen es nachgeführt wird. Die folgenden Folien zoomen hinein.",
               "punkte": [
-                "Phasenleiste: in welchen Phasen es erarbeitet oder nachgeführt wird; die erste ist hervorgehoben.",
-                "Erarbeitet in: die Aufgaben, die das Ergebnis unter «Ergebnisse» aufführen.",
-                "Grundlage für: die Aufgaben, die es unter «Grundlagen» nennen; Entscheide sind hervorgehoben.",
+                "Die Zeilen folgen dem Projekt: oben die Grundlagen der Initialisierung, unten die Berichte, die das ganze Projekt begleiten.",
+                "Die feine Linie unter Konzept bis Einführung: Bei agiler Vorgehensweise entsteht das Ergebnis in der Umsetzung.",
+                "Auf den Folien danach steht ein Ergebnis im Fokus. Umrandet sind die Kernergebnisse, die darauf aufbauen: Ergebnisse der Aufgaben, die es als Grundlage nennen.",
+                "Erarbeitet in: die Aufgaben, die das Ergebnis unter «Ergebnisse» aufführen. Grundlage für: die Aufgaben, die es unter «Grundlagen» nennen; Entscheide sind hervorgehoben.",
                 "Die Beziehungen stehen nur online; hier sind sie aus den Aufgabenbeschreibungen zusammengetragen."
               ],
               "quelle": [
@@ -3067,7 +3068,7 @@
             {
               "typ": "rollenweg",
               "rolle": "Auftraggeber",
-              "titel": "Auftraggeber: Weg durch die Phasen",
+              "titel": "Auftraggeber über die ganze Methode",
               "kern": "Der Auftraggeber trägt die Gesamtverantwortung für das Vorhaben und das Erreichen der Ziele. Er stellt die Ressourcen bereit und entscheidet rechtzeitig über Anträge und Massnahmen.",
               "punkte": [
                 "Befugnisse: Entscheide gemäss Kompetenzordnung, Zuteilung der Ressourcen, Eskalation zur Stammorganisation.",
@@ -3238,7 +3239,7 @@
             {
               "typ": "rollenweg",
               "rolle": "Projektleiter",
-              "titel": "Projektleiter: Weg durch die Phasen",
+              "titel": "Projektleiter über die ganze Methode",
               "kern": "Der Projektleiter führt das Projekt zu den gesetzten Zielen in Zeit, Kosten und Qualität. Er informiert die Steuerung so, dass sie ihre Steuerungs- und Entscheidungsaufgaben wahrnehmen kann.",
               "punkte": [
                 "Alleinige Führungs- und Anordnungskompetenz; Entscheide trifft er im mit dem Auftraggeber definierten Rahmen.",
@@ -3408,7 +3409,7 @@
             {
               "typ": "rollenweg",
               "rolle": "Anwendervertreter",
-              "titel": "Anwendervertreter: Weg durch die Phasen",
+              "titel": "Anwendervertreter über die ganze Methode",
               "kern": "Der Anwendervertreter verantwortet die mit den Fachbereichen abgestimmten Lösungsanforderungen und den fachlichen Erfolg. Er ist verbindlicher Kommunikationskanal zu Stakeholdern und Umsetzung.",
               "punkte": [
                 "Vom Auftraggeber ernannt und vom Projektleiter geführt, fachlich aber im Rahmen des Auftrags eigenständig.",
