@@ -394,7 +394,11 @@
        (Tastatur, untere Leiste), rollt die Seite das Feld nach oben, statt
        die Liste nach oben zu klappen — oben verschwand sie am Fensterrand,
        weil innerHeight die Tastatur nicht kennt. mitRollen nur beim Öffnen
-       und wenn die Tastatur kommt, nicht beim Rollen von Hand. */
+       und wenn die Tastatur kommt, nicht beim Rollen von Hand.
+       Gerollt wird gleich ganz, bis das Feld unter der Kopfzeile steht: nur
+       so weit wie nötig zu rollen, liess das Feld beim Tippen springen —
+       die Tastatur wächst beim ersten Buchstaben um die Vorschlagsleiste,
+       und jedes Wachsen rollte ein Stück weiter. */
     function positionieren(mitRollen) {
       var b = sichtbarerBereich();
       var r = feld.getBoundingClientRect();
@@ -403,8 +407,9 @@
       var schmal = istSchmal();
       if (schmal && mitRollen === true) {
         var bedarf = Math.min(240, Math.max(110, liste.scrollHeight));
-        var weg = Math.min(bedarf - unten, oben);
-        if (weg > 0) {
+        /* Steht das Feld schon oben, nicht um Bruchteile nachrollen. */
+        var weg = unten < bedarf ? oben : 0;
+        if (weg > 2) {
           /* instant: die Seite rollt sonst weich (scroll-behavior), und die
              Liste stünde bis zum Ende des Rollens noch über dem Feld. */
           global.scrollBy({ top: Math.ceil(weg), behavior: 'instant' });
@@ -512,7 +517,11 @@
     }
 
     feld.addEventListener('focus', oeffnen);
-    feld.addEventListener('mousedown', function () { if (offen) { schliessen(); } else { oeffnen(); } });
+    /* Ein Tipp ins offene Suchfeld setzt nur den Cursor; schliessen würde die
+       Liste beim nächsten Buchstaben wieder aufgehen und springen lassen. */
+    feld.addEventListener('mousedown', function () {
+      if (!offen) { oeffnen(); } else if (!mitSuche) { schliessen(); }
+    });
     feld.addEventListener('input', function () { aktiv = -1; if (!offen) { oeffnen(); } else { zeichnen(); } });
     feld.addEventListener('blur', schliessen);
     feld.addEventListener('keydown', function (ev) {
