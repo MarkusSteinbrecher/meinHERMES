@@ -398,7 +398,14 @@
        Gerollt wird gleich ganz, bis das Feld unter der Kopfzeile steht: nur
        so weit wie nötig zu rollen, liess das Feld beim Tippen springen —
        die Tastatur wächst beim ersten Buchstaben um die Vorschlagsleiste,
-       und jedes Wachsen rollte ein Stück weiter. */
+       und jedes Wachsen rollte ein Stück weiter.
+       Auf dem Telefon hängt die Liste zudem an der Seite (position:
+       absolute) statt am Fenster: fixed nachgeführt hinkte sie beim Rollen
+       den Scroll-Ereignissen hinterher und zuckte, und das Ein- und
+       Ausblenden der Adressleiste rollte gegen die Hand. Sie rollt jetzt
+       ohne Skript mit; neu gerechnet wird nur, wenn die Tastatur kommt
+       (die sichtbare Höhe sinkt um mehr als 120 px) oder die Breite sich
+       ändert. */
     function positionieren(mitRollen) {
       var b = sichtbarerBereich();
       var r = feld.getBoundingClientRect();
@@ -421,9 +428,22 @@
       /* Klappt nur noch, wenn die Seite nicht weiter rollen kann. */
       var nachOben = schmal ? unten < 110 && oben > unten : unten < 170 && oben > unten;
       var hoehe = Math.max(110, Math.min(240, nachOben ? oben : unten));
-      liste.style.left = Math.round(r.left) + 'px';
       liste.style.width = Math.round(r.width) + 'px';
       liste.style.maxHeight = Math.round(hoehe) + 'px';
+      if (schmal) {
+        var sy = global.pageYOffset || 0;
+        liste.style.position = 'absolute';
+        /* Unter der Kopfzeile (z-index 40) und der unteren Leiste (45):
+           rollt die Seite, gleitet die Liste hinter sie statt darüber. */
+        liste.style.zIndex = '35';
+        liste.style.left = Math.round(r.left + (global.pageXOffset || 0)) + 'px';
+        liste.style.bottom = 'auto';
+        liste.style.top = Math.round(sy + (nachOben ? r.top - 4 - liste.offsetHeight : r.bottom + 4)) + 'px';
+        return;
+      }
+      liste.style.position = '';
+      liste.style.zIndex = '';
+      liste.style.left = Math.round(r.left) + 'px';
       if (nachOben) {
         liste.style.top = 'auto';
         liste.style.bottom = Math.round(global.innerHeight - r.top + 4) + 'px';
@@ -433,9 +453,25 @@
       }
     }
 
-    function nachfuehren() { positionieren(false); }
-    /* Die Tastatur geht auf oder zu: Platz unter dem Feld neu schaffen. */
-    function platzSchaffen() { positionieren(true); }
+    /* Rollen: nur auf breiten Schirmen nachführen (dort auch das Rollen der
+       Karte); auf dem Telefon rollt die Liste mit der Seite. */
+    function nachfuehren() { if (!istSchmal()) { positionieren(false); } }
+
+    var hoeheZuletzt = 0, breiteZuletzt = 0;
+    function sichtbareHoehe() {
+      return global.visualViewport ? global.visualViewport.height : global.innerHeight;
+    }
+    /* Grössenänderung: kommt die Tastatur, Platz unter dem Feld schaffen;
+       die Adressleiste (rund 60 px) übergeht das Telefon. */
+    function platzSchaffen() {
+      var hoehe = sichtbareHoehe(), breite = global.innerWidth;
+      var tastatur = hoehe < hoeheZuletzt - 120;
+      var quer = breite !== breiteZuletzt;
+      hoeheZuletzt = hoehe;
+      breiteZuletzt = breite;
+      if (istSchmal() && !tastatur && !quer) { return; }
+      positionieren(tastatur);
+    }
 
     function zeichnen() {
       HT.ui.leeren(liste);
@@ -475,6 +511,8 @@
       liste.hidden = false;
       feld.setAttribute('aria-expanded', 'true');
       zeichnen();
+      hoeheZuletzt = sichtbareHoehe();
+      breiteZuletzt = global.innerWidth;
       positionieren(true);
       /* true: auch das Rollen der Karte selbst führt die Liste nach. */
       global.addEventListener('scroll', nachfuehren, true);
@@ -522,7 +560,9 @@
     feld.addEventListener('mousedown', function () {
       if (!offen) { oeffnen(); } else if (!mitSuche) { schliessen(); }
     });
-    feld.addEventListener('input', function () { aktiv = -1; if (!offen) { oeffnen(); } else { zeichnen(); } });
+    /* Nach dem Filtern neu setzen: eine nach oben geklappte Liste wird kürzer
+       und muss am Feld bleiben. */
+    feld.addEventListener('input', function () { aktiv = -1; if (!offen) { oeffnen(); } else { zeichnen(); positionieren(); } });
     feld.addEventListener('blur', schliessen);
     feld.addEventListener('keydown', function (ev) {
       if (ev.key === 'ArrowDown') { ev.preventDefault(); bewegen(1); }
