@@ -616,7 +616,16 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 }
 .lp-leinwand.ist-hoch .lp-f--bild .lp-f__koerper:has(.lp-f__punkte--seite) { grid-template-rows: minmax(0, 1fr) auto; }
 .lp-leinwand.ist-hoch .lp-fakten { align-self: start; }
-.lp-leinwand.ist-hoch .lp-spalten { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+.lp-leinwand.ist-hoch .lp-f--lebenslauf .lp-f__koerper,
+.lp-leinwand.ist-hoch .lp-f--rollenweg .lp-f__koerper,
+.lp-leinwand.ist-hoch .lp-f--rollenphase .lp-f__koerper,
+.lp-leinwand.ist-hoch .lp-f--rolle .lp-f__koerper,
+.lp-leinwand.ist-hoch .lp-f--entscheid .lp-f__koerper { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; gap: 26px; }
+.lp-leinwand.ist-hoch .lp-band__name { font-size: 14px; }
+.lp-leinwand.ist-hoch .lp-band__phase { padding: 5px 7px; }
+.lp-leinwand.ist-hoch .lp-f--abschnitt { padding: 60px 48px; }
+.lp-leinwand.ist-hoch .lp-spalten { grid-template-columns: minmax(0, 1fr) !important; gap: 22px; }
+.lp-leinwand.ist-hoch .lp-ergliste { columns: 2; }
 .lp-leinwand.ist-hoch .lp-spalte .lp-f__punkte li { font-size: 24px; }
 .lp-leinwand.ist-hoch .lp-rollen { grid-template-columns: repeat(2, minmax(0, 1fr)); align-self: start; }
 .lp-leinwand.ist-hoch .lp-rolle__text { font-size: 17px; }
@@ -630,6 +639,112 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-leinwand.ist-hoch .lp-frage__frage { font-size: 36px; }
 .lp-leinwand.ist-hoch .lp-merke li { font-size: 28px; }
 
+/* --- Deep Dive: Lebenslauf, Rollenweg, Entscheid, Listen ------------------ */
+
+.lp-deck__kurse { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 0; }
+.lp-deck__kurse a { display: flex; flex-direction: column; gap: 2px; font-size: 20px; font-weight: 600; color: var(--akzent-text); text-decoration: none; }
+.lp-deck__kurse a:hover span:first-child { text-decoration: underline; }
+.lp-deck__kurszeile { font-size: 16px; font-weight: 400; color: var(--text-leise); }
+
+.lp-f--abschnitt { justify-content: center; gap: 22px; padding: 64px 96px; border-left: 10px solid var(--akzent); }
+.lp-abschnitt__titel { margin: 0; font-size: 64px; line-height: 1.05; letter-spacing: -.015em; text-wrap: balance; }
+.lp-abschnitt__kern { margin: 0; max-width: 32em; font-size: 26px; line-height: 1.42; color: var(--text-weich); text-wrap: pretty; }
+
+.lp-f__titelzeile { display: flex; flex-direction: column; gap: 8px; margin-top: -8px; }
+.lp-f--lebenslauf, .lp-f--rollenweg, .lp-f--rollenphase, .lp-f--rolle, .lp-f--entscheid { gap: 18px; }
+.lp-f--lebenslauf .lp-f__titel--gross,
+.lp-f--rollenweg .lp-f__titel--gross,
+.lp-f--rollenphase .lp-f__titel--gross,
+.lp-f--rolle .lp-f__titel--gross,
+.lp-f--entscheid .lp-f__titel--gross { font-size: 44px; }
+.lp-f--lebenslauf .lp-f__koerper,
+.lp-f--rollenphase .lp-f__koerper,
+.lp-f--rolle .lp-f__koerper,
+.lp-f--entscheid .lp-f__koerper { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 40px; }
+.lp-f--rollenweg .lp-f__koerper { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 40px; }
+.lp-f--lebenslauf .lp-f__kern,
+.lp-f--rollenweg .lp-f__kern,
+.lp-f--rollenphase .lp-f__kern,
+.lp-f--rolle .lp-f__kern,
+.lp-f--entscheid .lp-f__kern { font-size: 25px; }
+.lp-f--lebenslauf .lp-f__punkte li,
+.lp-f--rollenweg .lp-f__punkte li,
+.lp-f--rollenphase .lp-f__punkte li,
+.lp-f--rolle .lp-f__punkte li,
+.lp-f--entscheid .lp-f__punkte li { font-size: 19px; }
+.lp-f--lebenslauf .lp-fakten,
+.lp-f--rollenphase .lp-fakten,
+.lp-f--rolle .lp-fakten,
+.lp-f--entscheid .lp-fakten { align-self: start; gap: 8px; padding: 20px 24px; }
+.lp-fakten .lp-fakten__titel:first-child { margin-top: 0; }
+.lp-fakten__leer { margin: 0; font-size: 16px; color: var(--text-leise); }
+.lp-f--rollenweg .lp-fakten__zahlen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 28px; }
+.lp-f--rollenweg .lp-zahl__wert { font-size: 50px; }
+
+/* Phasenband: oben die fünf klassischen Phasen, darunter die Umsetzung
+   über Konzept bis Einführung — wie die Abbildungen des Handbuchs. */
+.lp-band {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+}
+.lp-band__phase {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 42px;
+  padding: 5px 12px;
+  border: 1px solid var(--rand);
+  border-radius: 6px;
+  background: var(--weiss);
+  color: var(--text-leise-hell);
+}
+.lp-band__phase--5 { grid-column: 2 / span 3; grid-row: 2; }
+.lp-band__name { font-size: 16px; font-weight: 600; line-height: 1.2; }
+.lp-band__text { font-size: 13.5px; line-height: 1.25; }
+.lp-band__phase.ist-mit { border-color: var(--rand-stark); background: var(--flaeche); color: var(--text-weich); }
+.lp-band__phase.ist-an { border-color: var(--akzent-schwach-2); background: var(--akzent-schwach); color: var(--text); }
+.lp-band__phase.ist-erst { border-color: var(--akzent); background: var(--akzent); color: var(--akzent-auf); }
+
+.lp-aufgaben { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.lp-aufgaben li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; font-size: 17px; line-height: 1.3; }
+.lp-aufgaben li::before { content: ""; flex: 0 0 auto; width: 7px; height: 7px; margin-right: 2px; border-radius: 50%; background: var(--rand-stark); transform: translateY(-2px); }
+.lp-aufgaben li.ist-entscheid::before { border-radius: 1px; background: var(--akzent); transform: translateY(-2px) rotate(45deg); }
+.lp-aufgaben__rolle { font-size: 14px; color: var(--text-leise); }
+.lp-aufgaben li.lp-aufgaben__mehr { font-size: 15px; color: var(--text-leise); }
+.lp-aufgaben li.lp-aufgaben__mehr::before { visibility: hidden; }
+
+.lp-chip--entscheid { border-color: var(--akzent-schwach-2); background: var(--akzent-schwach); }
+.lp-chips--leise .lp-chip { border-color: var(--rand); color: var(--text-weich); font-size: 15px; }
+
+.lp-entscheid__wer { display: flex; align-items: baseline; gap: 12px; }
+.lp-entscheid__wer .lp-fakten__titel { margin: 0; }
+.lp-entscheid__rolle { font-size: 24px; font-weight: 700; }
+
+.lp-spalten--listen { flex: 1 1 auto; align-content: start; gap: 24px; }
+.lp-spalte__titel .lp-spalte__zahl { margin-left: 10px; font-size: 18px; font-weight: 400; color: var(--text-leise); }
+.lp-spalten--listen .lp-spalte__titel { font-size: 22px; }
+.lp-spalten--listen .lp-spalte { gap: 10px; border-top-width: 4px; }
+.lp-ergliste { list-style: none; margin: 0; padding: 0; columns: var(--listenspalten, 1); column-gap: 20px; }
+.lp-ergliste li { break-inside: avoid; margin-bottom: 3px; }
+.lp-ergliste li { position: relative; padding-left: 16px; font-size: 16px; line-height: 1.3; color: var(--text-weich); }
+.lp-ergliste li.ist-minimal { color: var(--text); font-weight: 600; }
+.lp-ergliste li.ist-minimal::before, .lp-ergliste__punkt {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: .45em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--akzent);
+}
+.lp-ergliste__legende { position: relative; margin: 0; padding-left: 16px; font-size: 15px; color: var(--text-leise); }
+.lp-ergliste__punkt { top: .5em; }
+
 /* Einpassen (js/lernpfad.js): zu viel Inhalt macht die Schrift dichter —
    quer und hochkant, darum nach den Regeln der hohen Leinwand. */
 .lp-leinwand .lp-f.ist-dicht { gap: 16px; }
@@ -641,6 +756,9 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-leinwand .lp-f.ist-dicht .lp-f__punkte li { font-size: 19px; }
 .lp-leinwand .lp-f.ist-dicht .lp-rolle { padding: 10px 14px; gap: 4px; }
 .lp-leinwand .lp-f.ist-dicht .lp-rolle__text { font-size: 14px; }
+.lp-leinwand .lp-f.ist-dicht .lp-aufgaben li { font-size: 15.5px; }
+.lp-leinwand .lp-f.ist-dicht .lp-chip { font-size: 14.5px; padding: 3px 10px; }
+.lp-leinwand .lp-f.ist-dicht .lp-band__phase { min-height: 36px; }
 .lp-leinwand .lp-f.ist-dicht .lp-antwort { padding: 9px 16px; font-size: 18px; }
 .lp-leinwand .lp-leinwand .lp-f.ist-dichter .lp-f__kern { font-size: 22px; }
 .lp-leinwand .lp-leinwand .lp-f.ist-dichter .lp-f__punkte li { font-size: 17px; }
