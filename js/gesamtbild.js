@@ -426,6 +426,7 @@
 
   HT.gesamtbild = {
     SPALTEN: SPALTEN,
+    trennen: trennen,     // auch für die Karte des Lernpfads
     breite: breite,
     bauen: bauen,
     malen: malen,

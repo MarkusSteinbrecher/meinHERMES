@@ -682,10 +682,12 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-ergliste__punkt { top: .5em; }
 
 /* --- Deep Dive: die Karte ------------------------------------------------
-   Links das Fenster auf die Karte (Zeilen = Ergebnisse, Spalten = Phasen),
-   rechts die Tafel — auf Übersichten wie auf Zoomfolien, damit der Schwenk
-   zwischen ihnen im selben Fenster bleibt. Die Fläche ist in Punkten der Karte gezeichnet (Spalte 200,
-   Zeile 17) und wird per transform gezoomt; js/lernpfad.js setzt die Lage. */
+   Aufgebaut wie das Gesamtbild: Phasen als Zeilen, Module als Spalten, je
+   Ergebnis ein Kasten, wo es erstmals entsteht, mit einem Band für seinen
+   Lebenslauf. Links das Fenster mit den Linealen (oben Module, links
+   Phasen), rechts die Tafel. Die Fläche ist in Punkten der Karte gezeichnet
+   (Spalte 104, Kasten 96 × 36) und wird per transform vergrössert;
+   js/lernpfad.js setzt die Lage. */
 
 .lp-f--karte {
   padding: 0;
@@ -694,6 +696,7 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
   grid-template-rows: minmax(0, 1fr);
   gap: 0;
 }
+.lp-f--karte.ist-ueberblick { grid-template-columns: minmax(0, 1fr) 350px; }
 .lp-f--karte.ist-ohne-karte { grid-template-columns: minmax(0, 1fr); }
 .lp-f--karte.ist-neu { animation: none; }
 .lp-f--karte.ist-neu .lp-tafel { animation: lp-tafel .35s ease-out; }
@@ -705,121 +708,161 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
   position: relative;
   min-width: 0;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  margin: 26px 0 26px 26px;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  grid-template-rows: 34px minmax(0, 1fr);
+  margin: 24px 0 24px 24px;
   border: 1px solid var(--rand-fein);
   border-radius: 12px;
   background: var(--weiss);
   overflow: hidden;
-  --kz-an: #f7bdb0;
-  --kz-agil: #f28b75;
+  --kk-an: #f7bdb0;
+  --kk-agil: #f28b75;
 }
+.lp-karte__ecke { grid-column: 1; grid-row: 1; border-right: 1px solid var(--rand-fein); border-bottom: 1px solid var(--rand-fein); }
 
-.lp-lineal { position: relative; flex: 0 0 auto; height: 46px; border-bottom: 1px solid var(--rand-fein); }
+/* Lineale: oben die Module, links die Phasen; js setzt Lage und Grösse. */
+.lp-lineal { position: relative; overflow: hidden; }
+.lp-lineal--oben { grid-column: 2; grid-row: 1; border-bottom: 1px solid var(--rand-fein); }
+.lp-lineal--links { grid-column: 1; grid-row: 2; border-right: 1px solid var(--rand-fein); }
+.lp-lineal__modul {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 5px;
+  overflow: hidden;
+  border-left: 1px solid var(--rand-fein);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--text-leise);
+  hyphens: manual;
+}
 .lp-lineal__phase {
   position: absolute;
-  top: 6px;
-  height: 22px;
-  padding: 0 8px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
-  border-left: 1px solid var(--rand);
-  font-size: 13px;
+  border-top: 1px solid var(--rand-fein);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 11px;
   font-weight: 600;
-  line-height: 22px;
   letter-spacing: .04em;
   text-transform: uppercase;
   white-space: nowrap;
-  text-overflow: ellipsis;
   color: var(--text-leise);
 }
-.lp-lineal__phase--agil { top: 29px; height: 14px; font-size: 10.5px; line-height: 12px; font-weight: 500; color: var(--text-leise); border-left-color: transparent; border-top: 2px solid var(--kz-agil); }
-.lp-lineal__phase.ist-an { color: var(--text); }
-.lp-lineal__phase.ist-fokus { color: var(--akzent-text); }
-.lp-lineal__phase--agil.ist-fokus { border-top-color: var(--akzent); }
+.lp-lineal__phase.ist-agil { color: var(--akzent-text); }
+.lp-lineal__modul.ist-an, .lp-lineal__phase.ist-an { color: var(--akzent-text); }
 
-.lp-karte__fenster { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.lp-karte__fenster { position: relative; grid-column: 2; grid-row: 2; min-width: 0; min-height: 0; overflow: hidden; }
 .lp-karte__flaeche { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
-.lp-karte__flaeche, .lp-lineal__phase { transition: transform .8s cubic-bezier(.45, 0, .2, 1), left .8s cubic-bezier(.45, 0, .2, 1), width .8s cubic-bezier(.45, 0, .2, 1); }
-.lp-karte.ohne-uebergang .lp-karte__flaeche, .lp-karte.ohne-uebergang .lp-lineal__phase { transition: none; }
-@media (prefers-reduced-motion: reduce) { .lp-karte__flaeche, .lp-lineal__phase { transition: none; } }
+.lp-karte__flaeche, .lp-lineal__modul, .lp-lineal__phase {
+  transition: transform .8s cubic-bezier(.45, 0, .2, 1), left .8s cubic-bezier(.45, 0, .2, 1), width .8s cubic-bezier(.45, 0, .2, 1),
+    top .8s cubic-bezier(.45, 0, .2, 1), height .8s cubic-bezier(.45, 0, .2, 1);
+}
+.lp-lineal__phase { transition-property: top, height; }
+.lp-karte.ohne-uebergang .lp-karte__flaeche, .lp-karte.ohne-uebergang .lp-lineal__modul, .lp-karte.ohne-uebergang .lp-lineal__phase { transition: none; }
+@media (prefers-reduced-motion: reduce) { .lp-karte__flaeche, .lp-lineal__modul, .lp-lineal__phase { transition: none; } }
 
-.lp-karte__spalte { position: absolute; top: -600px; bottom: -600px; border-left: 1px solid var(--rand-fein); }
-.lp-karte__spalte:nth-child(even) { background: #faf8f8; }
-.lp-karte__spalte.ist-fokus { background: rgba(236, 48, 19, .06); }
-.lp-karte__spalte.ist-agil { border-left: 0; background: repeating-linear-gradient(135deg, rgba(236, 48, 19, .07) 0 6px, transparent 6px 12px); }
+/* Zeilenbänder der Phasen und Spaltenlinien der Module. */
+.lp-karte__zeile { position: absolute; left: -3000px; right: -3000px; border-top: 1px solid var(--rand-fein); }
+.lp-karte__zeile.ist-ungerade { background: #faf8f8; }
+.lp-karte__zeile.ist-agil { background: repeating-linear-gradient(135deg, rgba(236, 48, 19, .05) 0 6px, transparent 6px 12px); }
+.lp-karte__zeile.ist-fokus { background: rgba(236, 48, 19, .07); }
+.lp-karte__spalte { position: absolute; top: -3000px; bottom: -3000px; border-left: 1px solid var(--rand-fein); }
+.lp-karte__kopf { position: absolute; height: 13px; border-bottom: 1px solid var(--rand); font-size: 9.5px; font-weight: 700; line-height: 12px; letter-spacing: .03em; color: var(--text-leise); }
 
-/* Eine Zeile: Zellen je Phase (die erste kräftig), die agile Linie, der Name. */
-.lp-kz { position: absolute; left: 0; right: 0; height: 17px; transition: opacity .4s; }
-.lp-kz.ist-gedimmt { opacity: .28; }
-.lp-kz__zelle { position: absolute; top: 0; height: 13px; border-radius: 3px; background: var(--kz-an); }
-.lp-kz__zelle.ist-erst { background: var(--akzent); }
-.lp-kz--zustand .lp-kz__zelle { border-radius: 8px; }
-.lp-kz--meilenstein .lp-kz__zelle { background: transparent; box-shadow: inset 0 -2px 0 var(--kz-an); }
-.lp-kz--meilenstein .lp-kz__zelle.ist-erst { background: var(--akzent-schwach-2); box-shadow: none; }
-.lp-kz--meilenstein .lp-kz__zelle::after {
+/* Ein Kasten: Name, darunter das Band I K R E A, unter K–E die agile Linie. */
+.lp-kk {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 5px 6px 4px;
+  border: 1px solid var(--kk-an);
+  border-radius: 4px;
+  background: var(--akzent-schwach);
+  transition: opacity .4s;
+}
+.lp-kk--zustand { border-radius: 10px; background: var(--weiss); }
+.lp-kk--meilenstein { border-color: transparent; background: transparent; }
+.lp-kk__name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--text);
+  hyphens: manual;
+}
+.lp-kk--meilenstein .lp-kk__name { padding-left: 12px; position: relative; }
+.lp-kk--meilenstein .lp-kk__name::before {
   content: "";
   position: absolute;
-  right: 3px;
-  top: 2.5px;
-  width: 8px;
-  height: 8px;
+  left: 1px;
+  top: 3px;
+  width: 7px;
+  height: 7px;
   background: var(--akzent);
   transform: rotate(45deg);
 }
-.lp-kz__zelle.ist-phase { box-shadow: 0 0 0 1.5px var(--akzent-text); }
-.lp-kz__agil { position: absolute; top: 14px; height: 2.5px; border-radius: 2px; background: var(--kz-agil); }
-.lp-kz__agil.ist-allein { top: 0; height: 13px; background: repeating-linear-gradient(135deg, var(--kz-an) 0 5px, var(--akzent-schwach) 5px 10px); }
-.lp-kz__name {
-  position: absolute;
-  top: 0;
-  padding: 0 7px;
-  overflow: hidden;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 13px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--akzent-auf);
-}
-.lp-kz__name.ist-lang { font-size: 10px; letter-spacing: -.01em; }
-.lp-kz__name.ist-agil, .lp-kz--meilenstein .lp-kz__name { color: var(--akzent-text); }
-.lp-kz--meilenstein .lp-kz__name { padding-right: 16px; }
-.lp-kz.ist-mit .lp-kz__zelle { background: var(--rand); }
-.lp-kz.ist-mit .lp-kz__zelle.ist-erst { background: var(--text-leise); }
-.lp-kz.ist-mit .lp-kz__agil { background: var(--rand); }
-.lp-kz.ist-mit.lp-kz--meilenstein .lp-kz__zelle { background: transparent; box-shadow: inset 0 -2px 0 var(--rand); }
-.lp-kz.ist-mit.lp-kz--meilenstein .lp-kz__zelle.ist-erst { background: var(--rand); box-shadow: none; }
-.lp-kz.ist-mit .lp-kz__zelle::after { background: var(--text-leise); }
-.lp-kz.ist-mit.lp-kz--meilenstein .lp-kz__name, .lp-kz.ist-mit .lp-kz__name.ist-agil { color: var(--text); }
-.lp-kz.ist-fokus::before { content: ""; position: absolute; left: -2000px; right: -2000px; top: -2px; height: 17px; background: rgba(236, 48, 19, .1); }
-.lp-kz.ist-fokus .lp-kz__zelle.ist-erst { box-shadow: 0 0 0 2px var(--weiss), 0 0 0 3.5px var(--akzent-text); }
-.lp-kz.ist-nachher { opacity: .7; }
-.lp-kz.ist-nachher .lp-kz__zelle.ist-erst, .lp-kz.ist-nachher .lp-kz__agil.ist-allein { outline: 1.5px dashed var(--akzent-text); outline-offset: 1.5px; }
+.lp-kk__band { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.5px; height: 4px; margin-bottom: 2px; }
+.lp-kk__band i { border-radius: 1px; background: var(--rand-fein); }
+.lp-kk__band i.ist-an { background: var(--kk-an); }
+.lp-kk__band i.ist-erst { background: var(--akzent); }
+.lp-kk__agil { position: absolute; left: 20%; width: 60%; top: 5px; height: 1.5px; background: var(--kk-agil); }
+.lp-kk__agil.ist-erst { height: 2px; background: var(--akzent); }
+.lp-kk.ist-mit { border-color: var(--rand); background: var(--flaeche); }
+.lp-kk.ist-mit.lp-kk--meilenstein { border-color: transparent; background: transparent; }
+.lp-kk.ist-mit .lp-kk__band i.ist-an, .lp-kk.ist-mit .lp-kk__agil { background: var(--rand-stark); }
+.lp-kk.ist-mit .lp-kk__band i.ist-erst, .lp-kk.ist-mit .lp-kk__name::before { background: var(--text-leise); }
+.lp-kk.ist-gedimmt { opacity: .25; }
+.lp-kk.ist-fokus { border: 1.5px solid var(--akzent); background: var(--weiss); box-shadow: 0 0 0 3px rgba(236, 48, 19, .18); }
+.lp-kk.ist-nachher { outline: 1.5px dashed var(--akzent-text); outline-offset: 1.5px; }
+.lp-kk.ist-neu-hier { border-color: var(--akzent); }
+/* Auf einer Phasenfolie ist im Band jedes Kastens diese Phase markiert. */
+.zeigt-phase[data-phase="0"] .lp-kk__band i:nth-child(1),
+.zeigt-phase[data-phase="1"] .lp-kk__band i:nth-child(2),
+.zeigt-phase[data-phase="2"] .lp-kk__band i:nth-child(3),
+.zeigt-phase[data-phase="3"] .lp-kk__band i:nth-child(4),
+.zeigt-phase[data-phase="4"] .lp-kk__band i:nth-child(5) { box-shadow: 0 0 0 1px var(--akzent-text); }
+.zeigt-phase[data-phase="-1"] .lp-kk__agil { box-shadow: 0 0 0 1px var(--akzent-text); }
 
 .lp-karte__legende {
   position: absolute;
-  left: 8px;
+  left: 34px;
   bottom: 6px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
+  gap: 4px 7px;
   margin: 0;
   padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, .9);
-  font-size: 13px;
+  background: rgba(255, 255, 255, .92);
+  font-size: 12.5px;
   color: var(--text-leise);
 }
-.lp-leg { display: inline-block; width: 18px; height: 9px; margin-left: 8px; border-radius: 2px; background: var(--kz-an); }
+.lp-leg { display: inline-block; width: 18px; height: 4px; margin-left: 8px; border-radius: 1px; background: var(--kk-agil); }
 .lp-leg:first-child { margin-left: 0; }
-.lp-leg--erst { background: var(--akzent); }
-.lp-leg--agil { height: 3px; background: var(--kz-agil); }
+.lp-leg--band { display: inline-grid; grid-template-columns: repeat(5, 1fr); gap: 1.5px; width: 34px; background: none; }
+.lp-leg--band i { background: var(--rand-fein); }
+.lp-leg--band i.ist-an { background: var(--kk-an); }
+.lp-leg--band i.ist-erst { background: var(--akzent); }
+.lp-leg--agil { height: 2px; }
 .lp-leg--raute { width: 8px; height: 8px; margin-right: 2px; background: var(--akzent); transform: rotate(45deg); }
-.lp-leg--nachher { background: transparent; outline: 1.5px dashed var(--akzent-text); outline-offset: -1.5px; }
-.lp-karte__legende.ist-mit .lp-leg { background: var(--rand); }
-.lp-karte__legende.ist-mit .lp-leg--erst, .lp-karte__legende.ist-mit .lp-leg--raute { background: var(--text-leise); }
+.lp-leg--nachher { height: 9px; background: transparent; outline: 1.5px dashed var(--akzent-text); outline-offset: -1.5px; }
+.lp-karte__legende.ist-mit .lp-leg--band i.ist-an { background: var(--rand-stark); }
+.lp-karte__legende.ist-mit .lp-leg--band i.ist-erst, .lp-karte__legende.ist-mit .lp-leg--raute { background: var(--text-leise); }
 
 /* Die Tafel: Marke, Titel, Kernsatz, Fakten. */
 .lp-tafel {
@@ -855,7 +898,7 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-tafel__fakt .lp-fakten__titel { margin: 0; font-size: 12.5px; }
 .lp-tafel .lp-chip { font-size: 15px; padding: 3px 11px; }
 .lp-tafel .lp-aufgaben li { font-size: 16px; }
-.lp-tafel__zahlen { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+.lp-tafel__zahlen { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px 20px; }
 .lp-tafel__zahl { display: flex; flex-direction: column; font-size: 14px; line-height: 1.2; color: var(--text-leise); }
 .lp-tafel__wert { font-size: 40px; font-weight: 700; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
 .lp-tafel__zusatz { margin: 0; font-size: 15px; color: var(--text-leise); }

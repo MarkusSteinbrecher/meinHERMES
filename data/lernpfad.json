@@ -2038,12 +2038,13 @@
             },
             {
               "typ": "karte",
-              "titel": "Die Kernergebnisse über die Phasen",
-              "kern": "28 Kernergebnisse, von links nach rechts durch das Projekt: kräftig die Phase, in der ein Ergebnis erstmals entsteht, hell die, in denen es nachgeführt wird. Die folgenden Folien zoomen hinein.",
+              "titel": "Die Kernergebnisse im Gesamtbild",
+              "kern": "Aufgebaut wie das Gesamtbild: Phasen als Zeilen, Module als Spalten. Jedes der 28 Kernergebnisse steht dort, wo es erstmals entsteht; das Band im Kasten zeigt, in welchen Phasen es erarbeitet oder nachgeführt wird. Die folgenden Folien gehen näher heran.",
               "punkte": [
-                "Die Zeilen folgen dem Projekt: oben die Grundlagen der Initialisierung, unten die Berichte, die das ganze Projekt begleiten.",
-                "Die feine Linie unter Konzept bis Einführung: Bei agiler Vorgehensweise entsteht das Ergebnis in der Umsetzung.",
-                "Auf den Folien danach steht ein Ergebnis im Fokus. Umrandet sind die Kernergebnisse, die darauf aufbauen: Ergebnisse der Aufgaben, die es als Grundlage nennen.",
+                "Die Spalten folgen dem Gesamtbild des Handbuchs (Abbildung 1); Projektgrundlagen liegt in der Initialisierung über Organisation, Produkt und IT-System.",
+                "Das Band im Kasten steht für Initialisierung, Konzept, Realisierung, Einführung und Abschluss: kräftig die Phase, in der das Ergebnis erstmals entsteht, hell die, in denen es nachgeführt wird.",
+                "Die Linie unter dem Band: Bei agiler Vorgehensweise entsteht das Ergebnis in der Umsetzung. Was nur agil entsteht (Releasebericht), steht in der Zeile «Umsetzung (agil)».",
+                "Auf den Folien danach steht ein Ergebnis im Mittelpunkt. Gestrichelt umrandet sind die Kernergebnisse, die darauf aufbauen: Ergebnisse der Aufgaben, die es als Grundlage nennen.",
                 "Erarbeitet in: die Aufgaben, die das Ergebnis unter «Ergebnisse» aufführen. Grundlage für: die Aufgaben, die es unter «Grundlagen» nennen; Entscheide sind hervorgehoben.",
                 "Die Beziehungen stehen nur online; hier sind sie aus den Aufgabenbeschreibungen zusammengetragen."
               ],
