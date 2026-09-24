@@ -19,7 +19,10 @@
    Folientypen (Feld `typ`): aussage (Text, mit `bild` rechts die Abbildung),
    bild (die Abbildung füllt die Folie), spalten (2–4 Spalten), element (eine
    Phase, ein Modul oder ein Szenario — Kennzahlen aus unseren Daten), ebene
-   (die Rollen einer Hierarchieebene aus unseren Daten), ergebnistypen und
+   (die Rollen einer Hierarchieebene mit ihren Aufgaben als Graph), graph
+   (ein Ausschnitt des Graphen aus dem Überblick: eine Rolle mit ihren
+   Aufgaben und Ergebnissen oder eine Aufgabe mit Rollen und Ergebnissen,
+   interaktiv), ergebnistypen und
    jePhase (Zahlen zu den Ergebnissen aus unseren Daten). Für den Deep Dive
    dazu Folien mit einer Karte, aufgebaut wie das Gesamtbild (Phasen als
    Zeilen, Module als Spalten, seit 2026-09-23): karte (die ganze Karte des
@@ -679,28 +682,22 @@
     ]);
   }
 
+  /* Die Rollen einer Hierarchieebene mit den Aufgaben, die sie
+     verantworten — als Graph wie im Überblick (graphFolie). */
   function ebeneFolie(e, ctx) {
     var f = e.folie;
-    var aufgaben = HT.daten.eintraegeDerKategorie('aufgabe');
-    var rollen = HT.daten.alphabetisch(HT.daten.eintraegeDerKategorie('rolle').filter(function (r) { return r.ebene === f.ebene; }));
-    /* Drei Rollen nebeneinander, vier als zwei mal zwei, neun als drei mal drei. */
-    var spalten = rollen.length === 4 ? 2 : Math.min(3, rollen.length);
-    var laenge = rollen.length > 4 ? 72 : 160;
-    return h('div', { class: 'lp-f lp-f--ebene' }, [
-      kopfzeile(e, f.titel || ('Ebene ' + f.ebene)),
-      h('div', { class: 'lp-f__koerper' }, [
-        h('div', { class: 'lp-f__text' }, [kernSatz(f.kern), punkteListe(f.punkte)]),
-        h('ul', { class: 'lp-rollen', style: '--spalten:' + spalten }, rollen.map(function (r) {
-        var verantwortet = aufgaben.filter(function (a) { return a.verantwortlich === r.begriff; }).length;
-        return h('li', { class: 'lp-rolle' }, [
-          h('span', { class: 'lp-rolle__name' }, [kreis('rolle', 15), h('span', { text: trennen(r.begriff) })]),
-          h('span', { class: 'lp-rolle__text', text: HT.ui.kuerzen(HT.daten.ersterSatz(r.definition || ''), laenge) }),
-          h('span', { class: 'lp-rolle__zahl', text: verantwortet ? 'verantwortet ' + anzahl(verantwortet, 'Aufgabe', 'Aufgaben') : 'verantwortet keine Aufgabe' })
-        ]);
-        }))
-      ]),
-      ctx.fuss
-    ]);
+    var rollen = HT.daten.alphabetisch(HT.daten.eintraegeDerKategorie('rolle').filter(function (r) { return r.ebene === f.ebene; }))
+      .map(function (r) { return r.begriff; });
+    return graphFolie(e, ctx, {
+      rollen: rollen,
+      art: 'rolle',
+      marke: 'Kapitel ' + e.kapNr + ' · ' + e.kapitel.titel,
+      zahlen: function (tg) {
+        /* Rollen ohne eigene Aufgabe (Tester, Umsetzungsorganisation) fehlen
+           im Graphen — gezählt wird, was er zeigt. */
+        return [[tg.gezeigt.rolle, tg.gezeigt.rolle === 1 ? 'Rolle mit Aufgaben' : 'Rollen mit Aufgaben'], [tg.gezeigt.aufgabe, 'Aufgaben verantwortet']];
+      }
+    });
   }
 
   /* Das Handbuch kennt zwei Arten von Ergebnissen: Dokumente (Tabelle 16,
@@ -1585,6 +1582,169 @@
     ]);
   }
 
+  /* --- Graph-Folie ---------------------------------------------------------
+     Ein Ausschnitt des Graphen aus dem Überblick, mit derselben Zeichnung
+     (HT.graph.teilgraph, HT.graphZeichnen): links die Fläche, rechts die
+     Tafel. Zeigen hebt ein Element mit seinen Verbindungen hervor, ein Klick
+     hält es fest und zeigt es in der Tafel; Ziehen verschiebt, das Mausrad
+     zoomt, «Einpassen» holt alles zurück. Blättern geht weiter mit Tasten
+     und Knöpfen — Wischen auf der Fläche verschiebt den Graphen.
+     Was gezeigt wird: `rollen` (Namen) — die Rollen mit den Aufgaben, die
+     sie verantworten, mit `ergebnisse` dazu deren Ergebnisse; `aufgabe` —
+     eine Aufgabe mit allen ihren Rollen und Ergebnissen. */
+  function graphAusschnitt(opt) {
+    var menge = {};
+    function dazu(id) { if (id) { menge[id] = true; } }
+    function kanten(id, rel, richtung) {
+      var k = HT.graph.knoten(id);
+      return k ? k.kanten.filter(function (x) { return x.rel === rel && (richtung === 'aus' ? x.von === id : x.nach === id); }) : [];
+    }
+    var aufgabenIds = [];
+    if (opt.aufgabe) {
+      var a = HT.daten.eintragMitBegriff(opt.aufgabe, 'aufgabe');
+      if (a) {
+        dazu(a.id);
+        aufgabenIds.push(a.id);
+        (HT.graph.knoten(a.id) || { kanten: [] }).kanten.forEach(function (x) { dazu(x.von); dazu(x.nach); });
+      }
+    }
+    (opt.rollen || []).forEach(function (name) {
+      var r = HT.daten.eintragMitBegriff(name, 'rolle');
+      if (!r) { return; }
+      dazu(r.id);
+      kanten(r.id, 'verantwortlich', 'aus').forEach(function (x) { dazu(x.nach); aufgabenIds.push(x.nach); });
+    });
+    if (opt.ergebnisse) {
+      aufgabenIds.forEach(function (id) { kanten(id, 'erzeugt', 'aus').forEach(function (x) { dazu(x.nach); }); });
+    }
+    var mitErgebnissen = !!(opt.ergebnisse || opt.aufgabe);
+    return HT.graph.teilgraph({
+      umfang: { vorgehen: 'beide', phasen: [], module: [] },
+      kategorien: { rolle: true, aufgabe: true, ergebnis: mitErgebnissen },
+      relationen: { verantwortlich: true, beteiligt: !!opt.aufgabe, erzeugt: mitErgebnissen, ergebnisrolle: false },
+      gruppierung: 'modul',
+      isolierteAusblenden: true,
+      menge: menge
+    });
+  }
+
+  /* Die Tafel zu einem gewählten Element: Art und Name, der erste Satz,
+     seine Verbindungen in diesem Ausschnitt, Links in Überblick und Handbuch. */
+  function graphInfo(id, sichtbar) {
+    var k = HT.graph.knoten(id);
+    if (!k) { return []; }
+    var e = k.eintrag;
+    var gruppen = {};
+    HT.graph.nachbarn(id).forEach(function (n) {
+      if (!sichtbar[n.knoten.id]) { return; }
+      n.relationen.forEach(function (r) {
+        var g = gruppen[r.label] || (gruppen[r.label] = { rel: r.rel, kat: n.knoten.kategorie, namen: [] });
+        if (g.namen.indexOf(n.knoten.begriff) === -1) { g.namen.push(n.knoten.begriff); }
+      });
+    });
+    var LINIE = { verantwortlich: 'verantwortlich', beteiligt: 'beteiligt', erzeugt: 'erzeugt', ergebnisrolle: 'ergebnisrolle' };
+    return [
+      h('ul', { class: 'lp-els lp-graph__wahl' }, [element(k.kategorie, e.begriff, k.kategorie === 'ergebnis' ? ohnePraefix(e.begriff) : null)]),
+      e.definition ? h('p', { class: 'lp-graph__text', text: HT.ui.kuerzen(HT.daten.ersterSatz(e.definition), 190) }) : null
+    ].concat(Object.keys(gruppen).map(function (label) {
+      var g = gruppen[label];
+      return tafelFakt(label.charAt(0).toUpperCase() + label.slice(1), elemente(g.kat, gedeckelt(g.namen, 4)), LINIE[g.rel]);
+    })).concat([
+      h('p', { class: 'lp-fakten__links' }, [
+        h('a', { class: 'lp-fakten__link', href: '#/handbuch?id=' + encodeURIComponent(e.id), text: 'Im Handbuch nachlesen' }),
+        h('a', { class: 'lp-fakten__link', href: '#/ueberblick?sicht=graph&id=' + encodeURIComponent(e.id), text: 'Im Überblick öffnen' })
+      ])
+    ]);
+  }
+
+  function graphFolie(e, ctx, opt) {
+    var f = e.folie;
+    var tg = graphAusschnitt(opt);
+    var sichtbar = {};
+    tg.spalten.forEach(function (sp) { sp.knoten.forEach(function (k) { sichtbar[k.id] = true; }); });
+    var flaeche = h('div', { class: 'graph-flaeche lp-graph__flaeche' });
+    var zeichner = null, gewaehlt = null;
+    var info = h('div', { class: 'lp-graph__info' });
+    var hinweis = h('p', { class: 'lp-graph__hinweis', text: 'Zeigen hebt die Verbindungen hervor, ein Klick zeigt das Element hier. Ziehen verschiebt, das Mausrad zoomt.' });
+
+    /* Gewählt ersetzt die Auskunft Kernsatz und Zahlen — beides hätte neben
+       ihr keinen Platz; ohne Wahl kommen sie zurück. */
+    function infoZeigen() {
+      tafel.classList.toggle('ist-gewaehlt', !!gewaehlt);
+      HT.ui.leeren(info);
+      if (gewaehlt) { graphInfo(gewaehlt, sichtbar).forEach(function (x) { if (x) { info.appendChild(x); } }); }
+      else { info.appendChild(hinweis); }
+    }
+    function waehlen(id) {
+      gewaehlt = id && id !== gewaehlt ? id : null;
+      if (zeichner) { zeichner.hervorheben(gewaehlt, true); }
+      infoZeigen();
+    }
+    function einpassen() { if (zeichner) { zeichner.einpassen({ maxZoom: 2, minZoom: 0.3, rand: 20 }); } }
+
+    var legende = h('p', { class: 'lp-graph__legende' }, [
+      h('span', { class: 'glinie glinie--verantwortlich' }), 'verantwortlich',
+      opt.aufgabe ? h('span', { class: 'glinie glinie--beteiligt' }) : null, opt.aufgabe ? 'beteiligt' : null,
+      tg.kanten.some(function (x) { return x.rel === 'erzeugt'; }) ? h('span', { class: 'glinie glinie--erzeugt' }) : null,
+      tg.kanten.some(function (x) { return x.rel === 'erzeugt'; }) ? 'erzeugt' : null
+    ]);
+    function zoomKnopf(titel, pfade, tun) {
+      return h('button', { type: 'button', class: 'lp-graph__knopf', title: titel, 'aria-label': titel, on: { click: tun } }, HT.ui.symbol(pfade, 16));
+    }
+    var steuerung = h('div', { class: 'lp-graph__zoom' }, [
+      zoomKnopf('Verkleinern', ICONS.kleiner, function () { if (zeichner) { zeichner.zoomen(0.8); } }),
+      zoomKnopf('Vergrössern', ICONS.groesser, function () { if (zeichner) { zeichner.zoomen(1.25); } }),
+      zoomKnopf('Einpassen', ICONS.einpassen, einpassen)
+    ]);
+    var kasten = h('div', { class: 'lp-graph' }, [flaeche, legende, steuerung]);
+    var z = opt.zahlen ? kleineZahlen(opt.zahlen(tg)) : null;
+    var tafel = h('div', { class: 'lp-tafel' }, [
+      h('div', { class: 'lp-tafel__kopf' }, [tafelMarke(opt.marke, null, opt.art), tafelTitel(f.titel || '')]),
+      tafelKern(f.kern),
+      z,
+      info
+    ]);
+    /* Schmale Tafel wie auf den Übersichtsfolien: der Graph ist breit. */
+    var folie = h('div', { class: 'lp-f lp-f--karte lp-f--graph ist-ueberblick' }, [kasten, tafel, ctx.fuss]);
+    folie.punkteInNotizen = true;
+    infoZeigen();
+
+    /* Gezeichnet wird, sobald die Folie steht und ihre Grösse hat
+       (folie.karte.zeigen, wie bei den Karten), danach nur noch eingepasst. */
+    folie.karte = {
+      zeigen: function () {
+        if (!flaeche.clientWidth) { return; }
+        if (!zeichner) {
+          zeichner = HT.graphZeichnen.erstellen(flaeche, {
+            beiKlick: waehlen,
+            beiLeerklick: function () { if (gewaehlt) { waehlen(null); } },
+            beiHover: function (id) { if (zeichner) { zeichner.hervorheben(id || gewaehlt, !id && !!gewaehlt); } }
+          });
+          zeichner.zeigen(HT.graphZeichnen.layoutSpalten(tg, { spaltenAbstand: 64 }), { einpassen: false });
+        }
+        einpassen();
+      }
+    };
+    return folie;
+  }
+
+  function graphTypFolie(e, ctx) {
+    var f = e.folie;
+    var rollen = f.rolle ? [f.rolle] : (f.rollen || []);
+    var r = f.rolle ? HT.daten.eintragMitBegriff(f.rolle, 'rolle') : null;
+    return graphFolie(e, ctx, {
+      rollen: rollen,
+      aufgabe: f.aufgabe,
+      ergebnisse: f.ergebnisse,
+      art: f.aufgabe ? 'aufgabe' : 'rolle',
+      marke: f.aufgabe ? 'Beispiel · Aufgabe' : (r ? 'Rolle' + (r.ebene ? ' · Ebene ' + r.ebene : '') : 'Rollen'),
+      zahlen: function (tg) {
+        return [f.aufgabe ? [tg.gezeigt.rolle, tg.gezeigt.rolle === 1 ? 'Rolle' : 'Rollen'] : [tg.gezeigt.aufgabe, tg.gezeigt.aufgabe === 1 ? 'Aufgabe' : 'Aufgaben'],
+          f.ergebnisse || f.aufgabe ? [tg.gezeigt.ergebnis, tg.gezeigt.ergebnis === 1 ? 'Ergebnis' : 'Ergebnisse'] : null];
+      }
+    });
+  }
+
   var BAUER = {
     aussage: aussageFolie,
     bild: bildFolie,
@@ -1600,7 +1760,8 @@
     rollenphase: rollenphaseFolie,
     rolle: rolleFolie,
     entscheid: entscheidFolie,
-    jePhase: jePhaseFolie
+    jePhase: jePhaseFolie,
+    graph: graphTypFolie
   };
 
   /* --- Notizen: der Wortlaut des Handbuchs --------------------------------- */
@@ -2012,6 +2173,7 @@
     var wischStart = null;
     buehne.addEventListener('pointerdown', function (ev) {
       if (ev.pointerType === 'mouse') { return; }
+      if (ev.target && ev.target.closest && ev.target.closest('.lp-graph')) { return; }   // dort verschiebt es den Graphen
       wischStart = { x: ev.clientX, y: ev.clientY };
     });
     buehne.addEventListener('pointerup', function (ev) {

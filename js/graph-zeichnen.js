@@ -481,9 +481,13 @@
       welt.setAttribute('transform', 'translate(' + rund(sicht.x) + ',' + rund(sicht.y) + ') scale(' + (Math.round(sicht.k * 1000) / 1000) + ')');
     }
 
+    /* Steht die Fläche in einer skalierten Umgebung (Folie des Lernpfads,
+       transform: scale), sind Bildschirmpixel nicht die Einheiten der
+       Zeichnung: f rechnet um. Im Überblick ist f = 1. */
     function masse() {
       var r = svg.getBoundingClientRect();
-      return { w: r.width || 800, h: r.height || 600, links: r.left, oben: r.top };
+      var f = svg.clientWidth && r.width ? r.width / svg.clientWidth : 1;
+      return { w: r.width / f || 800, h: r.height / f || 600, links: r.left, oben: r.top, f: f };
     }
 
     /* Bereiche, die über der Fläche liegen (die Icon-Leisten), sollen den
@@ -496,8 +500,8 @@
       elemente.forEach(function (el) {
         if (!el || el.hidden || !el.offsetParent) { return; }
         var r = el.getBoundingClientRect();
-        var links = r.right - m.links, rechts = m.links + m.w - r.left;
-        var oben = r.bottom - m.oben, unten = m.oben + m.h - r.top;
+        var links = (r.right - m.links) / m.f, rechts = m.w - (r.left - m.links) / m.f;
+        var oben = (r.bottom - m.oben) / m.f, unten = m.h - (r.top - m.oben) / m.f;
         var wahl = [
           ['links', links, links * m.h], ['rechts', rechts, rechts * m.h],
           ['oben', oben, oben * m.w], ['unten', unten, unten * m.w]
@@ -538,7 +542,7 @@
 
     function zoomBei(cx, cy, faktor) {
       var m = masse();
-      var px = cx - m.links, py = cy - m.oben;
+      var px = (cx - m.links) / m.f, py = (cy - m.oben) / m.f;
       eingepasst = null;
       var neu = Math.min(3, Math.max(0.2, sicht.k * faktor));
       var f = neu / sicht.k;
@@ -550,7 +554,7 @@
 
     function zoomen(faktor) {
       var m = masse();
-      zoomBei(m.links + m.w / 2, m.oben + m.h / 2, faktor);
+      zoomBei(m.links + m.w * m.f / 2, m.oben + m.h * m.f / 2, faktor);
     }
 
     if (global.ResizeObserver) {
@@ -589,7 +593,7 @@
       bewegt = false;
       gedrueckt = liste.length === 1 ? knotenAusEreignis(ev) : null;
       if (liste.length === 1) {
-        start = { x: ev.clientX, y: ev.clientY, sx: sicht.x, sy: sicht.y };
+        start = { x: ev.clientX, y: ev.clientY, sx: sicht.x, sy: sicht.y, f: masse().f };
         pinch = null;
       } else if (liste.length === 2) {
         pinch = { d: Math.hypot(liste[0].x - liste[1].x, liste[0].y - liste[1].y) };
@@ -609,8 +613,8 @@
         if (!bewegt && Math.hypot(dx, dy) > 8) { bewegt = true; svg.classList.add('ist-am-ziehen'); }
         if (bewegt) {
           eingepasst = null;
-          sicht.x = start.sx + dx;
-          sicht.y = start.sy + dy;
+          sicht.x = start.sx + dx / (start.f || 1);
+          sicht.y = start.sy + dy / (start.f || 1);
           anwenden();
         }
       } else if (liste.length === 2 && pinch) {
@@ -636,7 +640,7 @@
            Knoten auch dann, wenn der Browser ihn an die Fläche adressiert. */
         global.setTimeout(function () { bewegt = false; gedrueckt = null; }, 0);
       } else if (liste.length === 1) {
-        start = { x: liste[0].x, y: liste[0].y, sx: sicht.x, sy: sicht.y };
+        start = { x: liste[0].x, y: liste[0].y, sx: sicht.x, sy: sicht.y, f: masse().f };
         pinch = null;
       }
     }

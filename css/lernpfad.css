@@ -950,6 +950,58 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-karte__legende.ist-mit .lp-leg--band i.ist-an { background: var(--rand-stark); }
 .lp-karte__legende.ist-mit .lp-leg--band i.ist-erst, .lp-karte__legende.ist-mit .lp-leg--raute { background: var(--text-leise); }
 
+/* Graph-Folie: der Graph des Überblicks im Rahmen der Karte, unten links
+   die Legende der Linien, unten rechts Zoom und Einpassen. */
+.lp-graph {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  margin: 24px 0 24px 24px;
+  border: 1px solid var(--rand-fein);
+  border-radius: 12px;
+  background: var(--graph-bg);
+  overflow: hidden;
+}
+.lp-graph__flaeche { flex: 1 1 auto; min-height: 0; }
+.lp-graph__legende {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .92);
+  font-size: 13px;
+  color: var(--text-leise);
+}
+.lp-graph__legende .glinie { width: 22px; margin-left: 8px; }
+.lp-graph__legende .glinie:first-child { margin-left: 0; }
+.lp-graph__zoom { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 2px; padding: 2px; border-radius: 8px; background: rgba(255, 255, 255, .92); }
+.lp-graph__knopf {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; padding: 0;
+  border: 0; border-radius: 6px;
+  background: transparent; color: var(--text-leise);
+  cursor: pointer;
+}
+.lp-graph__knopf:hover { color: var(--text); background: var(--flaeche-2); }
+.lp-graph__info { flex: 0 1 auto; display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.lp-graph__info .lp-tafel__fakt { gap: 5px; }
+.lp-f--karte.lp-f--graph .lp-tafel { padding-bottom: 72px; }
+/* Die Fusszeile steht unter der schmalen Tafel, nicht über Zoom und Legende. */
+.lp-f--karte.lp-f--graph .lp-f__fuss { right: 32px; width: 286px; }
+.lp-leinwand.ist-hoch .lp-f--karte.lp-f--graph .lp-f__fuss { left: 32px; right: 32px; width: auto; }
+.lp-f--graph .lp-tafel.ist-gewaehlt .lp-tafel__kern, .lp-f--graph .lp-tafel.ist-gewaehlt .lp-tafel__zahlen { display: none; }
+.lp-graph__hinweis { margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--flaeche); font-size: 15px; line-height: 1.4; color: var(--text-leise); }
+.lp-graph__wahl .lp-el { font-size: 17px; }
+.lp-graph__text { margin: 0; font-size: 16px; line-height: 1.4; color: var(--text-weich); }
+.lp-f--graph .lp-fakten__links .lp-fakten__link { font-size: 15px; }
+.lp-leinwand.ist-hoch .lp-graph { margin: 24px 24px 0; }
+
 /* Die Tafel: Marke, Titel, Kernsatz, Fakten. */
 .lp-tafel {
   min-width: 0;

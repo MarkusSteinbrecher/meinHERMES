@@ -305,7 +305,10 @@
     return false;
   }
 
+  /* «beide» (nur für Ausschnitte wie die Folien des Lernpfads, nicht im
+     Überblick wählbar): alle Phasen im Projektverlauf. */
   function phasenDerVorgehensweise(vorgehen) {
+    if (vorgehen === 'beide') { return PHASEN_REIHE; }
     return VORGEHEN[vorgehen] || VORGEHEN.klassisch;
   }
 
@@ -422,7 +425,9 @@
         }());
 
     /* 1. Umfang bestimmen — im Fokus zusätzlich nur die Nachbarschaft */
-    var fokus = zustand.fokus ? fokusMenge(zustand.fokus) : null;
+    /* `menge` (Id -> true) gibt die Knoten fest vor — die Folien des
+       Lernpfads zeigen so einen Ausschnitt, ohne Fokus des Überblicks. */
+    var fokus = zustand.menge || (zustand.fokus ? fokusMenge(zustand.fokus) : null);
     function imFokus(id) { return !fokus || !!fokus[id]; }
     var aufgabenAlle = [], ergebnisseAlle = [];
     m.liste.forEach(function (k) {

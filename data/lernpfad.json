@@ -1362,6 +1362,26 @@
                   ]
                 }
               ]
+            },
+            {
+              "typ": "graph",
+              "aufgabe": "Lösungsanforderungen erarbeiten",
+              "titel": "Rolle, Aufgabe, Ergebnis",
+              "kern": "Eine Rolle verantwortet die Aufgabe, weitere Rollen wirken mit, und die Aufgabe erarbeitet Ergebnisse. So hängen die drei Methodenelemente zusammen — hier am Beispiel «Lösungsanforderungen erarbeiten».",
+              "punkte": [
+                "Der Anwendervertreter verantwortet die Aufgabe; Business Analyst und IT-Architekt wirken mit.",
+                "Die Aufgabe erarbeitet die Situationsanalyse und die Lösungsanforderungen.",
+                "Im Handbuch stehen die Beziehungen nur online — der Graph im Überblick zeigt sie für jede Aufgabe so wie hier."
+              ],
+              "quelle": [
+                {
+                  "kapitel": "aufgaben",
+                  "abschnitte": [
+                    "5.3",
+                    "5.4.3.19"
+                  ]
+                }
+              ]
             }
           ],
           "merke": [
@@ -3088,6 +3108,23 @@
               ]
             },
             {
+              "typ": "graph",
+              "rolle": "Auftraggeber",
+              "ergebnisse": true,
+              "titel": "Auftraggeber im Graphen",
+              "kern": "Die Aufgaben, die der Auftraggeber verantwortet, und die Ergebnisse, die sie erarbeiten — dieselbe Zeichnung wie im Überblick, nach Modulen geordnet.",
+              "punkte": [],
+              "quelle": [
+                {
+                  "kapitel": "rollen",
+                  "abschnitte": [
+                    "6.4.1.1",
+                    "6.2.3.2"
+                  ]
+                }
+              ]
+            },
+            {
               "typ": "rollenphase",
               "rolle": "Auftraggeber",
               "phase": "Initialisierung",
@@ -3259,6 +3296,23 @@
               ]
             },
             {
+              "typ": "graph",
+              "rolle": "Projektleiter",
+              "ergebnisse": true,
+              "titel": "Projektleiter im Graphen",
+              "kern": "Die Aufgaben, die der Projektleiter verantwortet, und die Ergebnisse, die sie erarbeiten — dieselbe Zeichnung wie im Überblick, nach Modulen geordnet.",
+              "punkte": [],
+              "quelle": [
+                {
+                  "kapitel": "rollen",
+                  "abschnitte": [
+                    "6.4.2.2",
+                    "6.2.3.3"
+                  ]
+                }
+              ]
+            },
+            {
               "typ": "rollenphase",
               "rolle": "Projektleiter",
               "phase": "Initialisierung",
@@ -3418,6 +3472,23 @@
                 "Er entscheidet über die Eigenschaften der Lösung samt Qualitätsanforderungen und definiert Akzeptanzkriterien.",
                 "Besetzung: beim Anwender; nicht durch Ersteller oder Betreiber, denen das Anwenderumfeld fremd ist."
               ],
+              "quelle": [
+                {
+                  "kapitel": "rollen",
+                  "abschnitte": [
+                    "6.4.3.1",
+                    "6.2.3.4"
+                  ]
+                }
+              ]
+            },
+            {
+              "typ": "graph",
+              "rolle": "Anwendervertreter",
+              "ergebnisse": true,
+              "titel": "Anwendervertreter im Graphen",
+              "kern": "Die Aufgaben, die der Anwendervertreter verantwortet, und die Ergebnisse, die sie erarbeiten — dieselbe Zeichnung wie im Überblick, nach Modulen geordnet.",
+              "punkte": [],
               "quelle": [
                 {
                   "kapitel": "rollen",
