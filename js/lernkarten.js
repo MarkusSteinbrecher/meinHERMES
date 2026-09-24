@@ -857,33 +857,45 @@
        Karte im Handbuch: Markierungen von dort erscheinen auch hier, und
        hier gesetzte stehen dann dort (js/markieren.js). */
     var ort = '#/handbuch?id=' + encodeURIComponent(e.id);
-    el.appendChild(h('div', {
+    var zusammenfassung = h('div', {
       class: 'flip__inhalt flip__inhalt--klein', text: e.definition,
       dataset: istGrundbegriff(e) ? {} : { markOrt: ort, markAuszug: '' }
-    }));
-    if (!istGrundbegriff(e)) { el.appendChild(volltextBereich(e, ort)); }
+    });
+    el.appendChild(istGrundbegriff(e) ? zusammenfassung : volltextBereich(e, ort, zusammenfassung));
 
     el.appendChild(verweise(e, true));
   }
 
-  /* «Ganzer Text im Handbuch»: klappt unter der Zusammenfassung den
-     Abschnitt des Handbuchs auf, wie ihn die Karte im Kapitel zeigt. Offen
+  /* Der Pfeil vor der Zusammenfassung klappt den ganzen Abschnitt des
+     Handbuchs auf, wie ihn die Karte im Kapitel zeigt. Er ersetzt die
+     Zusammenfassung — die steht darin schon (Zweck, Beschreibung). Offen
      oder zu bleibt für die nächsten Karten. */
-  function volltextBereich(e, ort) {
-    var inhalt = h('div', { class: 'lk-volltext__text', id: 'lk-volltext-' + e.id, dataset: { markOrt: ort, markAuszug: '' } });
+  function volltextBereich(e, ort, zusammenfassung) {
+    var inhalt = h('div', { class: 'flip__inhalt--klein lk-volltext__text', id: 'lk-volltext-' + e.id, dataset: { markOrt: ort, markAuszug: '' } });
+    inhalt.hidden = true;
     var knopf = h('button', {
       type: 'button', class: 'aufklapp lk-volltext__knopf', 'aria-controls': inhalt.id
-    }, [h('span', { class: 'aufklapp__pfeil', 'aria-hidden': 'true', text: '▶' }), h('span', { text: 'Ganzer Text im Handbuch' })]);
-    var geladen = false;
+    }, [h('span', { class: 'aufklapp__pfeil', 'aria-hidden': 'true', text: '▶' })]);
+    var bereich = h('div', { class: 'lk-volltext' }, [knopf, h('div', {}, [zusammenfassung, inhalt])]);
+    var text;   // undefined: noch nicht geladen, null: kein eigener Abschnitt
+    function zeigen(offen) {
+      var voll = offen && !!text;
+      knopf.setAttribute('aria-expanded', voll ? 'true' : 'false');
+      var name = voll ? 'Nur Zusammenfassung zeigen' : 'Ganzen Text im Handbuch zeigen';
+      knopf.setAttribute('aria-label', name);
+      knopf.title = name;
+      inhalt.hidden = !voll;
+      zusammenfassung.hidden = voll;
+    }
     function setzen(offen) {
-      knopf.setAttribute('aria-expanded', offen ? 'true' : 'false');
-      inhalt.hidden = !offen;
-      if (!offen || geladen) { return; }
-      geladen = true;
-      inhalt.appendChild(h('p', { class: 'trefferzahl', text: 'Handbuchtext wird geladen …' }));
-      HT.handbuch.elementText(e).then(function (text) {
-        HT.ui.leeren(inhalt);
-        inhalt.appendChild(text || h('p', { class: 'trefferzahl', text: 'Für diesen Eintrag gibt es im Handbuch keinen eigenen Abschnitt.' }));
+      if (!offen || text !== undefined) { zeigen(offen); return; }
+      zeigen(false);
+      text = null;
+      HT.handbuch.elementText(e).then(function (t) {
+        text = t;
+        if (!t) { knopf.remove(); bereich.classList.add('lk-volltext--ohne'); return; }
+        inhalt.appendChild(t);
+        zeigen(zustand.volltext);
       });
     }
     knopf.addEventListener('click', function (ev) {
@@ -893,7 +905,7 @@
       setzen(zustand.volltext);
     });
     setzen(zustand.volltext);
-    return h('div', { class: 'lk-volltext' }, [knopf, inhalt]);
+    return bereich;
   }
 
   function kartenBereichAufbauen() {

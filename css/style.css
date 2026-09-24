@@ -1285,12 +1285,15 @@ a.wert:hover, .wert a:hover { color: var(--akzent); border-color: var(--text); }
 
 /* Rückseite: je Beziehung eine Zeile, Name links, Werte rechts. */
 .lk-bezuege { display: grid; gap: 2px; margin: 2px 0 4px; }
-/* Ganzer Handbuchtext unter der Zusammenfassung, zum Aufklappen. */
-.lk-volltext { border-top: 1px solid var(--rand-fein); padding-top: 4px; }
-.lk-volltext__knopf { padding-left: 0; }
-.lk-volltext__text { padding: 4px 0 6px; }
-.lk-volltext__text[hidden] { display: none; }
-.lk-volltext__text .hb-p, .lk-volltext__text .hb-liste { font-size: 14px; }
+/* Zusammenfassung mit Pfeil davor; aufgeklappt steht an ihrer Stelle der
+   ganze Handbuchtext, in derselben Schrift und Zeilenlänge. */
+.lk-volltext { display: grid; grid-template-columns: 20px minmax(0, 1fr); align-items: start; }
+.lk-volltext--ohne { grid-template-columns: minmax(0, 1fr); }
+.lk-volltext__knopf { min-height: 0; height: 23px; padding: 0; justify-content: flex-start; }
+.lk-volltext [hidden] { display: none; }
+.lk-volltext__text .hb-p, .lk-volltext__text .hb-liste { font-size: inherit; line-height: inherit; max-width: none; }
+.lk-volltext__text > :last-child, .lk-volltext__text > :last-child > :last-child { margin-bottom: 0; }
+.lk-volltext__text > :first-child, .lk-volltext__text > :first-child > :first-child { margin-top: 0; }
 .lk-bezug {
   display: grid;
   grid-template-columns: 10.5rem 1fr;
