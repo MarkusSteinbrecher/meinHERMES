@@ -156,6 +156,9 @@
 .gswatch--phase { background: var(--gk-phase); color: var(--gk-phase-glyph-auf); }
 .gswatch--szenario { background: var(--gk-szenario); }
 .gswatch--modul { background: var(--gk-modul); }
+/* Handbuch: die Zeile zu den Stellen im Text unter den Elementen. */
+.gswatch--text { background: var(--rand-fein); color: var(--text-leise); }
+.gs-treffer__weiter .gs-treffer__knopf { border-top: 1px solid var(--rand); }
 .gswatch--aufgabe { background: var(--gk-aufgabe); }
 .gswatch--ergebnis { background: var(--gk-ergebnis); }
 .gswatch--rolle { background: var(--gk-rolle); }

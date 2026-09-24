@@ -271,10 +271,14 @@ main:focus { outline: none; }
 /* Fundstellen-Modus (Handbuch): rechts im Feld der Zähler «3/42» und zwei
    Pfeile; solange gesucht wird, bleibt die Pille breit. */
 .kopf-suche .gleiste-suche.ist-suchend { width: 22rem; }
-.gleiste-suche__fund {
+.gleiste-suche__rechts {
   position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
   display: flex; align-items: center;
 }
+.gleiste-suche__fund { display: flex; align-items: center; }
+.gleiste-suche__leeren[hidden] { display: none; }
+/* Zugeklappt (ohne Fokus, ohne Fundstellen) passt das × nicht in die Pille. */
+.kopf-suche .gleiste-suche:not(:focus-within):not(.ist-suchend) .gleiste-suche__leeren { display: none; }
 .gleiste-suche__fund[hidden] { display: none; }
 .gleiste-suche__zahl {
   padding: 0 4px 0 2px;

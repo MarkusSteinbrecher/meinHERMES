@@ -131,7 +131,7 @@
         ' — grün «Gewusst», rot «Nochmals», der älteste links, leere Ringe für noch freie Plätze. Ein Klick darauf legt diese '
           + 'Lernkarte zuoberst auf den Stapel. Phasen, Szenarien, Module und Rollen haben keine Lernkarte; dort stehen keine Punkte.'
       ]),
-      h('p', { text: 'Die Suche oben durchsucht hier den Text aller Kapitel, ohne Rücksicht auf Gross- und Kleinschreibung und Akzente. Der Zähler nennt die Treffer im ganzen Handbuch, die Leiste die Zahl je Kapitel; Enter springt zum nächsten Treffer, Umschalt+Enter zum vorherigen, auch ins nächste Kapitel. ⌘F bzw. Strg+F öffnet die Suche, Escape leert sie.' }),
+      h('p', { text: 'Die Suche oben findet hier Elemente wie im Überblick und durchsucht den Text aller Kapitel, ohne Rücksicht auf Gross- und Kleinschreibung und Akzente. Passende Rollen, Aufgaben, Ergebnisse, Module, Phasen und Szenarien stehen in der Liste unter dem Feld; ein Klick führt zu ihrer Karte. Der Zähler nennt die Treffer im ganzen Handbuch, die Leiste die Zahl je Kapitel; Enter springt zum nächsten Treffer, Umschalt+Enter zum vorherigen, auch ins nächste Kapitel. ⌘F bzw. Strg+F öffnet die Suche, das × im Feld oder Escape leert sie.' }),
       h('p', { class: 'hb-verweis' }, links)
     ];
   }
@@ -610,11 +610,26 @@
     });
   }
 
+  /* Wie im Überblick findet die Suche auch die Elemente selbst; die Pille
+     listet sie über den Stellen im Text. Gewählt führt eines zu seiner Karte
+     im Handbuch — der Suchtext bleibt, seine Stellen bleiben markiert. */
+  function elementWaehlen(e) {
+    var adresse = '#/handbuch?id=' + encodeURIComponent(e.id);
+    if (global.location.hash !== adresse) { global.location.hash = adresse; return; }
+    var karte = document.getElementById('eintrag-' + e.id);
+    if (!karte) { return; }
+    var alt = document.querySelectorAll('.eintrag.ist-hervorgehoben');
+    for (var i = 0; i < alt.length; i++) { alt[i].classList.remove('ist-hervorgehoben'); }
+    karte.classList.add('ist-hervorgehoben');
+    springen(karte);
+  }
+
   var MODUS = {
     name: 'handbuch',
     platzhalter: 'Im Handbuch suchen',
-    label: 'Im Text des Handbuchs suchen — Enter springt zum nächsten Treffer',
+    label: 'Element oder Text im Handbuch suchen — Enter springt zur nächsten Stelle im Text',
     eingabe: eingabe,
+    wahl: elementWaehlen,
     /* Wer ins Feld klickt, will suchen: die Kapiteltexte schon laden. */
     vorbereiten: function () { KAPITEL.forEach(kapitelTexte); },
     schritt: function (richtung) { suche.bereit.then(function () { schrittJetzt(richtung); }); },

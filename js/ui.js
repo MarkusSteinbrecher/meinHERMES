@@ -718,7 +718,11 @@
      Verzögerung abkürzt), schritt(+1/-1) bei Enter, Umschalt+Enter und den
      Pfeilen, beenden, wenn die Ansicht den Modus wieder abgibt. Zurück kommt
      { stand(s), fokus() }; stand({ aktuell, gesamt, laedt }) setzt den
-     Zähler, stand(null) blendet ihn aus. */
+     Zähler, stand(null) blendet ihn aus.
+     Hat der Modus wahl(eintrag), zeigt die Pille auch in ihm die Liste der
+     Elemente (opt.treffer) — darunter eine Zeile zu den Stellen im Text.
+     Ein gewähltes Element geht an wahl, der Suchtext bleibt stehen.
+     Steht Text im Feld, leert ihn das × rechts — wie Escape. */
   function suchpille(opt) {
     var feld = h('input', {
       type: 'search', class: 'suche__feld gleiste-suche__feld',
@@ -736,25 +740,42 @@
     var ansage = h('span', { class: 'nur-sr', role: 'status' });
     var zurueck = h('button', {
       type: 'button', class: 'gleiste-suche__schritt', title: 'Vorheriger Treffer (Umschalt+Enter)', 'aria-label': 'Vorheriger Treffer',
-      on: { click: function () { if (modus) { modus.schritt(-1); } } }
+      on: { click: function () { schliessen(); if (modus) { modus.schritt(-1); } } }
     }, symbol(['M6 15l6-6 6 6'], 16));
     var vor = h('button', {
       type: 'button', class: 'gleiste-suche__schritt', title: 'Nächster Treffer (Enter)', 'aria-label': 'Nächster Treffer',
-      on: { click: function () { if (modus) { modus.schritt(1); } } }
+      on: { click: function () { schliessen(); if (modus) { modus.schritt(1); } } }
     }, symbol(['M6 9l6 6 6-6'], 16));
     var fund = h('span', { class: 'gleiste-suche__fund', hidden: true }, [zahl, ansage, zurueck, vor]);
-    /* Die Pfeile nehmen dem Feld den Fokus nicht — so bleibt die Pille offen. */
-    fund.addEventListener('mousedown', function (ev) { ev.preventDefault(); });
+    var loeschKnopf = h('button', {
+      type: 'button', class: 'gleiste-suche__schritt gleiste-suche__leeren', title: 'Suchtext löschen (Escape)', 'aria-label': 'Suchtext löschen', hidden: true,
+      on: { click: function () { allesLeeren(); feld.focus(); } }
+    }, symbol(['M7 7l10 10', 'M17 7 7 17'], 16));
+    var rechts = h('span', { class: 'gleiste-suche__rechts' }, [fund, loeschKnopf]);
+    /* Die Knöpfe nehmen dem Feld den Fokus nicht — so bleibt die Pille offen. */
+    rechts.addEventListener('mousedown', function (ev) { ev.preventDefault(); });
 
-    var el = h('div', { class: 'gleiste-suche' }, [lupe, feld, fund, liste]);
-    var timer = null;
+    var el = h('div', { class: 'gleiste-suche' }, [lupe, feld, rechts, liste]);
+    var timer = null, listenTimer = null;
+    var textZahl = null;   // Zahl in der Zeile «Alle Stellen im Text», solange die Liste sie zeigt
+    var letzterStand = null;
+    function standZahl() { return !letzterStand || letzterStand.laedt ? '…' : String(letzterStand.gesamt || 0); }
+
+    /* Das × nur bei Text im Feld; das Feld lässt rechts Platz für alles,
+       was dort steht. */
+    function rechtsSetzen() {
+      loeschKnopf.hidden = !feld.value;
+      feld.style.paddingRight = fund.hidden && loeschKnopf.hidden ? '' : (rechts.offsetWidth + 10) + 'px';
+    }
 
     function stand(s) {
+      letzterStand = s || null;
+      if (textZahl) { textZahl.textContent = standZahl(); }
       fund.hidden = !s;
       el.classList.toggle('ist-suchend', !!s);
       if (!s) {
-        feld.style.paddingRight = '';
         ansage.textContent = '';
+        rechtsSetzen();
         return;
       }
       var text, sagen;
@@ -766,17 +787,18 @@
       zahl.classList.toggle('ist-leer', !s.laedt && !s.gesamt);
       ansage.textContent = sagen;
       zurueck.disabled = vor.disabled = !s.gesamt;
-      feld.style.paddingRight = (fund.offsetWidth + 10) + 'px';
+      rechtsSetzen();
     }
 
     el.modusSetzen = function (m) {
       if (modus && m && modus.name === m.name) { modus = m; return api; }
       if (timer) { clearTimeout(timer); timer = null; }
+      if (listenTimer) { clearTimeout(listenTimer); listenTimer = null; }
       if (modus && modus.beenden) { modus.beenden(); }
       modus = m || null;
       feld.value = '';
-      liste.hidden = true;
-      stand(null);
+      schliessen();
+      stand(null);   // setzt auch das ×
       feld.placeholder = (modus && modus.platzhalter) || opt.platzhalter || 'Suchen …';
       feld.setAttribute('aria-label', (modus && modus.label) || opt.label || opt.platzhalter || 'Suchen');
       return modus ? api : null;
@@ -786,12 +808,22 @@
       fokus: function () { feld.focus(); feld.select(); }
     };
 
+    function schliessen() {
+      liste.hidden = true;
+      textZahl = null;
+    }
+
     function zeichnen() {
-      if (modus) { return; }
+      listenTimer = null;
+      if (modus && !modus.wahl) { return; }
       var text = feld.value.trim();
       leeren(liste);
+      textZahl = null;
       if (text.length < 2) { liste.hidden = true; return; }
       var treffer = opt.treffer(text) || [];
+      /* Im Modus stehen die Stellen im Text im Feld; ohne passendes Element
+         braucht es die Liste nicht. */
+      if (modus && !treffer.length) { liste.hidden = true; return; }
       if (!treffer.length) {
         liste.appendChild(h('li', { class: 'gs-treffer__leer', text: 'Keine Treffer' }));
         liste.hidden = false;
@@ -801,8 +833,10 @@
         var meta = HT.daten && HT.daten.kategorieMeta ? HT.daten.kategorieMeta(e.kategorie) : null;
         liste.appendChild(h('li', {}, h('button', {
           type: 'button', class: 'gs-treffer__knopf', on: { click: function () {
+            schliessen();
+            if (modus) { modus.wahl(e); return; }
             feld.value = '';
-            liste.hidden = true;
+            rechtsSetzen();
             opt.beiWahl(e);
           } }
         }, [
@@ -811,6 +845,20 @@
           h('span', { class: 'gs-treffer__art', text: meta ? meta.singular : '' })
         ])));
       });
+      if (modus) {
+        textZahl = h('span', { class: 'gs-treffer__art', text: standZahl() });
+        liste.appendChild(h('li', { class: 'gs-treffer__weiter' }, h('button', {
+          type: 'button', class: 'gs-treffer__knopf', title: 'Enter springt von Stelle zu Stelle', on: { click: function () {
+            schliessen();
+            if (timer) { clearTimeout(timer); eingeben(true); } else { modus.schritt(1); }
+          } }
+        }, [
+          h('span', { class: 'gswatch gswatch--text', 'aria-hidden': 'true' },
+            symbol(['M10.6 3.6a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z', 'M15.6 15.6 20.4 20.4'], 13)),
+          h('span', { class: 'gs-treffer__text', text: 'Alle Stellen im Text' }),
+          textZahl
+        ])));
+      }
       liste.hidden = false;
     }
 
@@ -820,17 +868,23 @@
     }
 
     feld.addEventListener('input', function () {
-      if (timer) { clearTimeout(timer); }
-      timer = modus ? setTimeout(eingeben, 250) : setTimeout(zeichnen, 120);
+      rechtsSetzen();
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (listenTimer) { clearTimeout(listenTimer); }
+      if (modus) { timer = setTimeout(eingeben, 250); }
+      listenTimer = setTimeout(zeichnen, 120);
     });
     feld.addEventListener('focus', function () {
-      if (modus) { if (modus.vorbereiten) { modus.vorbereiten(); } return; }
+      if (modus && modus.vorbereiten) { modus.vorbereiten(); }
       if (feld.value.trim().length >= 2) { zeichnen(); }
     });
     feld.addEventListener('keydown', function (ev) {
       if (ev.key === 'Enter') {
         ev.preventDefault();
         if (modus) {
+          /* Enter bleibt beim Text; die Liste der Elemente geht dafür zu. */
+          if (listenTimer) { clearTimeout(listenTimer); listenTimer = null; }
+          schliessen();
           /* Noch nicht gesucht (Tippen eben erst): die Suche sofort, sie
              springt selbst zum ersten Treffer. */
           if (timer) { clearTimeout(timer); eingeben(true); } else { modus.schritt(ev.shiftKey ? -1 : 1); }
@@ -840,15 +894,20 @@
         if (erster) { erster.click(); }
       } else if (ev.key === 'Escape') {
         ev.stopPropagation();
-        if (timer) { clearTimeout(timer); timer = null; }
-        feld.value = '';
-        liste.hidden = true;
-        if (modus) { modus.eingabe('', false); }
+        allesLeeren();
       }
     });
+    function allesLeeren() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (listenTimer) { clearTimeout(listenTimer); listenTimer = null; }
+      feld.value = '';
+      schliessen();
+      rechtsSetzen();
+      if (modus) { modus.eingabe('', false); }
+    }
     function daneben(ev) {
       if (!document.body.contains(el)) { document.removeEventListener('pointerdown', daneben); return; }
-      if (!liste.hidden && !el.contains(ev.target)) { liste.hidden = true; }
+      if (!liste.hidden && !el.contains(ev.target)) { schliessen(); }
     }
     document.addEventListener('pointerdown', daneben);
     return el;
