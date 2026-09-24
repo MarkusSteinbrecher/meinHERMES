@@ -13,7 +13,8 @@
    Dazu die Grundbegriffe (data/grundbegriffe.json, nur hier geladen): mit
    dem Begriff vorn eine Karte zum Drehen (auch per Klick auf die Karte), mit
    der Definition vorn eine Wahl allein für den Begriff.
-   «Nochmals» kehrt im Stapel zurück. Fortschritt liegt im localStorage und
+   «Nochmals» kehrt im Stapel zurück, nach allen noch nie eingeschätzten
+   Karten — die kommen immer zuerst (stufe/ordnen). Fortschritt liegt im localStorage und
    ist zurücksetzbar.
    Unter der Karte blättern ‹ und › zurück und weiter: ‹ zeigt die zuvor
    gezeigte Karte wieder, › überspringt die Karte ohne Einschätzung. Das Icon
@@ -285,12 +286,30 @@
     zustand.antworten = {};
   }
 
+  /* Reihenfolge im Stapel (seit 2026-09-24, Wunsch des Sponsors): zuerst
+     die Karten, die noch nie eingeschätzt wurden, dann die mit «Nochmals»,
+     zuletzt (nur nach «Stapel neu mischen») die gewussten. Innerhalb einer
+     Stufe bleibt die gemischte Folge. */
+  function stufe(id) {
+    if (!verlaufVon(id).length) { return 0; }
+    return zustand.fortschritt[id] === 'gewusst' ? 2 : 1;
+  }
+
+  /** Den Stapel stabil nach Stufen ordnen. */
+  function ordnen() {
+    zustand.stapel = zustand.stapel
+      .map(function (id, i) { return { id: id, i: i, s: stufe(id) }; })
+      .sort(function (a, b) { return a.s - b.s || a.i - b.i; })
+      .map(function (x) { return x.id; });
+  }
+
   function stapelAufbauen(auchGewusste) {
     var karten = auswahl();
     var ids = karten
       .filter(function (e) { return auchGewusste || zustand.fortschritt[e.id] !== 'gewusst'; })
       .map(function (e) { return e.id; });
     zustand.stapel = HT.ui.mischen(ids);
+    ordnen();
     zustand.zurueck = [];
     neueKarte();
   }
@@ -1044,6 +1063,7 @@
     zustand.fortschritt[id] = wert;
     zustand.stapel.shift();
     if (wert === 'nochmals') { zustand.stapel.push(id); }
+    ordnen();
     merken(id);
     neueKarte();
     speichern();
@@ -1082,12 +1102,19 @@
     neuZeichnen(true);
   }
 
-  /** › überspringt die Karte ohne Einschätzung: sie kommt ans Ende des
-      Stapels, eine schon gewusste fällt heraus (wie beim Mischen). */
+  /** › überspringt die Karte ohne Einschätzung: sie kommt ans Ende ihrer
+      Stufe — eine noch nie eingeschätzte also vor die mit «Nochmals» —,
+      eine schon gewusste fällt heraus (wie beim Mischen). Stünde die
+      übersprungene danach wieder oben (die letzte ihrer Stufe), rückt sie
+      eine Stelle nach hinten, damit › immer eine andere Karte zeigt. */
   function weiterBlaettern() {
     if (zustand.stapel.length < 2) { return; }
     var id = zustand.stapel.shift();
     if (zustand.fortschritt[id] !== 'gewusst') { zustand.stapel.push(id); }
+    ordnen();
+    if (zustand.stapel[0] === id && zustand.stapel.length > 1) {
+      zustand.stapel.splice(0, 2, zustand.stapel[1], id);
+    }
     merken(id);
     neueKarte();
     neuZeichnen(true);
@@ -1389,7 +1416,7 @@
             + 'ist der Begriff zu sehen, und ein Klick auf die Karte zeigt die Definition. Steht oben «Definition», wählt man, welcher '
             + 'Begriff gemeint ist.' }),
           h('p', { text: 'Ohne Wahl geht es auch: Karte mit «Lösung» unter der Karte drehen und selbst einschätzen. Was «Nochmals» erhält, kehrt im '
-            + 'Stapel zurück. Zur Auswahl stehen nur Werte, die auf irgendeiner Karte richtig sind.' }),
+            + 'Stapel zurück — aber erst, wenn keine Karte mehr da ist, die Sie noch nie eingeschätzt haben: Die kommen immer zuerst. Zur Auswahl stehen nur Werte, die auf irgendeiner Karte richtig sind.' }),
           h('p', {}, [
             'Die Einschätzung zählt auch im ',
             h('a', { href: '#/trainer?teil=fortschritt', text: 'Fortschritt' }),
@@ -1406,7 +1433,7 @@
               + 'im Handbuch, ihre Punkte gibt es nur hier.'
           ]),
           h('p', { text: 'Unter der Karte blättert man mit ‹ und ›: ‹ zeigt die zuvor gezeigte Karte wieder, auch eine schon '
-            + 'eingeschätzte; › überspringt die Karte ohne Einschätzung, sie kommt ans Ende des Stapels (eine gewusste fällt heraus). '
+            + 'eingeschätzte; › überspringt die Karte ohne Einschätzung, sie kommt ans Ende ihrer Gruppe — eine noch nie eingeschätzte also vor die mit «Nochmals» (eine gewusste fällt heraus). '
             + 'Das Icon daneben zeigt alle Karten der gewählten Kategorien als Liste, nach Kategorie und alphabetisch, je mit den '
             + 'Punkten der letzten Versuche. Die Nummer oben auf der Karte («Nr. 57») steht dort vorn in der Zeile und bleibt '
             + 'gleich, welche Kategorien auch gewählt sind. Ein Klick auf eine Karte zeigt sie zum Üben — auch eine, die schon als gewusst gilt —, '
