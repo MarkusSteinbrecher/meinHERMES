@@ -17,7 +17,14 @@
    denselben Handbuchtext — eine Markierung hier erscheint auch dort. Was
    ein Block gerade nicht enthält (Karte in der Stufe «Kurz», Text noch
    nicht nachgeladen), bleibt gespeichert und erscheint, sobald der Text
-   da ist. */
+   da ist.
+
+   Auszüge an anderen Stellen tragen den Ort ihres Handbuchabschnitts
+   (HT.handbuch.markOrtVon) und dazu `data-mark-auszug`: die Lernkarte, die
+   Notizen des Lernpfads. Dort zeigt nur, wessen Umfeld passt — sonst
+   leuchtete ein markiertes «Projekt» aus dem Kapitel an irgendeiner Stelle
+   des Auszugs auf. Das Handbuch im Fenster liegt ausserhalb von #view und
+   meldet sich mit beobachten() an. */
 (function (global) {
   'use strict';
 
@@ -132,7 +139,7 @@
 
   /* Zitat wiederfinden: erst mit Kontext, dann das Zitat allein — bei
      mehreren Treffern der mit der grössten Übereinstimmung des Umfelds. */
-  function finden(m, z) {
+  function finden(m, z, streng) {
     var t = m.text;
     var i = t.indexOf((z.prefix || '') + z.exact + (z.suffix || ''));
     if (i !== -1) { return i + (z.prefix || '').length; }
@@ -145,6 +152,8 @@
         + gemeinsam(t.slice(p + z.exact.length, p + z.exact.length + KONTEXT), z.suffix || '', false);
       if (punkte > bestePunkte) { bestePunkte = punkte; beste = p; }
     });
+    /* Im Auszug: ein langes Zitat genügt, ein kurzes braucht Umfeld. */
+    if (streng && z.exact.length < 30 && bestePunkte < 8) { return -1; }
     return beste;
   }
 
@@ -188,26 +197,31 @@
 
   function blockAnwenden(block) {
     var ort = block.getAttribute('data-mark-ort');
+    var streng = block.hasAttribute('data-mark-auszug');
     entfernen(block);
     var liste = fuerOrt(ort);
     if (!liste.length) { return; }
     liste.forEach(function (e) {
       var m = modell(block);
-      var start = finden(m, e.zitat);
+      var start = finden(m, e.zitat, streng);
       if (start === -1) { return; }          // Text (noch) nicht in diesem Block
       umhuellen(m, start, start + e.zitat.exact.length, e.id);
     });
   }
 
+  var weitere = [];   // Wurzeln ausserhalb von #view (beobachten)
+
   function anwenden(wurzel) {
-    wurzel = wurzel || document.getElementById('view');
-    if (!wurzel) { return; }
+    var wurzeln = wurzel ? [wurzel] : [document.getElementById('view')].concat(weitere.filter(function (w) { return document.body.contains(w); }));
     stumm++;
     try {
       var bloecke = [];
-      if (wurzel.hasAttribute && wurzel.hasAttribute('data-mark-ort')) { bloecke.push(wurzel); }
-      var innen = wurzel.querySelectorAll('[data-mark-ort]');
-      for (var i = 0; i < innen.length; i++) { bloecke.push(innen[i]); }
+      wurzeln.forEach(function (w) {
+        if (!w) { return; }
+        if (w.hasAttribute && w.hasAttribute('data-mark-ort')) { bloecke.push(w); }
+        var innen = w.querySelectorAll('[data-mark-ort]');
+        for (var i = 0; i < innen.length; i++) { bloecke.push(innen[i]); }
+      });
       bloecke.forEach(blockAnwenden);
     } finally {
       if (beobachter) { beobachter.takeRecords(); }
@@ -311,6 +325,7 @@
 
     beobachter = new global.MutationObserver(function () { if (stumm === 0) { planen(); } });
     beobachter.observe(view, { childList: true, subtree: true });
+    weitere.forEach(function (w) { beobachter.observe(w, { childList: true, subtree: true }); });
     planen();
   }
 
@@ -326,5 +341,14 @@
     starten();
   }
 
-  HT.markieren = { anwenden: anwenden, fuerOrt: fuerOrt };
+  /* Eine Wurzel ausserhalb von #view (das Handbuch im Fenster): ihre
+     Blöcke bekommen die Markierungen wie die Seite. */
+  function beobachten(wurzel) {
+    if (!wurzel || weitere.indexOf(wurzel) !== -1) { return; }
+    weitere.push(wurzel);
+    if (beobachter) { beobachter.observe(wurzel, { childList: true, subtree: true }); }
+    planen();
+  }
+
+  HT.markieren = { anwenden: anwenden, fuerOrt: fuerOrt, beobachten: beobachten };
 }(window));

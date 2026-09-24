@@ -56,6 +56,7 @@
     stapel: [],            // offene Karten-IDs der laufenden Runde
     zurueck: [],           // zuvor gezeigte Karten-IDs, die zuletzt gezeigte zuletzt (für ‹)
     gedreht: false,
+    volltext: false,       // Rückseite: ganzer Handbuchtext aufgeklappt
     antworten: {}          // Bezug-Schlüssel -> { wert, richtig } der laufenden Karte
   };
 
@@ -72,7 +73,8 @@
       ansicht: zustand.ansicht,
       filter: zustand.filter,
       fortschritt: zustand.fortschritt,
-      verlauf: zustand.verlauf
+      verlauf: zustand.verlauf,
+      volltext: zustand.volltext
     });
   }
 
@@ -81,6 +83,7 @@
     if (g && typeof g === 'object') {
       zustand.richtung = (g.richtung === 'db') ? 'db' : 'bd';
       zustand.ansicht = (g.ansicht === 'liste') ? 'liste' : 'karte';
+      zustand.volltext = g.volltext === true;
       zustand.filter = Array.isArray(g.filter)
         ? g.filter.filter(function (k) { return KATEGORIEN.indexOf(k) !== -1; })
         : [];
@@ -850,9 +853,47 @@
     if (bezuege(e).length) {
       el.appendChild(h('dl', { class: 'lk-bezuege' }, bezuege(e).map(loesungZeile)));
     }
-    el.appendChild(h('div', { class: 'flip__inhalt flip__inhalt--klein', text: e.definition }));
+    /* Die Zusammenfassung und der ganze Handbuchtext tragen den Ort der
+       Karte im Handbuch: Markierungen von dort erscheinen auch hier, und
+       hier gesetzte stehen dann dort (js/markieren.js). */
+    var ort = '#/handbuch?id=' + encodeURIComponent(e.id);
+    el.appendChild(h('div', {
+      class: 'flip__inhalt flip__inhalt--klein', text: e.definition,
+      dataset: istGrundbegriff(e) ? {} : { markOrt: ort, markAuszug: '' }
+    }));
+    if (!istGrundbegriff(e)) { el.appendChild(volltextBereich(e, ort)); }
 
     el.appendChild(verweise(e, true));
+  }
+
+  /* «Ganzer Text im Handbuch»: klappt unter der Zusammenfassung den
+     Abschnitt des Handbuchs auf, wie ihn die Karte im Kapitel zeigt. Offen
+     oder zu bleibt für die nächsten Karten. */
+  function volltextBereich(e, ort) {
+    var inhalt = h('div', { class: 'lk-volltext__text', id: 'lk-volltext-' + e.id, dataset: { markOrt: ort, markAuszug: '' } });
+    var knopf = h('button', {
+      type: 'button', class: 'aufklapp lk-volltext__knopf', 'aria-controls': inhalt.id
+    }, [h('span', { class: 'aufklapp__pfeil', 'aria-hidden': 'true', text: '▶' }), h('span', { text: 'Ganzer Text im Handbuch' })]);
+    var geladen = false;
+    function setzen(offen) {
+      knopf.setAttribute('aria-expanded', offen ? 'true' : 'false');
+      inhalt.hidden = !offen;
+      if (!offen || geladen) { return; }
+      geladen = true;
+      inhalt.appendChild(h('p', { class: 'trefferzahl', text: 'Handbuchtext wird geladen …' }));
+      HT.handbuch.elementText(e).then(function (text) {
+        HT.ui.leeren(inhalt);
+        inhalt.appendChild(text || h('p', { class: 'trefferzahl', text: 'Für diesen Eintrag gibt es im Handbuch keinen eigenen Abschnitt.' }));
+      });
+    }
+    knopf.addEventListener('click', function (ev) {
+      ev.stopPropagation();   // eine klickbare Karte drehte sich sonst
+      zustand.volltext = knopf.getAttribute('aria-expanded') !== 'true';
+      speichern();
+      setzen(zustand.volltext);
+    });
+    setzen(zustand.volltext);
+    return h('div', { class: 'lk-volltext' }, [knopf, inhalt]);
   }
 
   function kartenBereichAufbauen() {

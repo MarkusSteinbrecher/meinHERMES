@@ -1285,6 +1285,12 @@ a.wert:hover, .wert a:hover { color: var(--akzent); border-color: var(--text); }
 
 /* Rückseite: je Beziehung eine Zeile, Name links, Werte rechts. */
 .lk-bezuege { display: grid; gap: 2px; margin: 2px 0 4px; }
+/* Ganzer Handbuchtext unter der Zusammenfassung, zum Aufklappen. */
+.lk-volltext { border-top: 1px solid var(--rand-fein); padding-top: 4px; }
+.lk-volltext__knopf { padding-left: 0; }
+.lk-volltext__text { padding: 4px 0 6px; }
+.lk-volltext__text[hidden] { display: none; }
+.lk-volltext__text .hb-p, .lk-volltext__text .hb-liste { font-size: 14px; }
 .lk-bezug {
   display: grid;
   grid-template-columns: 10.5rem 1fr;

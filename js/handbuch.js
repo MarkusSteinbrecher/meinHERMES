@@ -890,6 +890,8 @@
       if (vorher && document.body.contains(vorher)) { try { vorher.focus({ preventScroll: true }); } catch (e) { /* egal */ } }
     });
     document.body.appendChild(dialog);
+    /* Das Fenster liegt ausserhalb von #view: Markierungen dort anmelden. */
+    if (HT.markieren && HT.markieren.beobachten) { HT.markieren.beobachten(inhalt); }
     return { dialog: dialog, titel: titel, marke: marke, seite: seite, inhalt: inhalt, version: 0, vorher: null };
   }
 
@@ -973,5 +975,44 @@
   }
 
   HT.views.handbuch = { titel: 'Handbuch', render: render };
-  HT.handbuch = { imFenster: imFenster, adresse: kapitelAdresse };
+  /* --- Auszüge an anderen Stellen ------------------------------------------ */
+
+  /* Markierungs-Ort eines Abschnitts, wie ihn die Kapitelseite vergibt
+     (kapitelKoerper): eine Elementkarte ist ihr eigener Ort, ein Abschnitt
+     der Hinweise mit eigener Online-Seite samt seinen Unterabschnitten
+     ebenso, alles andere gehört zum Kapitel. Damit zeigen Auszüge im
+     Lernpfad und auf den Lernkarten dieselben Markierungen wie das Handbuch. */
+  function markOrtVon(kapitelId, kap, nummer) {
+    var meta = kapitelMeta(kapitelId);
+    if (!meta) { return null; }
+    var teil = null, offenEbene = 0;
+    var abschnitte = (kap && kap.abschnitte) || [];
+    for (var i = 0; i < abschnitte.length; i++) {
+      var a = abschnitte[i];
+      if (teil && (a.ebene || 2) <= offenEbene) { teil = null; offenEbene = 0; }
+      if (a.url && a.nummer && (a.ebene || 2) >= 2 && !a.element && meta.id === 'hinweise') { teil = a.nummer; offenEbene = a.ebene || 2; }
+      if (a.nummer === nummer) {
+        return a.element ? '#/handbuch?id=' + encodeURIComponent(a.element) : markOrt(meta, teil);
+      }
+    }
+    return markOrt(meta);
+  }
+
+  /* Der Handbuchtext eines Elements, gezeichnet wie auf seiner Karte im
+     Kapitel (gleiche Blöcke, gleiche Seitenmarken — sonst fänden die
+     Markierungen ihr Zitat nicht wieder). Promise: Element oder null, wenn
+     das Handbuch keinen eigenen Abschnitt dazu hat (Grundbegriffe). */
+  function elementText(e) {
+    var meta = e ? kapitelDerKategorie(e.kategorie) : null;
+    if (!meta) { return Promise.resolve(null); }
+    return Promise.all([HT.daten.rhbKapitel(meta.id), HT.daten.rhbIndex()]).then(function (r) {
+      var kap = r[0], idx = r[1];
+      var a = ((kap && kap.abschnitte) || []).filter(function (x) { return x.element === e.id; })[0];
+      if (!a || !(a.bloecke || []).length) { return null; }
+      var pdf = idx && idx.quelle && idx.quelle.pdf ? idx.quelle.pdf : null;
+      return HT.ui.bloecke(a.bloecke, { verlinken: true, ebene: 5, seite: a.seite || null, pdf: pdf });
+    }).catch(function () { return null; });
+  }
+
+  HT.handbuch = { imFenster: imFenster, adresse: kapitelAdresse, markOrtVon: markOrtVon, elementText: elementText };
 }(window));

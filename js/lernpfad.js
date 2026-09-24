@@ -1788,7 +1788,11 @@
       platz.appendChild(h('h3', { class: 'lp-notizen__titel' },
         handbuchLink(a, a.nummer + ' ' + (a.titel || ''), 'lp-notizen__link')));
       if ((a.bloecke || []).length) {
-        platz.appendChild(HT.ui.bloecke(a.bloecke, { verlinken: true, ebene: 4, seite: a.seite }));
+        /* Ein Auszug trägt den Ort seines Abschnitts im Handbuch: dort
+           gesetzte Markierungen erscheinen auch hier (js/markieren.js). */
+        var ort = HT.handbuch && HT.handbuch.markOrtVon ? HT.handbuch.markOrtVon(a.kapitel, texte[a.kapitel], a.nummer) : null;
+        platz.appendChild(h('div', { class: 'lp-notizen__text', dataset: ort ? { markOrt: ort, markAuszug: '' } : {} },
+          HT.ui.bloecke(a.bloecke, { verlinken: true, ebene: 4, seite: a.seite })));
       }
     });
   }
