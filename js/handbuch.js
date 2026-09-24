@@ -168,12 +168,21 @@
 
   /* --- Kapiteltext in Handbuchgliederung ------------------------------------ */
 
+  /* Titelzeile: links Nummer und Titel, rechtsbündig die Seitenzahl und —
+     hat der Abschnitt eine eigene Online-Seite — «HERMES online» und «PDF». */
   function titelKinder(a) {
     return [
-      a.nummer ? h('span', { class: 'hb-nr', text: a.nummer + ' ' }) : null,
-      a.titel,
-      seiteElement(a.seite)
+      h('span', { class: 'hb-titel__name' }, [
+        a.nummer ? h('span', { class: 'hb-nr', text: a.nummer + ' ' }) : null,
+        a.titel
+      ]),
+      titelRechts(a)
     ];
+  }
+
+  function titelRechts(a) {
+    var teile = [seiteElement(a.seite)].concat(a.url ? verweisLinks(a) : []).filter(Boolean);
+    return teile.length ? h('span', { class: 'hb-titel__rechts' }, teile) : null;
   }
 
   function verweisZeile(a, mitKapitel) {
@@ -181,6 +190,13 @@
     if (mitKapitel) {
       teile.push(h('span', { text: 'Referenzhandbuch' + (a.nummer ? ' Kap. ' + a.nummer : '') + (a.seite ? ', S. ' + a.seite : '') }));
     }
+    teile = teile.concat(verweisLinks(a));
+    if (!teile.length) { return null; }
+    return h('p', { class: 'hb-verweis' }, teile);
+  }
+
+  function verweisLinks(a) {
+    var teile = [];
     if (a.url) {
       teile.push(h('a', {
         href: a.url, target: '_blank', rel: 'noopener', class: 'hb-online',
@@ -194,8 +210,7 @@
         'aria-label': 'Seite ' + a.seite + ' im Referenzhandbuch als PDF öffnen (neuer Tab)'
       }, 'PDF ↗'));
     }
-    if (!teile.length) { return null; }
-    return h('p', { class: 'hb-verweis' }, teile);
+    return teile;
   }
 
   /* Ein Abschnitt: Titel seiner Ebene und seine Blöcke — oder die Karte, wenn
@@ -215,10 +230,6 @@
       }
     } else {
       kinder.push(h('h' + ebene, { class: 'hb-titel hb-titel--' + ebene, id: ankerId(a, index) }, titelKinder(a)));
-      if (a.url) {
-        var verweis = verweisZeile(a, false);
-        if (verweis) { kinder.push(verweis); }
-      }
     }
     if (a.bloecke && a.bloecke.length) {
       kinder.push(HT.ui.bloecke(a.bloecke, { verlinken: true, ebene: ebene + 1, seite: a.seite, pdf: quelle && quelle.pdf }));
@@ -307,7 +318,7 @@
      ohne den Text anzufassen, in dem js/markieren.js seine Markierungen
      legt. */
 
-  var AUSGENOMMEN = '.hb-seite, .hb-seitenmarke, .hb-verweis, .eintrag__fuss, .badge, .fakten, .nur-sr, [aria-hidden="true"], [hidden]';
+  var AUSGENOMMEN = '.hb-seite, .hb-seitenmarke, .hb-verweis, .hb-titel__rechts, .eintrag__fuss, .badge, .fakten, .nur-sr, [aria-hidden="true"], [hidden]';
   var BLOCK = 'p, li, td, th, caption, figcaption, h1, h2, h3, h4, h5, h6';
   var FALTUNG = {
     'ä': 'a', 'à': 'a', 'á': 'a', 'â': 'a', 'ö': 'o', 'ô': 'o', 'ó': 'o', 'ü': 'u', 'ù': 'u', 'ú': 'u', 'û': 'u',
@@ -725,9 +736,10 @@
     var blatt = h('div', { class: 'hb-blatt' });
     behaelter.appendChild(blatt);
 
+    var kopfTitel = h('h2', { class: 'hb-kapitelkopf__titel' }, h('span', { class: 'hb-titel__name', text: meta.titel }));
     var kopf = h('div', { class: 'hb-kapitelkopf' }, [
       h('span', { class: 'detail__label', text: meta.nummer ? 'Kapitel ' + meta.nummer : 'Referenzhandbuch' }),
-      h('h2', { class: 'hb-kapitelkopf__titel', text: meta.titel })
+      kopfTitel
     ]);
     blatt.appendChild(kopf);
 
@@ -746,9 +758,8 @@
         return;
       }
 
-      var kopfInfo = { nummer: meta.nummer || null, seite: kap.seite, url: kap.url };
-      var verweis = verweisZeile(kopfInfo, true);
-      if (verweis) { kopf.appendChild(verweis); }
+      var rechts = titelRechts({ seite: kap.seite, url: kap.url });
+      if (rechts) { kopfTitel.appendChild(rechts); }
 
       var toc = inhaltsverzeichnis(kap, idx);
       if (toc) { inhalt.appendChild(toc); }

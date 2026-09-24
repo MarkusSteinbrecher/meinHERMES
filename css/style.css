@@ -1847,6 +1847,20 @@ html:has(.hb-fenster[open]) { overflow: hidden; }
 /* Abstand zum Titel über die Leerstelle hinaus: «4.2.1 Projekt» lief sonst zusammen. */
 .hb-nr { color: var(--akzent-text); font-variant-numeric: tabular-nums; margin-right: .35em; }
 .hb-seite { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-leise); font-size: .95em; }
+/* Titelzeilen im Handbuchtext: Seitenzahl und Links rechtsbündig; wird es
+   eng, rutschen die Links samt Seitenzahl in eine eigene Zeile, weiter rechts. */
+.hb-titel, .hb-teil__titel, .hb-kapitelkopf__titel { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 14px; }
+.hb-titel__name { flex: 0 1 auto; min-width: 0; }
+/* Nur die Seitenzahl: bleibt neben dem Titel, der Titel bricht um. */
+.hb-titel:not(:has(.hb-online)), .hb-teil__titel:not(:has(.hb-online)), .hb-kapitelkopf__titel:not(:has(.hb-online)) { flex-wrap: nowrap; }
+.hb-titel__rechts {
+  margin-left: auto;
+  display: inline-flex; align-items: baseline; gap: 14px;
+  font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; line-height: 1.4;
+  white-space: nowrap;
+}
+.hb-titel__rechts .hb-seite { font-size: inherit; }
+.hb-titel__rechts .hb-online { font-weight: 700; text-decoration: none; border: 0; }
 .hb-p { margin: 0 0 10px; color: var(--text-weich); font-size: 14.5px; line-height: 1.6; max-width: 60ch; text-wrap: pretty; }
 .hb-h { margin: 14px 0 4px; font-size: 15px; }
 .hb-liste { margin: 0 0 10px; padding-left: 1.25rem; font-size: 14.5px; line-height: 1.55; color: var(--text-weich); }
