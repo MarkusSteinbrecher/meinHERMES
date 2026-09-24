@@ -936,14 +936,20 @@ a.wert:hover, .wert a:hover { color: var(--akzent); border-color: var(--text); }
   .lk-fortschritt { flex-wrap: wrap; row-gap: 2px; }
 }
 
-/* Kopfzeile beider Seiten: links der Begriff und dahinter seine Kategorie,
-   rechts vorn die Wahl, was vorne steht (beide Möglichkeiten sichtbar, die
-   gewählte unterstrichen), hinten die Bilanz. */
+/* Kopfzeile beider Seiten: oben der Begriff in eigener Zeile, darunter
+   seine Kategorie und rechts vorn die Wahl, was vorne steht (beide
+   Möglichkeiten sichtbar, die gewählte unterstrichen), hinten die Bilanz.
+   Der Begriff steht immer allein in seiner Zeile, auch wenn daneben Platz
+   wäre — sonst wechselte die Kopfzeile je nach Länge des Begriffs zwischen
+   einer und zwei Zeilen, und die Karte sprang in der Höhe (seit 2026-09-24). */
 .lk-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-.lk-kopf__begriff { min-width: 0; }
-/* Die Wahl (hinten die Bilanz) steht rechts — bricht ein langer Begriff die
-   Zeile um, teilt sie sich die zweite Zeile mit der Kategorie. */
+.lk-kopf__begriff { flex: 1 0 100%; min-width: 0; }
 .lk-kopf > :last-child { margin-left: auto; }
+/* Schmal bricht auch der Begriff selbst um: Platz für zwei Zeilen, damit
+   ein- und zweizeilige Begriffe gleich hoch stehen. */
+@media (max-width: 699.98px) {
+  .lk-kopf__begriff { min-height: 2.4em; }
+}
 /* Feste Nummer der Karte, leise neben der Kategorie (dieselbe wie in der Liste). */
 .lk-nr { font-size: 12px; font-weight: 600; color: var(--text-leise); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lk-seitenwahl { display: flex; align-items: center; gap: 6px; }
@@ -1027,7 +1033,7 @@ a.wert:hover, .wert a:hover { color: var(--akzent); border-color: var(--text); }
 .lk-fragen { display: grid; gap: 10px; }
 .lk-frage {
   display: grid;
-  grid-template-columns: 10.5rem minmax(0, 26rem) 1fr;
+  grid-template-columns: 12.5rem minmax(0, 26rem) 1fr;   /* «Entsteht aus (0 von 5)» in einer Zeile */
   gap: 4px 14px;
   align-items: start;
 }
@@ -1055,6 +1061,8 @@ a.wert:hover, .wert a:hover { color: var(--akzent); border-color: var(--text); }
   color: var(--text-leise);
 }
 .lk-frage__label svg { flex: 0 0 auto; }
+/* «(0 von 2)» hinter der Bezeichnung, wenn mehrere Werte gesucht sind. */
+.lk-frage__zahl { margin-left: -2px; font-weight: 600; letter-spacing: .02em; text-transform: none; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* Die gewählten Werte einer Zeile, mit ihrem Zeichen. */
 .lk-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
 .lk-chip {
@@ -1124,6 +1132,15 @@ a.wert:hover, .wert a:hover { color: var(--akzent); border-color: var(--text); }
   .lk-frage__label { grid-column: 1; padding-top: 0; }
   .lk-frage__stand { padding-top: 0; }
   .lk-frage__feld { grid-column: 1 / -1; }
+  /* Bei 390 px passen die zweite Kopfzeile (Grundbegriff · Nr. · Begriff/
+     Definition) und die Verweise samt Verlauf gerade in eine Zeile. */
+  .flip__seite { padding: 16px; }
+  .lk-kopf { column-gap: 8px; }
+  .lk-kopf .badge, .lk-seitenwahl .chip { letter-spacing: 0; }
+  .flip__hinweis.lk-verweise { column-gap: 10px; }
+  .lk-verweise .lk-verweis { font-size: 11px; letter-spacing: 0; }
+  .lk-verweise .lk-verlauf { gap: 3px; }
+  .lk-verweise .lk-verlauf__punkt { width: 8px; height: 8px; }
 }
 
 /* Fuss beider Kartenseiten: die drei Wege weiter, im Kleid der Verweise des Überblicks. */

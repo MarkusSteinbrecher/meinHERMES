@@ -6,7 +6,7 @@
    ein Ergebnis entsteht) und zuunterst die verantwortliche Rolle. Gesucht sind je
    Zeile alle Werte, die dort richtig sind (49 der 71 Aufgaben erzeugen
    mehrere Ergebnisse, die meisten Elemente stehen in mehreren Phasen); die
-   Zeile zählt mit («2 von 4 gefunden»). Jede Wahl wird sofort geprüft, die
+   Zeile zählt hinter ihrer Bezeichnung mit («Ergebnisse (2 von 4)»). Jede Wahl wird sofort geprüft, die
    erste falsche beendet die Zeile; sind alle Zeilen fertig, dreht sich die
    Karte zur Lösung. Die Werte kommen aus einem Kombinationsfeld, bei langen
    Listen (Aufgaben, Ergebnisse) mit Suche. Ohne Wahl geht es auch: Karte drehen und selbst einschätzen.
@@ -588,7 +588,9 @@
 
   /**
    * Eine Abfragezeile der Vorderseite: Bezeichnung, die schon gewählten
-   * Werte, das Kombinationsfeld und der Stand. Gesucht sind alle Werte der
+   * Werte, das Kombinationsfeld und der Stand (✓/✗). Hinter der
+   * Bezeichnung zählt die Zeile mit, wenn mehrere Werte gesucht sind:
+   * «Ergebnisse (0 von 2)». Gesucht sind alle Werte der
    * Zeile (z.pflicht); jede Wahl wird sofort geprüft, die erste falsche
    * beendet sie. Ein freiwilliger Wert (Umsetzung) zählt als richtig, aber
    * nicht zum Gefundenen.
@@ -602,6 +604,7 @@
     var mehrere = pflicht.length > 1;
     var chips = h('div', { class: 'lk-chips', hidden: true });
     var stand = h('span', { class: 'lk-frage__stand' });
+    var zahl = mehrere ? h('span', { class: 'lk-frage__zahl' }) : null;
     var kombi = kombiFeld(poolVon(z.kategorie), {
       label: z.label,
       vergeben: a.gewaehlt.map(function (g) { return g.wert; }),
@@ -611,7 +614,8 @@
     var zeile = h('div', { class: 'lk-frage', role: 'group', 'aria-label': z.label, dataset: { stand: 'offen' } }, [
       h('span', { class: 'lk-frage__label' }, [
         HT.ui.katSymbol(z.kategorie, 14),
-        h('span', { text: z.label })
+        h('span', { text: z.label }),
+        zahl
       ]),
       h('div', { class: 'lk-frage__feld' }, [chips, kombi.el]),
       stand
@@ -633,13 +637,9 @@
       chips.hidden = !a.gewaehlt.length;
       /* Bei einem einzigen gesuchten Wert sagt das Zeichen alles — «1 von 1»
          wäre nur Lärm. */
+      if (zahl) { zahl.textContent = '(' + gefunden() + ' von ' + pflicht.length + ')'; }
       HT.ui.leeren(stand);
-      if (a.fertig) {
-        stand.appendChild(zeichenFuer(a.richtig));
-        if (mehrere) { stand.appendChild(h('span', { text: gefunden() + ' von ' + pflicht.length })); }
-      } else if (mehrere) {
-        stand.appendChild(h('span', { text: gefunden() + ' von ' + pflicht.length + ' gefunden' }));
-      }
+      if (a.fertig) { stand.appendChild(zeichenFuer(a.richtig)); }
       zeile.dataset.stand = a.fertig ? (a.richtig ? 'richtig' : 'falsch') : (a.gewaehlt.length ? 'begonnen' : 'offen');
     }
 
@@ -703,11 +703,11 @@
     return h('div', { class: 'flip__hinweis lk-verweise' }, [
       h('a', {
         class: 'lk-verweis', href: '#/ueberblick?id=' + encodeURIComponent(e.id),
-        text: 'Im Überblick', title: name + ' im Überblick zeigen'
+        text: 'Überblick', title: name + ' im Überblick zeigen'
       }),
       h('a', {
         class: 'lk-verweis', href: '#/handbuch?id=' + encodeURIComponent(e.id),
-        text: 'Im Handbuch', title: name + ' im Handbuch zeigen'
+        text: 'Handbuch', title: name + ' im Handbuch zeigen'
       }),
       offiziell,
       verlaufAnzeige(e)
@@ -1375,7 +1375,7 @@
           h('p', { text: 'Aufgaben und Ergebnisse und ihr Zusammenhang: In welcher Phase, in welchem Modul, was entsteht '
             + 'woraus, wer ist verantwortlich? Je Bezug eine Zeile auf der Vorderseite, und gesucht sind alle '
             + 'Werte, die dort richtig sind — die meisten Elemente stehen in mehreren Phasen, die meisten Aufgaben '
-            + 'erzeugen mehrere Ergebnisse. Die Zeile zählt mit («2 von 4 gefunden»). Die agile Phase Umsetzung '
+            + 'erzeugen mehrere Ergebnisse. Die Zeile zählt hinter ihrer Bezeichnung mit («Ergebnisse (2 von 4)»). Die agile Phase Umsetzung '
             + 'muss nicht genannt werden, wenn das Element auch in anderen Phasen steht; die Lösung zeigt sie trotzdem, leicht grau.' }),
           h('p', { text: 'Jede Wahl wird sofort geprüft; die erste falsche beendet die Zeile, die Lösung zeigt dann, '
             + 'was gefehlt hat. Sind alle Zeilen fertig, dreht sich die Karte. In langen Listen (Aufgaben, Ergebnisse) '
