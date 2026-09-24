@@ -23,7 +23,7 @@
   /* Bei jeder Inhaltsänderung erhöhen: hängt an alle Datenabrufe eine
      Versionsangabe, damit Browser keine veralteten JSON-Dateien aus dem
      Cache verwenden. */
-  var DATEN_VERSION = '2026-09-23e';
+  var DATEN_VERSION = '2026-09-24a';
 
   /* Nur für die Lernkarten: die Grundbegriffe (kuratiert aus den
      Übersichtsseiten von hermes.admin.ch, im Referenzhandbuch kein eigener

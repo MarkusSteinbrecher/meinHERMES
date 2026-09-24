@@ -248,8 +248,12 @@
   }
 
   function seitenText(abschnitte) {
+    /* Von der kleinsten bis zur grössten Seite — die Quelle nennt die
+       Abschnitte in der Folge der Folie, nicht des Handbuchs. */
     var seiten = abschnitte.map(function (a) { return a.seite; }).filter(Boolean);
-    return seiten.length ? ' · S. ' + seiten[0] + (seiten[seiten.length - 1] !== seiten[0] ? '–' + seiten[seiten.length - 1] : '') : '';
+    if (!seiten.length) { return ''; }
+    var von = Math.min.apply(null, seiten), bis = Math.max.apply(null, seiten);
+    return ' · S. ' + von + (bis !== von ? '–' + bis : '');
   }
 
   function quellText(folie, texte) {

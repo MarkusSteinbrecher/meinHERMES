@@ -2825,7 +2825,7 @@
               "punkte": [
                 "Dafür benennt der Auftraggeber eine unabhängige Stelle, die direkt an ihn rapportiert.",
                 "Der Inhalt hängt von Auftrag, Abgrenzung und den eingesetzten Methoden ab.",
-                "Bei einem Projektabbruch erstellt eine beauftragte QS-/Risikostelle einen eigenen Schlussbericht."
+                "Auch zum Projektabschluss (und bei einem Abbruch) erstellt eine beauftragte QS-/Risikostelle einen eigenen Schlussbericht."
               ],
               "quelle": [
                 {
@@ -2838,6 +2838,7 @@
                   "kapitel": "aufgaben",
                   "abschnitte": [
                     "5.4.3.34",
+                    "5.4.1.7",
                     "5.4.1.6"
                   ]
                 }
