@@ -314,7 +314,57 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 }
 .lp-f__bild img { flex: 1 1 auto; min-height: 0; width: 100%; object-fit: contain; }
 .lp-f__bild.ist-leer { display: none; }
-.lp-f__bildtext { flex: 0 0 auto; margin: 0; font-size: 14px; color: var(--text-leise); text-align: center; }
+.lp-f__bildtext { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; font-size: 14px; color: var(--text-leise); text-align: center; }
+/* Lupe: das Bild selbst und das Icon vor der Bildunterschrift öffnen es gross. */
+.lp-f__bild img.ist-zoombar { cursor: zoom-in; }
+.lp-f__lupe {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--rand-stark);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--akzent-text);
+  cursor: pointer;
+}
+.lp-f__lupe:hover { border-color: var(--akzent); color: var(--akzent); }
+
+/* Die Abbildung gross (lupeOeffnen in js/lernpfad.js). */
+.lp-lupe {
+  width: calc(100vw - 32px);
+  height: calc(100dvh - 32px);
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 1px solid var(--rand-stark);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--schatten-stark);
+  overflow: hidden;
+}
+.lp-lupe[open] { display: flex; flex-direction: column; }
+.lp-lupe::backdrop { background: rgba(32, 30, 29, .55); }
+.lp-lupe__kopf { display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 20px; border-bottom: 1px solid var(--rand); }
+.lp-lupe__titel { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 14px; color: var(--text-weich); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-lupe__steuer { flex: 0 0 auto; display: flex; align-items: center; gap: 2px; }
+.lp-lupe__knopf { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--text-weich); cursor: pointer; }
+.lp-lupe__knopf:hover { background: var(--flaeche-2); color: var(--text); }
+.lp-lupe__stufe { min-width: 48px; font-size: 12px; font-weight: 700; text-align: center; color: var(--text-leise); font-variant-numeric: tabular-nums; }
+/* margin: auto zentriert, solange das Bild kleiner ist, und lässt es
+   grösser ganz erreichbar (anders als justify-content: center). */
+.lp-lupe__flaeche { flex: 1 1 auto; min-height: 0; display: flex; overflow: auto; overscroll-behavior: contain; padding: 16px; background: var(--weiss); touch-action: pan-x pan-y pinch-zoom; }
+.lp-lupe__bild { cursor: zoom-in; }
+.lp-lupe__flaeche.ist-gezoomt, .lp-lupe__flaeche.ist-gezoomt .lp-lupe__bild { cursor: grab; }
+.lp-lupe__flaeche.ist-gezogen, .lp-lupe__flaeche.ist-gezogen .lp-lupe__bild { cursor: grabbing; user-select: none; }
+.lp-lupe__bild { flex: 0 0 auto; margin: auto; max-width: none; height: auto; user-select: none; -webkit-user-drag: none; }
+@media (max-width: 699.98px) {
+  .lp-lupe { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
+  .lp-lupe__kopf { padding-left: 12px; }
+}
 .lp-f__bild-laden { font-size: 16px; color: var(--text-leise-hell); }
 
 /* --- Folientypen ---------------------------------------------------------- */

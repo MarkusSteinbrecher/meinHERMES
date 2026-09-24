@@ -74,7 +74,11 @@
     raster: ['M4 4h7v7H4Z', 'M13 4h7v7h-7Z', 'M4 13h7v7H4Z', 'M13 13h7v7h-7Z'],
     vollbild: ['M4 9V4h5', 'M15 4h5v5', 'M20 15v5h-5', 'M9 20H4v-5'],
     fenster: ['M9 4v5H4', 'M20 9h-5V4', 'M15 20v-5h5', 'M4 15h5v5'],
-    schliessen: ['M6 6l12 12', 'M18 6 6 18']
+    schliessen: ['M6 6l12 12', 'M18 6 6 18'],
+    lupe: ['M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Z', 'M15.3 15.3 20 20', 'M10.5 7.5v6', 'M7.5 10.5h6'],
+    kleiner: ['M6 12h12'],
+    groesser: ['M6 12h12', 'M12 6v12'],
+    einpassen: ['M4 9V4h5', 'M15 4h5v5', 'M20 15v5h-5', 'M9 20H4v-5']
   };
 
   function inhalte() {
@@ -305,11 +309,136 @@
     return h('div', { class: 'lp-f__bild' }, h('span', { class: 'lp-f__bild-laden', text: 'Abbildung wird geladen …' }));
   }
 
-  function bildEinsetzen(platz, block) {
+  /* Abbildungen auf der Folie bekommen eine Lupe (ausser das schmale
+     Phasenband über Elementfolien): Das Gesamtbild (Abbildung 1) ist auf
+     einem Laptop in der Folie nicht lesbar (Sponsor, 2026-09-24). Ein Klick
+     auf das Bild oder das Lupen-Icon neben der Bildunterschrift öffnet es
+     gross (lupeOeffnen). */
+  function bildEinsetzen(platz, block, ohneLupe) {
     HT.ui.leeren(platz);
     if (!block || !block.datei) { platz.classList.add('ist-leer'); return; }
-    platz.appendChild(h('img', { src: block.datei, alt: block.text || 'Abbildung aus dem HERMES-Referenzhandbuch' }));
-    if (block.text) { platz.appendChild(h('p', { class: 'lp-f__bildtext', text: block.text })); }
+    var alt = block.text || 'Abbildung aus dem HERMES-Referenzhandbuch';
+    var bild = h('img', { src: block.datei, alt: alt });
+    platz.appendChild(bild);
+    var knopf = null;
+    if (!ohneLupe) {
+      bild.classList.add('ist-zoombar');
+      bild.addEventListener('click', function () { lupeOeffnen(block, knopf); });
+      knopf = h('button', { type: 'button', class: 'lp-f__lupe', title: 'Abbildung vergrössern', 'aria-label': 'Abbildung vergrössern' },
+        HT.ui.symbol(ICONS.lupe, 22));
+      knopf.addEventListener('click', function () { lupeOeffnen(block, knopf); });
+    }
+    if (block.text || knopf) {
+      platz.appendChild(h('p', { class: 'lp-f__bildtext' }, [knopf, block.text ? h('span', { text: block.text }) : null]));
+    }
+  }
+
+  /* --- Lupe: eine Abbildung gross ------------------------------------------ */
+
+  /* Ein modaler Dialog über der Präsentation (auch im Vollbild, Top Layer),
+     die Folientasten ruhen solange. Die Abbildung steht zuerst eingepasst,
+     dann näher mit +/− (Knöpfe, Tasten + − 0), mit dem Mausrad bei
+     gedrückter Strg-/Cmd-Taste oder der Trackpad-Geste; gerollt wird mit
+     Rad, Balken oder Ziehen. Stufen relativ zum Einpassen, 1 bis 8. */
+  function lupeOeffnen(block, vorher) {
+    var stufe = 1;
+    var bild = h('img', { class: 'lp-lupe__bild', src: block.datei, alt: block.text || 'Abbildung', draggable: 'false' });
+    var flaeche = h('div', { class: 'lp-lupe__flaeche' }, bild);
+    var anzeige = h('span', { class: 'lp-lupe__stufe', 'aria-live': 'polite' });
+    function kn(titel, pfade, fn) {
+      var b = h('button', { type: 'button', class: 'lp-lupe__knopf', title: titel, 'aria-label': titel }, HT.ui.symbol(pfade, 20));
+      b.addEventListener('click', fn);
+      return b;
+    }
+    var dialog = h('dialog', { class: 'lp-lupe', 'aria-label': block.text || 'Abbildung' }, [
+      h('div', { class: 'lp-lupe__kopf' }, [
+        h('p', { class: 'lp-lupe__titel', text: block.text || 'Abbildung' }),
+        h('div', { class: 'lp-lupe__steuer' }, [
+          kn('Kleiner (−)', ICONS.kleiner, function () { zoomen(stufe / 1.5); }),
+          anzeige,
+          kn('Grösser (+)', ICONS.groesser, function () { zoomen(stufe * 1.5); }),
+          kn('Einpassen (0)', ICONS.einpassen, function () { zoomen(1); }),
+          kn('Schliessen (Esc)', ICONS.schliessen, function () { dialog.close(); })
+        ])
+      ]),
+      flaeche
+    ]);
+
+    /* Breite der eingepassten Abbildung in px. */
+    function passend() {
+      var nb = bild.naturalWidth || 1000, nh = bild.naturalHeight || 700;
+      return nb * Math.min((flaeche.clientWidth - 32) / nb, (flaeche.clientHeight - 32) / nh);
+    }
+
+    /* Zoomen um einen Punkt der Fläche (Standard: die Mitte): er bleibt,
+       wo er ist. */
+    function zoomen(neu, px, py) {
+      neu = Math.max(1, Math.min(8, neu));
+      var r = flaeche.getBoundingClientRect();
+      var ax = px === undefined ? flaeche.clientWidth / 2 : px - r.left;
+      var ay = py === undefined ? flaeche.clientHeight / 2 : py - r.top;
+      var br = bild.getBoundingClientRect();
+      var relX = (ax + r.left - br.left) / (br.width || 1), relY = (ay + r.top - br.top) / (br.height || 1);
+      stufe = neu;
+      bild.style.width = Math.round(passend() * stufe) + 'px';
+      flaeche.classList.toggle('ist-gezoomt', stufe > 1);
+      var nb = bild.getBoundingClientRect();
+      flaeche.scrollLeft += (nb.left + relX * nb.width) - (ax + r.left);
+      flaeche.scrollTop += (nb.top + relY * nb.height) - (ay + r.top);
+      anzeige.textContent = Math.round(stufe * 100) + ' %';
+    }
+
+    flaeche.addEventListener('wheel', function (ev) {
+      if (!ev.ctrlKey && !ev.metaKey) { return; }   // ohne Taste: rollen
+      ev.preventDefault();
+      zoomen(stufe * Math.exp(-ev.deltaY * 0.01), ev.clientX, ev.clientY);
+    }, { passive: false });
+
+    /* Ziehen verschiebt; ein Klick ohne Ziehen geht eine Stufe näher. */
+    var zug = null;
+    flaeche.addEventListener('pointerdown', function (ev) {
+      if (ev.button !== 0) { return; }
+      zug = { x: ev.clientX, y: ev.clientY, l: flaeche.scrollLeft, t: flaeche.scrollTop, bewegt: false, id: ev.pointerId };
+    });
+    flaeche.addEventListener('pointermove', function (ev) {
+      if (!zug || ev.pointerId !== zug.id) { return; }
+      var dx = ev.clientX - zug.x, dy = ev.clientY - zug.y;
+      if (!zug.bewegt && Math.abs(dx) + Math.abs(dy) > 4) {
+        zug.bewegt = true;
+        try { flaeche.setPointerCapture(ev.pointerId); } catch (e) { /* egal */ }
+        flaeche.classList.add('ist-gezogen');
+      }
+      if (zug.bewegt) { flaeche.scrollLeft = zug.l - dx; flaeche.scrollTop = zug.t - dy; }
+    });
+    function loslassen(ev) {
+      if (!zug) { return; }
+      var klick = !zug.bewegt && ev.type === 'pointerup' && ev.target === bild && ev.pointerType === 'mouse';
+      zug = null;
+      flaeche.classList.remove('ist-gezogen');
+      if (klick) { zoomen(stufe < 8 ? stufe * 1.5 : 1, ev.clientX, ev.clientY); }
+    }
+    flaeche.addEventListener('pointerup', loslassen);
+    flaeche.addEventListener('pointercancel', loslassen);
+
+    dialog.addEventListener('keydown', function (ev) {
+      ev.stopPropagation();   // die Folie dahinter blättert nicht
+      if (ev.key === '+' || ev.key === '=') { ev.preventDefault(); zoomen(stufe * 1.5); }
+      else if (ev.key === '-') { ev.preventDefault(); zoomen(stufe / 1.5); }
+      else if (ev.key === '0') { ev.preventDefault(); zoomen(1); }
+    });
+    dialog.addEventListener('click', function (ev) { if (ev.target === dialog) { dialog.close(); } });
+    function neuEinpassen() { zoomen(stufe); }
+    global.addEventListener('resize', neuEinpassen);
+    dialog.addEventListener('close', function () {
+      global.removeEventListener('resize', neuEinpassen);
+      dialog.remove();
+      if (vorher && document.body.contains(vorher)) { try { vorher.focus({ preventScroll: true }); } catch (e) { /* egal */ } }
+    });
+
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    function start() { zoomen(1); }
+    if (bild.complete && bild.naturalWidth) { start(); } else { bild.addEventListener('load', start); }
   }
 
   function chips(namen, klasse) {
@@ -498,7 +627,7 @@
        Modulbilder der Szenarien wären dort unlesbar klein — sie stehen in den
        Notizen, die Module selbst rechts als Liste. */
     var platz = f.bild && f.art === 'phase' ? bildPlatz() : null;
-    if (platz) { ctx.nachLaden(function (texte) { bildEinsetzen(platz, bildSuchen(f, texte)); }); }
+    if (platz) { ctx.nachLaden(function (texte) { bildEinsetzen(platz, bildSuchen(f, texte), true); }); }
     var kicker = h('p', { class: 'lp-f__art' }, [
       HT.ui.katSymbol(f.art, 18),
       h('span', { text: ART_NAME[f.art] || '' }),
