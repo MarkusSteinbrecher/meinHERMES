@@ -168,8 +168,9 @@
 
   /* --- Kapiteltext in Handbuchgliederung ------------------------------------ */
 
-  /* Titelzeile: links Nummer und Titel, rechtsbündig die Seitenzahl und —
-     hat der Abschnitt eine eigene Online-Seite — «HERMES online» und «PDF». */
+  /* Titelzeile: links Nummer und Titel, rechtsbündig — hat der Abschnitt
+     eine eigene Online-Seite — «HERMES online» und «PDF», dann ganz rechts
+     die Seitenzahl. */
   function titelKinder(a) {
     return [
       h('span', { class: 'hb-titel__name' }, [
@@ -181,7 +182,7 @@
   }
 
   function titelRechts(a) {
-    var teile = [seiteElement(a.seite)].concat(a.url ? verweisLinks(a) : []).filter(Boolean);
+    var teile = (a.url ? verweisLinks(a) : []).concat([seiteElement(a.seite)]).filter(Boolean);
     return teile.length ? h('span', { class: 'hb-titel__rechts' }, teile) : null;
   }
 
