@@ -395,8 +395,14 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
   text-transform: uppercase;
   color: var(--akzent-text);
 }
+.lp-f__art .gswatch { width: 26px; height: 26px; }
+.lp-f__art--phase { color: var(--gk-phase-fg); }
+.lp-f__art--modul { color: var(--gk-modul-fg); }
+.lp-f__art--szenario { color: var(--gk-szenario-fg); }
+.lp-tafel__marke .gswatch { width: 18px; height: 18px; margin-right: 8px; vertical-align: -4px; }
 .lp-pflicht {
   margin-left: 6px;
+  color: var(--akzent-text);
   padding: 3px 11px;
   border-radius: 999px;
   background: var(--akzent-schwach);
@@ -430,16 +436,39 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-zahl__label { margin-top: 6px; font-size: 18px; font-weight: 600; }
 .lp-zahl__zusatz { font-size: 15px; color: var(--text-leise); }
 
-.lp-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 7px; }
-.lp-chip {
-  padding: 4px 12px;
+/* Elemente wie die Knoten des Graphen (css/graph.css): Kreis mit Symbol in
+   der Farbe der Art; Aufgabe und Ergebnis als Kasten in ihren Farben,
+   Phase, Modul und Szenario als Pille, Rolle und Meilenstein ohne Rahmen. */
+.lp-els { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 7px; }
+.lp-els--liste { flex-direction: column; flex-wrap: nowrap; align-items: flex-start; gap: 5px; }
+.lp-el {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 3px 11px 3px 4px;
   border: 1px solid var(--rand-stark);
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--weiss);
   font-size: 16px;
-  line-height: 1.3;
+  line-height: 1.25;
 }
-.lp-chips--meilenstein .lp-chip { border-color: var(--akzent-schwach-2); background: var(--akzent-schwach); }
+.lp-el .gswatch { width: 22px; height: 22px; }
+.lp-el__name { min-width: 0; }
+.lp-el__zusatz { font-size: .85em; color: var(--text-leise); }
+.lp-el--aufgabe { border-color: var(--gk-aufgabe); background: var(--gk-aufgabe-bg); color: var(--gk-aufgabe-fg); }
+.lp-el--aufgabe.ist-entscheid { border-width: 2px; padding: 2px 10px 2px 3px; }
+.lp-el--ergebnis { border-color: var(--gk-ergebnis); background: var(--gk-ergebnis-bg); color: var(--gk-ergebnis-fg); }
+.lp-el--phase, .lp-el--modul, .lp-el--szenario { border-radius: 999px; padding-right: 13px; }
+.lp-el--phase { border-color: var(--gk-phase); background: var(--gk-phase-bg); color: var(--gk-phase-fg); }
+.lp-el--modul { border-color: var(--gk-modul); background: var(--gk-modul-bg); color: var(--gk-modul-fg); }
+.lp-el--szenario { border-color: var(--gk-szenario); background: var(--gk-szenario-bg); color: var(--gk-szenario-fg); }
+.lp-el--rolle, .lp-el--meilenstein { padding-left: 0; border-color: transparent; background: transparent; font-weight: 600; }
+.lp-el--rolle { color: var(--gk-rolle-fg); }
+.lp-el--meilenstein { color: var(--gk-ergebnis-fg); }
+.lp-el--mehr { padding-left: 4px; border-color: transparent; background: transparent; color: var(--text-leise); font-size: 15px; }
+/* Beziehung vor einem Faktentitel, in der Linienart der Legende des Überblicks. */
+.lp-fakten__titel .glinie, .lp-tafel__zusatz .glinie { width: 22px; margin-right: 8px; vertical-align: middle; }
 
 /* Spalten */
 .lp-spalten {
@@ -450,6 +479,7 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 }
 .lp-spalte { display: flex; flex-direction: column; gap: 14px; padding-top: 16px; border-top: 5px solid var(--akzent); min-width: 0; }
 .lp-spalte__titel { margin: 0; font-size: 26px; line-height: 1.2; }
+.lp-spalte__titel .gswatch { width: 24px; height: 24px; margin-right: 10px; vertical-align: -3px; }
 .lp-spalte .lp-f__punkte { gap: 10px; }
 .lp-spalte .lp-f__punkte li { font-size: 20px; }
 .lp-f--spalten .lp-spalten { flex: 1 1 auto; align-content: start; }
@@ -468,7 +498,7 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-balken__muster--minimal { background: var(--akzent); margin-left: 0; }
 .lp-balken__liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .lp-balken__zeile { display: grid; grid-template-columns: 200px 1fr 90px; align-items: center; gap: 18px; }
-.lp-balken__name { font-size: 20px; font-weight: 600; }
+.lp-balken__name { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 600; }
 .lp-balken__spur { display: flex; gap: 2px; height: 30px; }
 .lp-balken__teil { background: var(--rand-stark); border-radius: 0 4px 4px 0; }
 .lp-balken__teil--minimal { background: var(--akzent); border-radius: 4px 0 0 4px; }
@@ -500,7 +530,8 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 }
 .lp-rolle__name { display: flex; align-items: flex-start; gap: 8px; font-size: 19px; font-weight: 700; line-height: 1.2; }
 .lp-rolle__name span { min-width: 0; hyphens: manual; overflow-wrap: break-word; }
-.lp-rolle__name svg { flex: 0 0 auto; margin-top: 1px; color: var(--akzent); }
+.lp-rolle__name .gswatch { width: 24px; height: 24px; margin-top: -1px; }
+.lp-rolle__name span:not(.gswatch) { color: var(--gk-rolle-fg); }
 .lp-rolle__text { font-size: 15px; line-height: 1.35; color: var(--text-weich); }
 .lp-rolle__zahl { margin-top: auto; font-size: 13px; color: var(--text-leise); }
 
@@ -701,18 +732,11 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 
 .lp-fakten .lp-fakten__titel:first-child { margin-top: 0; }
 .lp-fakten__leer { margin: 0; font-size: 16px; color: var(--text-leise); }
-.lp-aufgaben { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.lp-aufgaben li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; font-size: 17px; line-height: 1.3; }
-.lp-aufgaben li::before { content: ""; flex: 0 0 auto; width: 7px; height: 7px; margin-right: 2px; border-radius: 50%; background: var(--rand-stark); transform: translateY(-2px); }
-.lp-aufgaben li.ist-entscheid::before { border-radius: 1px; background: var(--akzent); transform: translateY(-2px) rotate(45deg); }
-.lp-aufgaben__rolle { font-size: 14px; color: var(--text-leise); }
-.lp-aufgaben li.lp-aufgaben__mehr { font-size: 15px; color: var(--text-leise); }
-.lp-aufgaben li.lp-aufgaben__mehr::before { visibility: hidden; }
 
-.lp-chip--entscheid { border-color: var(--akzent-schwach-2); background: var(--akzent-schwach); }
-.lp-chips--leise .lp-chip { border-color: var(--rand); color: var(--text-weich); font-size: 15px; }
 
-.lp-entscheid__wer { display: flex; align-items: baseline; gap: 12px; }
+.lp-entscheid__wer { display: flex; flex-direction: column; gap: 6px; }
+.lp-entscheid__rolle { display: flex; align-items: center; gap: 10px; color: var(--gk-rolle-fg); }
+.lp-entscheid__rolle .gswatch { width: 26px; height: 26px; }
 .lp-entscheid__wer .lp-fakten__titel { margin: 0; }
 .lp-entscheid__rolle { font-size: 24px; font-weight: 700; }
 
@@ -772,8 +796,10 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
   border-radius: 12px;
   background: var(--weiss);
   overflow: hidden;
-  --kk-an: #f7bdb0;
-  --kk-agil: #f28b75;
+  /* Kästen in den Farben der Ergebnisse im Graphen und im Nachbau des
+     Überblicks; Rot bleibt dem Fokus. */
+  --kk-an: #a9c8ee;
+  --kk-agil: #6a9fe0;
 }
 .lp-karte__ecke { grid-column: 1; grid-row: 1; border-right: 1px solid var(--rand-fein); border-bottom: 1px solid var(--rand-fein); }
 
@@ -842,12 +868,12 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
   flex-direction: column;
   justify-content: space-between;
   padding: 5px 6px 4px;
-  border: 1px solid var(--kk-an);
+  border: 1px solid var(--gk-ergebnis);
   border-radius: 4px;
-  background: var(--akzent-schwach);
+  background: var(--gk-ergebnis-bg);
   transition: opacity .4s;
 }
-.lp-kk--zustand { border-radius: 10px; background: var(--weiss); }
+.lp-kk--zustand { border-radius: 10px; }
 .lp-kk--meilenstein { border-color: transparent; background: transparent; }
 .lp-kk__name {
   display: -webkit-box;
@@ -857,7 +883,7 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
   font-size: 10.5px;
   font-weight: 600;
   line-height: 1.15;
-  color: var(--text);
+  color: var(--gk-ergebnis-fg);
   hyphens: manual;
 }
 .lp-kk--meilenstein .lp-kk__name { padding-left: 12px; position: relative; }
@@ -868,16 +894,19 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
   top: 3px;
   width: 7px;
   height: 7px;
-  background: var(--akzent);
+  background: var(--gk-ergebnis);
   transform: rotate(45deg);
 }
+.lp-kk--meilenstein.ist-entscheid .lp-kk__name { color: var(--gk-aufgabe-fg); }
+.lp-kk--meilenstein.ist-entscheid .lp-kk__name::before { background: var(--gk-aufgabe); }
 .lp-kk__band { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.5px; height: 4px; margin-bottom: 2px; }
 .lp-kk__band i { border-radius: 1px; background: var(--rand-fein); }
 .lp-kk__band i.ist-an { background: var(--kk-an); }
-.lp-kk__band i.ist-erst { background: var(--akzent); }
+.lp-kk__band i.ist-erst { background: var(--gk-ergebnis-fg); }
 .lp-kk__agil { position: absolute; left: 20%; width: 60%; top: 5px; height: 1.5px; background: var(--kk-agil); }
-.lp-kk__agil.ist-erst { height: 2px; background: var(--akzent); }
-.lp-kk.ist-mit { border-color: var(--rand); background: var(--flaeche); }
+.lp-kk__agil.ist-erst { height: 2px; background: var(--gk-ergebnis-fg); }
+.lp-kk.ist-mit { border-color: var(--rand); border-style: dashed; background: var(--flaeche); }
+.lp-kk.ist-mit .lp-kk__name { color: var(--text-weich); }
 .lp-kk.ist-mit.lp-kk--meilenstein { border-color: transparent; background: transparent; }
 .lp-kk.ist-mit .lp-kk__band i.ist-an, .lp-kk.ist-mit .lp-kk__agil { background: var(--rand-stark); }
 .lp-kk.ist-mit .lp-kk__band i.ist-erst, .lp-kk.ist-mit .lp-kk__name::before { background: var(--text-leise); }
@@ -913,9 +942,10 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-leg--band { display: inline-grid; grid-template-columns: repeat(5, 1fr); gap: 1.5px; width: 34px; background: none; }
 .lp-leg--band i { background: var(--rand-fein); }
 .lp-leg--band i.ist-an { background: var(--kk-an); }
-.lp-leg--band i.ist-erst { background: var(--akzent); }
+.lp-leg--band i.ist-erst { background: var(--gk-ergebnis-fg); }
 .lp-leg--agil { height: 2px; }
-.lp-leg--raute { width: 8px; height: 8px; margin-right: 2px; background: var(--akzent); transform: rotate(45deg); }
+.lp-leg--raute { width: 8px; height: 8px; margin-right: 2px; background: var(--gk-ergebnis); transform: rotate(45deg); }
+.lp-leg--raute.ist-entscheid { background: var(--gk-aufgabe); }
 .lp-leg--nachher { height: 9px; background: transparent; outline: 1.5px dashed var(--akzent-text); outline-offset: -1.5px; }
 .lp-karte__legende.ist-mit .lp-leg--band i.ist-an { background: var(--rand-stark); }
 .lp-karte__legende.ist-mit .lp-leg--band i.ist-erst, .lp-karte__legende.ist-mit .lp-leg--raute { background: var(--text-leise); }
@@ -952,12 +982,12 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-tafel__kern { margin: 0; font-size: 21px; line-height: 1.4; color: var(--text-weich); text-wrap: pretty; }
 .lp-tafel__fakt { display: flex; flex-direction: column; gap: 7px; }
 .lp-tafel__fakt .lp-fakten__titel { margin: 0; font-size: 12.5px; }
-.lp-tafel .lp-chip { font-size: 15px; padding: 3px 11px; }
-.lp-tafel .lp-aufgaben li { font-size: 16px; }
+.lp-tafel .lp-el { font-size: 15px; }
+.lp-tafel .lp-el .gswatch { width: 20px; height: 20px; }
 .lp-tafel__zahlen { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px 20px; }
 .lp-tafel__zahl { display: flex; flex-direction: column; font-size: 14px; line-height: 1.2; color: var(--text-leise); }
 .lp-tafel__wert { font-size: 40px; font-weight: 700; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
-.lp-tafel__zusatz { margin: 0; font-size: 15px; color: var(--text-leise); }
+.lp-tafel__zusatz { display: flex; align-items: center; margin: 0; font-size: 15px; color: var(--text-leise); }
 .lp-tafel .lp-entscheid__rolle { font-size: 22px; }
 .lp-f--karte .lp-f__fuss { left: auto; right: 48px; width: 364px; bottom: 18px; font-size: 13px; }
 .lp-f--karte.ist-ohne-karte .lp-f__fuss { left: 72px; right: 72px; width: auto; }
@@ -965,11 +995,12 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-leinwand .lp-f--karte.ist-dicht .lp-tafel { gap: 12px; }
 .lp-leinwand .lp-f--karte.ist-dicht .lp-tafel__titel { font-size: 34px; }
 .lp-leinwand .lp-f--karte.ist-dicht .lp-tafel__kern { font-size: 19px; }
-.lp-leinwand .lp-f--karte.ist-dicht .lp-tafel .lp-chip { font-size: 14px; padding: 2px 10px; }
+.lp-leinwand .lp-f--karte.ist-dicht .lp-tafel .lp-el { font-size: 14px; padding-top: 2px; padding-bottom: 2px; }
 .lp-leinwand .lp-f--karte.ist-dichter .lp-tafel { gap: 10px; padding-top: 40px; }
 .lp-leinwand .lp-f--karte.ist-dichter .lp-tafel__titel { font-size: 30px; }
 .lp-leinwand .lp-f--karte.ist-dichter .lp-tafel__kern { font-size: 17.5px; }
-.lp-leinwand .lp-f--karte.ist-dichter .lp-tafel .lp-aufgaben li { font-size: 14.5px; }
+.lp-leinwand .lp-f--karte.ist-dichter .lp-tafel .lp-el { font-size: 13.5px; }
+.lp-leinwand .lp-f--karte.ist-dichter .lp-tafel .lp-els--liste { gap: 3px; }
 
 .lp-notizen__punkte { margin: 0 0 8px; padding-left: 1.3em; font-size: 15px; line-height: 1.5; }
 .lp-notizen__punkte li { margin-bottom: 4px; }
@@ -994,8 +1025,7 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-leinwand .lp-f.ist-dicht .lp-f__punkte li { font-size: 19px; }
 .lp-leinwand .lp-f.ist-dicht .lp-rolle { padding: 10px 14px; gap: 4px; }
 .lp-leinwand .lp-f.ist-dicht .lp-rolle__text { font-size: 14px; }
-.lp-leinwand .lp-f.ist-dicht .lp-aufgaben li { font-size: 15.5px; }
-.lp-leinwand .lp-f.ist-dicht .lp-chip { font-size: 14.5px; padding: 3px 10px; }
+.lp-leinwand .lp-f.ist-dicht .lp-el { font-size: 14.5px; }
 .lp-leinwand .lp-f.ist-dicht .lp-antwort { padding: 9px 16px; font-size: 18px; }
 .lp-leinwand .lp-leinwand .lp-f.ist-dichter .lp-f__kern { font-size: 22px; }
 .lp-leinwand .lp-leinwand .lp-f.ist-dichter .lp-f__punkte li { font-size: 17px; }

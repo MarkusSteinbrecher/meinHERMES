@@ -441,9 +441,34 @@
     if (bild.complete && bild.naturalWidth) { start(); } else { bild.addEventListener('load', start); }
   }
 
-  function chips(namen, klasse) {
-    return h('ul', { class: 'lp-chips' + (klasse ? ' ' + klasse : '') }, namen.map(function (n) {
-      return h('li', { class: 'lp-chip', text: n });
+  /* Elemente sehen aus wie im Graphen (js/graph-zeichnen.js), damit man sie
+     aus Überblick, Suche und Handbuch wiedererkennt: vorn der Kreis mit dem
+     Symbol ihrer Art, Aufgaben und Ergebnisse als Kasten in deren Farbe,
+     Rollen und Meilensteine ohne Kasten, Entscheide mit kräftigem Rand.
+     Rot bleibt der Akzent der Folie (Marke, Fokus, «minimal gefordert»). */
+  function artVon(kat, name) {
+    return kat === 'ergebnis' && /^Meilenstein /.test(name) ? 'meilenstein' : kat;
+  }
+
+  function kreis(art, groesse) {
+    return h('span', { class: 'gswatch gswatch--' + (art === 'meilenstein' ? 'ergebnis' : art), 'aria-hidden': 'true' },
+      HT.ui.katSymbol(art, groesse || 13));
+  }
+
+  /** Ein Element als Listeneintrag; `text` ersetzt den angezeigten Namen
+      (ohne «Meilenstein »), `zusatz` steht klein dahinter. */
+  function element(kat, name, text, zusatz) {
+    if (/^\+ \d+ weitere$/.test(name)) { return h('li', { class: 'lp-el lp-el--mehr', text: name }); }
+    var art = artVon(kat, name);
+    return h('li', {
+      class: 'lp-el lp-el--' + art + (kat === 'aufgabe' && istEntscheid({ begriff: name }) ? ' ist-entscheid' : '')
+    }, [kreis(art), h('span', { class: 'lp-el__name', text: text || name }), zusatz ? h('span', { class: 'lp-el__zusatz', text: zusatz }) : null]);
+  }
+
+  /** Mehrere Elemente einer Kategorie nebeneinander (quer: als Liste untereinander). */
+  function elemente(kat, namen, quer) {
+    return h('ul', { class: 'lp-els' + (quer ? ' lp-els--liste' : '') }, namen.map(function (n) {
+      return element(kat, n, kat === 'ergebnis' ? ohnePraefix(n) : null);
     }));
   }
 
@@ -591,7 +616,7 @@
     if (art === 'szenario') {
       teile.push(h('div', { class: 'lp-fakten__zahlen' }, [zahl((eintrag.module || []).length, 'Module')]));
       teile.push(h('p', { class: 'lp-fakten__titel', text: 'Module im Szenario' }));
-      teile.push(chips(eintrag.module || []));
+      teile.push(elemente('modul', eintrag.module || []));
       return teile;
     }
     var erg = art === 'phase' ? mitPhase(ergebnisse, name) : mitModul(ergebnisse, name);
@@ -609,11 +634,11 @@
         HT.daten.phasenImModul(x, name).forEach(function (p) { if (phasen.indexOf(p) === -1) { phasen.push(p); } });
       });
       teile.push(h('p', { class: 'lp-fakten__titel', text: 'Kommt vor in' }));
-      teile.push(chips(HT.daten.phasenSortiert(phasen)));
+      teile.push(elemente('phase', HT.daten.phasenSortiert(phasen)));
     }
     if (meilensteine.length && art === 'modul') {
       teile.push(h('p', { class: 'lp-fakten__titel', text: 'Meilensteine' }));
-      teile.push(chips(meilensteine.map(function (m) { return ohnePraefix(m.begriff); }), 'lp-chips--meilenstein'));
+      teile.push(elemente('ergebnis', meilensteine.map(function (m) { return m.begriff; })));
     }
     return teile;
   }
@@ -628,8 +653,8 @@
        Notizen, die Module selbst rechts als Liste. */
     var platz = f.bild && f.art === 'phase' ? bildPlatz() : null;
     if (platz) { ctx.nachLaden(function (texte) { bildEinsetzen(platz, bildSuchen(f, texte), true); }); }
-    var kicker = h('p', { class: 'lp-f__art' }, [
-      HT.ui.katSymbol(f.art, 18),
+    var kicker = h('p', { class: 'lp-f__art lp-f__art--' + f.art }, [
+      kreis(f.art, 16),
       h('span', { text: ART_NAME[f.art] || '' }),
       f.pflicht ? h('span', { class: 'lp-pflicht', text: 'in jedem Projekt' }) : null
     ]);
@@ -668,7 +693,7 @@
         h('ul', { class: 'lp-rollen', style: '--spalten:' + spalten }, rollen.map(function (r) {
         var verantwortet = aufgaben.filter(function (a) { return a.verantwortlich === r.begriff; }).length;
         return h('li', { class: 'lp-rolle' }, [
-          h('span', { class: 'lp-rolle__name' }, [HT.ui.katSymbol('rolle', 18), h('span', { text: trennen(r.begriff) })]),
+          h('span', { class: 'lp-rolle__name' }, [kreis('rolle', 15), h('span', { text: trennen(r.begriff) })]),
           h('span', { class: 'lp-rolle__text', text: HT.ui.kuerzen(HT.daten.ersterSatz(r.definition || ''), laenge) }),
           h('span', { class: 'lp-rolle__zahl', text: verantwortet ? 'verantwortet ' + anzahl(verantwortet, 'Aufgabe', 'Aufgaben') : 'verantwortet keine Aufgabe' })
         ]);
@@ -704,7 +729,7 @@
       kernSatz(f.kern),
       h('div', { class: 'lp-spalten', style: '--spalten:' + TYPEN.length }, TYPEN.map(function (g) {
         return h('section', { class: 'lp-spalte' }, [
-          h('h3', { class: 'lp-spalte__titel', text: trennen(g.titel) }),
+          h('h3', { class: 'lp-spalte__titel' }, [kreis('ergebnis', 14), h('span', { text: trennen(g.titel) })]),
           teil(g.typ, g.name),
           teil(g.dazu, g.dazuName)
         ]);
@@ -736,7 +761,7 @@
         h('ul', { class: 'lp-balken__liste' }, zeilen.map(function (z) {
           var titel = z.phase + ': ' + z.alle + ' Ergebnisse, davon ' + z.minimal + ' minimal gefordert';
           return h('li', { class: 'lp-balken__zeile', title: titel }, [
-            h('span', { class: 'lp-balken__name', text: z.phase }),
+            h('span', { class: 'lp-balken__name' }, [kreis('phase', 12), h('span', { text: z.phase })]),
             h('span', { class: 'lp-balken__spur' }, [
               h('span', { class: 'lp-balken__teil lp-balken__teil--minimal', style: 'width:' + (z.minimal / max * 100) + '%' }),
               h('span', { class: 'lp-balken__teil', style: 'width:' + ((z.alle - z.minimal) / max * 100) + '%' })
@@ -896,18 +921,15 @@
     return namen.slice(0, max).concat(['+ ' + (namen.length - max) + ' weitere']);
   }
 
-  /* Aufgaben untereinander, Entscheide mit Raute; mehr als `max` werden
-     zu «+ n weitere». */
+  /* Aufgaben untereinander als Kästen wie im Graphen, Entscheide mit
+     kräftigem Rand; mehr als `max` werden zu «+ n weitere». */
   function aufgabenListe(liste, mitRolle, max) {
     max = max || 99;
     var zeilen = liste.slice(0, max).map(function (a) {
-      return h('li', { class: istEntscheid(a) ? 'ist-entscheid' : null }, [
-        h('span', { text: a.begriff }),
-        mitRolle && a.verantwortlich ? h('span', { class: 'lp-aufgaben__rolle', text: a.verantwortlich }) : null
-      ]);
+      return element('aufgabe', a.begriff, null, mitRolle && a.verantwortlich ? a.verantwortlich : null);
     });
-    if (liste.length > max) { zeilen.push(h('li', { class: 'lp-aufgaben__mehr', text: '+ ' + (liste.length - max) + ' weitere' })); }
-    return h('ul', { class: 'lp-aufgaben' }, zeilen);
+    if (liste.length > max) { zeilen.push(element('aufgabe', '+ ' + (liste.length - max) + ' weitere')); }
+    return h('ul', { class: 'lp-els lp-els--liste' }, zeilen);
   }
 
   /* --- Deep Dive: die Karte ------------------------------------------------
@@ -1003,8 +1025,10 @@
   }
 
   function entscheidKasten(name) {
-    return kastenAus(name, ohneTreffen(name).replace(/^Entscheid /, ''), 'meilenstein',
+    var k = kastenAus(name, ohneTreffen(name).replace(/^Entscheid /, ''), 'meilenstein',
       felder().filter(function (x) { return x.aufgabe === name; }));
+    if (k) { k.entscheid = true; }   // eine Aufgabe: Raute in deren Orange
+    return k;
   }
 
   /**
@@ -1177,7 +1201,7 @@
         return h('i', { class: an ? (p === k.reihe ? 'ist-erst' : 'ist-an') : null });
       }).concat([kastenAktivIn(k, 'Umsetzung') ? h('b', { class: 'lp-kk__agil' + (k.reihe === 'Umsetzung' ? ' ist-erst' : '') }) : null]));
       flaeche.appendChild(h('div', {
-        class: 'lp-kk lp-kk--' + k.art + (k.mit ? ' ist-mit' : '') + (fokus ? ' ist-fokus' : '') + (folgt ? ' ist-nachher' : '')
+        class: 'lp-kk lp-kk--' + k.art + (k.entscheid ? ' ist-entscheid' : '') + (k.mit ? ' ist-mit' : '') + (fokus ? ' ist-fokus' : '') + (folgt ? ' ist-nachher' : '')
           + (hell ? '' : ' ist-gedimmt')
           + (ziel.art === 'phase' && k.reihe === ziel.phase ? ' ist-neu-hier' : ''),
         style: 'left:' + k.x + 'px;top:' + k.y + 'px;width:' + KASTEN_B + 'px;height:' + KASTEN_H + 'px',
@@ -1274,12 +1298,13 @@
     fenster.appendChild(flaeche);
     var lineale = linealeBauen(karte, ziel);
     var meilensteine = karte.kaesten.some(function (k) { return k.art === 'meilenstein'; });
+    var entscheide = meilensteine && karte.kaesten.every(function (k) { return k.art !== 'meilenstein' || k.entscheid; });
     var legende = h('p', { class: 'lp-karte__legende' + (karte.mit ? ' ist-mit' : '') }, [
       h('span', { class: 'lp-leg lp-leg--band' }, KLASSISCH.map(function (p, i) { return h('i', { class: i === 0 ? 'ist-erst' : (i < 3 ? 'ist-an' : null) }); })),
       karte.mit ? 'Phasen, in denen es entsteht (wirkt mit)' : 'Phasen, in denen es entsteht — kräftig: erstmals',
       h('span', { class: 'lp-leg lp-leg--agil' }), 'agil in der Umsetzung',
-      meilensteine ? h('span', { class: 'lp-leg lp-leg--raute' }) : null,
-      meilensteine ? 'Meilenstein' : null,
+      meilensteine ? h('span', { class: 'lp-leg lp-leg--raute' + (entscheide ? ' ist-entscheid' : '') }) : null,
+      meilensteine ? (entscheide ? 'Entscheid' : 'Meilenstein') : null,
       opt.legende ? h('span', { class: 'lp-leg lp-leg--nachher' }) : null,
       opt.legende || null
     ]);
@@ -1316,8 +1341,10 @@
     return folie;
   }
 
-  function tafelMarke(text, pflicht) {
-    return h('p', { class: 'lp-tafel__marke' }, [h('span', { text: text }), pflicht ? h('span', { class: 'lp-pflicht', text: pflicht }) : null]);
+  function tafelMarke(text, pflicht, art) {
+    /* Der Kreis steht im Text, damit er bei einer langen Marke nicht allein
+       auf einer Zeile bleibt. */
+    return h('p', { class: 'lp-tafel__marke' }, [h('span', {}, [art ? kreis(art, 12) : null, text]), pflicht ? h('span', { class: 'lp-pflicht', text: pflicht }) : null]);
   }
 
   /* Titel und Rollennamen brechen an den Fugen (trennen), nicht nach der
@@ -1327,17 +1354,13 @@
 
   function tafelKern(text) { return text ? h('p', { class: 'lp-tafel__kern', text: trennen(text) }) : null; }
 
-  function tafelFakt(titel, inhalt) {
-    return inhalt ? h('div', { class: 'lp-tafel__fakt' }, [h('p', { class: 'lp-fakten__titel', text: titel }), inhalt]) : null;
-  }
-
-  function entscheideMarkieren(liste, aufgabenListe) {
-    Array.prototype.forEach.call(liste.children, function (li, i) {
-      if ((aufgabenListe && aufgabenListe[i] && istEntscheid(aufgabenListe[i])) || /^(Meilenstein|Entscheid) /.test(li.textContent)) {
-        li.classList.add('lp-chip--entscheid');
-      }
-    });
-    return liste;
+  /* `linie` zeigt die Beziehung in der Linienart der Legende des Überblicks:
+     verantwortlich, beteiligt, erzeugt. */
+  function tafelFakt(titel, inhalt, linie) {
+    return inhalt ? h('div', { class: 'lp-tafel__fakt' }, [
+      h('p', { class: 'lp-fakten__titel' }, [linie ? h('span', { class: 'glinie glinie--' + linie, 'aria-hidden': 'true' }) : null, h('span', { text: titel })]),
+      inhalt
+    ]) : null;
   }
 
   function kleineZahlen(werte) {
@@ -1406,13 +1429,13 @@
       legende: darauf.length ? 'baut darauf auf' : null,
       tafel: [
         tafelMarke('Kernergebnis ' + (i + 1) + ' von ' + karte.kaesten.length + ' · ' + (erg && erg.typ ? erg.typ : 'Ergebnis'),
-          erg && erg.minimalGefordert ? 'minimal gefordert' : null),
+          erg && erg.minimalGefordert ? 'minimal gefordert' : null, artVon('ergebnis', f.name)),
         tafelTitel(f.titel || f.name),
         tafelKern(f.kern),
-        erg && erg.verantwortlich ? tafelFakt('Verantwortlich', chips(rollenVon(erg.verantwortlich))) : null,
+        erg && erg.verantwortlich ? tafelFakt('Verantwortlich', elemente('rolle', rollenVon(erg.verantwortlich)), 'verantwortlich') : null,
         tafelFakt('Erarbeitet in', wege.length ? aufgabenListe(wege.map(function (w) { return w.aufgabe; }), false, 3)
-          : h('p', { class: 'lp-fakten__leer', text: 'Keine Aufgabe nennt es als Ergebnis.' })),
-        fuer.length ? tafelFakt('Grundlage für', entscheideMarkieren(chips(gedeckelt(fuer.map(function (a) { return a.begriff; }), 3)), fuer)) : null
+          : h('p', { class: 'lp-fakten__leer', text: 'Keine Aufgabe nennt es als Ergebnis.' }), wege.length ? 'erzeugt' : null),
+        fuer.length ? tafelFakt('Grundlage für', elemente('aufgabe', gedeckelt(fuer.map(function (a) { return a.begriff; }), 3))) : null
       ]
     });
   }
@@ -1436,7 +1459,7 @@
       karte: karte, ziel: { art: 'alles' }, ueberblick: true, fuss: ctx.fuss,
       tafel: [
         h('div', { class: 'lp-tafel__kopf' }, [
-          tafelMarke('Rolle' + (r && r.ebene ? ' · Ebene ' + r.ebene : '')),
+          tafelMarke('Rolle' + (r && r.ebene ? ' · Ebene ' + r.ebene : ''), null, 'rolle'),
           tafelTitel(f.titel || f.rolle)
         ]),
         tafelKern(f.kern),
@@ -1460,12 +1483,13 @@
     var karte = rolleKarte(f.rolle);
     var entstehen = karte ? karte.kaesten.filter(function (x) { return x.phasen.indexOf(f.phase) !== -1 && x.art !== 'meilenstein'; }).length : 0;
     var tafel = [
-      tafelMarke(f.rolle + ' · Phase ' + f.phase),
+      tafelMarke(f.rolle + ' · Phase ' + f.phase, null, 'rolle'),
       tafelTitel(f.titel || (f.rolle + ' in der ' + (f.phase === 'Abschluss' || f.phase === 'Initialisierung' ? 'Phase ' + f.phase : f.phase))),
       tafelKern(f.kern),
       kleineZahlen([[v.length, v.length === 1 ? 'Aufgabe' : 'Aufgaben'], [entstehen, entstehen === 1 ? 'Ergebnis' : 'Ergebnisse'], [d.length, d.length === 1 ? 'Entscheid' : 'Entscheide']]),
-      tafelFakt('Verantwortet', v.length ? aufgabenListe(v, false, 5) : h('p', { class: 'lp-fakten__leer', text: 'Keine Aufgabe in dieser Phase.' })),
-      m.length ? h('p', { class: 'lp-tafel__zusatz', text: 'Wirkt mit bei ' + anzahl(m.length, 'weiteren Aufgabe', 'weiteren Aufgaben') + '.' }) : null
+      tafelFakt('Verantwortet', v.length ? aufgabenListe(v, false, 5) : h('p', { class: 'lp-fakten__leer', text: 'Keine Aufgabe in dieser Phase.' }), v.length ? 'verantwortlich' : null),
+      m.length ? h('p', { class: 'lp-tafel__zusatz' }, [h('span', { class: 'glinie glinie--beteiligt', 'aria-hidden': 'true' }),
+        h('span', { text: 'Wirkt mit bei ' + anzahl(m.length, 'weiteren Aufgabe', 'weiteren Aufgaben') + '.' })]) : null
     ];
     if (!karte) { return karteLosFolie(e, ctx, 'lp-f--rollenphase', tafel); }
     return karteFolie({ karte: karte, ziel: { art: 'phase', phase: f.phase }, fuss: ctx.fuss, tafel: tafel });
@@ -1487,7 +1511,7 @@
     var z = rollenZahlen(f.rolle);
     var karte = rolleKarte(f.rolle);
     var kopf = h('div', { class: 'lp-tafel__kopf' }, [
-      tafelMarke('Rolle' + (r && r.ebene ? ' · Ebene ' + r.ebene : '')),
+      tafelMarke('Rolle' + (r && r.ebene ? ' · Ebene ' + r.ebene : ''), null, 'rolle'),
       tafelTitel(f.titel || f.rolle)
     ]);
     var zahlen = kleineZahlen([[z.verantwortet.length, 'Aufgaben verantwortet'], [z.mit.length, 'wirkt mit']]);
@@ -1510,19 +1534,19 @@
        Ausschreibung und Zuschlag aus dem Modul Beschaffung). */
     var ebene = a && verantwortet(a, 'Auftraggeber') ? 'Steuerung' : 'Führung';
     var tafel = [
-      tafelMarke('Entscheid ' + (i + 1) + ' von ' + karte.kaesten.length + ' · ' + ebene),
+      tafelMarke('Entscheid ' + (i + 1) + ' von ' + karte.kaesten.length + ' · ' + ebene, null, 'aufgabe'),
       tafelTitel(f.titel || ohneTreffen(f.name)),
       tafelKern(f.kern)
     ];
     if (a) {
       var wer = rollenVon(a.verantwortlich);
       tafel.push(h('div', { class: 'lp-entscheid__wer' }, [
-        h('span', { class: 'lp-fakten__titel', text: 'Entscheidet' }),
-        h('span', { class: 'lp-entscheid__rolle', text: wer.join(', ') })
+        h('span', { class: 'lp-fakten__titel' }, [h('span', { class: 'glinie glinie--verantwortlich', 'aria-hidden': 'true' }), h('span', { text: 'Entscheidet' })]),
+        h('span', { class: 'lp-entscheid__rolle' }, [kreis('rolle', 15), h('span', { text: wer.join(', ') })])
       ]));
-      if ((a.grundlagen || []).length) { tafel.push(tafelFakt('Gestützt auf', chips(gedeckelt(a.grundlagen, 5)))); }
+      if ((a.grundlagen || []).length) { tafel.push(tafelFakt('Gestützt auf', elemente('ergebnis', gedeckelt(a.grundlagen, 5)))); }
       var folgt = (a.ergebnisse || []).filter(function (n) { return /^Meilenstein /.test(n); });
-      if (folgt.length) { tafel.push(tafelFakt('Danach erreicht', entscheideMarkieren(chips(folgt)))); }
+      if (folgt.length) { tafel.push(tafelFakt('Danach erreicht', elemente('ergebnis', folgt), 'erzeugt')); }
     }
     return karteFolie({ karte: karte, ziel: { art: 'kasten', index: i }, fuss: ctx.fuss, tafel: tafel });
   }
@@ -1550,7 +1574,7 @@
       h('div', { class: 'lp-spalten lp-spalten--listen', style: 'grid-template-columns:' + breiten.map(function (b) { return 'minmax(0,' + b + 'fr)'; }).join(' ') }, listen.map(function (l, i) {
         var m = l.modul, liste = l.liste;
         return h('section', { class: 'lp-spalte', style: '--listenspalten:' + breiten[i] }, [
-          h('h3', { class: 'lp-spalte__titel' }, [h('span', { text: m }), h('span', { class: 'lp-spalte__zahl', text: String(liste.length) })]),
+          h('h3', { class: 'lp-spalte__titel' }, [kreis('modul', 14), h('span', { text: m }), h('span', { class: 'lp-spalte__zahl', text: String(liste.length) })]),
           h('ul', { class: 'lp-ergliste' }, liste.map(function (x) {
             return h('li', { class: x.minimalGefordert ? 'ist-minimal' : null, text: x.begriff });
           }))
