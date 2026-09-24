@@ -499,7 +499,7 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
   background: var(--weiss);
 }
 .lp-rolle__name { display: flex; align-items: flex-start; gap: 8px; font-size: 19px; font-weight: 700; line-height: 1.2; }
-.lp-rolle__name span { min-width: 0; hyphens: auto; overflow-wrap: anywhere; }
+.lp-rolle__name span { min-width: 0; hyphens: manual; overflow-wrap: break-word; }
 .lp-rolle__name svg { flex: 0 0 auto; margin-top: 1px; color: var(--akzent); }
 .lp-rolle__text { font-size: 15px; line-height: 1.35; color: var(--text-weich); }
 .lp-rolle__zahl { margin-top: auto; font-size: 13px; color: var(--text-leise); }
@@ -948,7 +948,7 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
   color: var(--akzent-text);
 }
 .lp-tafel__marke .lp-pflicht { margin-left: 0; font-size: 12px; }
-.lp-tafel__titel { margin: 0; font-size: 38px; font-weight: 700; line-height: 1.1; letter-spacing: -.01em; text-wrap: balance; overflow-wrap: break-word; hyphens: auto; }
+.lp-tafel__titel { margin: 0; font-size: 38px; font-weight: 700; line-height: 1.1; letter-spacing: -.01em; text-wrap: balance; overflow-wrap: break-word; hyphens: manual; }
 .lp-tafel__kern { margin: 0; font-size: 21px; line-height: 1.4; color: var(--text-weich); text-wrap: pretty; }
 .lp-tafel__fakt { display: flex; flex-direction: column; gap: 7px; }
 .lp-tafel__fakt .lp-fakten__titel { margin: 0; font-size: 12.5px; }

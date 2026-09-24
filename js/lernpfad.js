@@ -285,7 +285,7 @@
     var marke = e.kapitel ? 'Kapitel ' + e.kapNr + ' · ' + e.kapitel.titel : 'Lernpfad';
     return h('header', { class: 'lp-f__kopf' }, [
       h('p', { class: 'lp-f__marke', text: marke }),
-      titel ? h('h2', { class: 'lp-f__titel', text: titel }) : null
+      titel ? h('h2', { class: 'lp-f__titel', text: trennen(titel) }) : null
     ]);
   }
 
@@ -492,7 +492,7 @@
     return h('div', { class: 'lp-f lp-f--deck' }, [
       h('div', { class: 'lp-deck__text' }, [
         h('p', { class: 'lp-f__marke', text: 'Lernpfad · ' + (kurs.titel || 'HERMES 2022') }),
-        h('h1', { class: 'lp-deck__titel', text: kurs.deckTitel || kurs.titel }),
+        h('h1', { class: 'lp-deck__titel', text: trennen(kurs.deckTitel || kurs.titel) }),
         h('p', { class: 'lp-deck__kurz', text: (kurs.deckKurz ? kurs.deckKurz + ' ' : '') + summe + ' Folien.' }),
         h('p', { class: 'lp-deck__tasten' }, [
           h('kbd', { text: '→' }), ' weiter  ', h('kbd', { text: '←' }), ' zurück  ',
@@ -530,7 +530,7 @@
     return h('div', { class: 'lp-f lp-f--kapitel' }, [
       h('div', { class: 'lp-kap__links' }, [
         h('p', { class: 'lp-kap__nr', text: 'Kapitel ' + e.kapNr }),
-        h('h1', { class: 'lp-kap__titel', text: k.titel }),
+        h('h1', { class: 'lp-kap__titel', text: trennen(k.titel) }),
         k.kurz ? h('p', { class: 'lp-kap__kurz', text: k.kurz }) : null,
         h('p', { class: 'lp-kap__meta', text: anzahl(e.vonImKapitel, 'Folie', 'Folien') + (k.dauer ? ' · ≈ ' + k.dauer + ' Minuten' : '') })
       ]),
@@ -574,7 +574,7 @@
       kernSatz(f.kern),
       h('div', { class: 'lp-spalten', style: '--spalten:' + Math.max(1, (f.spalten || []).length) }, (f.spalten || []).map(function (s) {
         return h('section', { class: 'lp-spalte' }, [
-          h('h3', { class: 'lp-spalte__titel', text: s.titel }),
+          h('h3', { class: 'lp-spalte__titel', text: trennen(s.titel) }),
           punkteListe(s.punkte)
         ]);
       })),
@@ -639,7 +639,7 @@
       h('div', { class: 'lp-f__koerper' }, [
         h('div', { class: 'lp-f__text' }, [
           kicker,
-          h('h2', { class: 'lp-f__titel lp-f__titel--gross', text: f.titel || f.name }),
+          h('h2', { class: 'lp-f__titel lp-f__titel--gross', text: trennen(f.titel || f.name) }),
           kernSatz(f.kern),
           punkteListe(f.punkte)
         ]),
@@ -668,7 +668,7 @@
         h('ul', { class: 'lp-rollen', style: '--spalten:' + spalten }, rollen.map(function (r) {
         var verantwortet = aufgaben.filter(function (a) { return a.verantwortlich === r.begriff; }).length;
         return h('li', { class: 'lp-rolle' }, [
-          h('span', { class: 'lp-rolle__name' }, [HT.ui.katSymbol('rolle', 18), h('span', { text: r.begriff })]),
+          h('span', { class: 'lp-rolle__name' }, [HT.ui.katSymbol('rolle', 18), h('span', { text: trennen(r.begriff) })]),
           h('span', { class: 'lp-rolle__text', text: HT.ui.kuerzen(HT.daten.ersterSatz(r.definition || ''), laenge) }),
           h('span', { class: 'lp-rolle__zahl', text: verantwortet ? 'verantwortet ' + anzahl(verantwortet, 'Aufgabe', 'Aufgaben') : 'verantwortet keine Aufgabe' })
         ]);
@@ -704,7 +704,7 @@
       kernSatz(f.kern),
       h('div', { class: 'lp-spalten', style: '--spalten:' + TYPEN.length }, TYPEN.map(function (g) {
         return h('section', { class: 'lp-spalte' }, [
-          h('h3', { class: 'lp-spalte__titel', text: g.titel }),
+          h('h3', { class: 'lp-spalte__titel', text: trennen(g.titel) }),
           teil(g.typ, g.name),
           teil(g.dazu, g.dazuName)
         ]);
@@ -1320,9 +1320,12 @@
     return h('p', { class: 'lp-tafel__marke' }, [h('span', { text: text }), pflicht ? h('span', { class: 'lp-pflicht', text: pflicht }) : null]);
   }
 
-  function tafelTitel(text) { return h('h2', { class: 'lp-tafel__titel', text: text }); }
+  /* Titel und Rollennamen brechen an den Fugen (trennen), nicht nach der
+     Silbentrennung des Browsers — die trennte «Kerner-gebnisse»,
+     «Organisatio-nskonzept» (2026-09-24). */
+  function tafelTitel(text) { return h('h2', { class: 'lp-tafel__titel', text: trennen(text) }); }
 
-  function tafelKern(text) { return text ? h('p', { class: 'lp-tafel__kern', text: text }) : null; }
+  function tafelKern(text) { return text ? h('p', { class: 'lp-tafel__kern', text: trennen(text) }) : null; }
 
   function tafelFakt(titel, inhalt) {
     return inhalt ? h('div', { class: 'lp-tafel__fakt' }, [h('p', { class: 'lp-fakten__titel', text: titel }), inhalt]) : null;
@@ -1369,7 +1372,7 @@
     if (gi === -1) {
       return h('div', { class: 'lp-f lp-f--abschnitt' }, [
         h('p', { class: 'lp-f__marke', text: 'Kapitel ' + e.kapNr + ' · ' + e.kapitel.titel }),
-        h('h1', { class: 'lp-abschnitt__titel', text: f.titel || '' }),
+        h('h1', { class: 'lp-abschnitt__titel', text: trennen(f.titel || '') }),
         f.kern ? h('p', { class: 'lp-abschnitt__kern', text: f.kern }) : null
       ]);
     }

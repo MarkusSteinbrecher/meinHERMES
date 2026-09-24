@@ -60,7 +60,8 @@
      «Situationsanaly-se». Gelesen wird der Fachwortschatz aber in seinen
      Bestandteilen, darum setzt trennen() die Trennstellen selbst an die
      Fugen der Zusammensetzung: «Projekt-steuerung», «Situations-analyse».
-     Der Wortschatz ist geschlossen (105 Ergebnisse, 12 Module), die Liste
+     Der Wortschatz ist geschlossen (105 Ergebnisse, 12 Module; seit
+     2026-09-24 auch die Rollen und Titel des Lernpfads), die Liste
      deckt ihn ab; was sie nicht trifft, bricht die CSS-Regel notfalls
      irgendwo um.
 
@@ -73,12 +74,13 @@
      bemessen (css/gesamtbild.css). */
   var TRENNTEILE = ['abbruch', 'abnahme', 'abschluss', 'aktiviert', 'analyse',
     'anforderungen', 'anfrage', 'angepasst', 'anleitung', 'antrag', 'architektur',
-    'aufnahme', 'auftrag', 'bedarfs', 'bericht', 'beschreibung', 'beurteilung',
-    'dokumentation', 'entscheide', 'erfahrungen', 'freigabe', 'führung',
+    'anpassung', 'aufnahme', 'auftrag', 'ausschuss', 'bedarfs', 'bericht', 'beschreibung', 'beurteilung',
+    'dokumentation', 'entscheide', 'entwicklung', 'erfahrungen', 'ergebnis', 'freigabe', 'führung',
     'grundlagen', 'handbuch', 'infrastruktur', 'initialisierung', 'interessen',
-    'konzept', 'liste', 'management', 'massnahmen', 'modell', 'organisation',
+    'konzept', 'leistung', 'liste', 'management', 'manager', 'massnahmen', 'modell', 'organisation',
     'plan', 'protokoll', 'prozess', 'schluss', 'spezifikation', 'status',
-    'steuerung', 'system', 'unabhängig', 'unterlagen', 'verfahren', 'vorgehen'];
+    'steuerung', 'system', 'unabhängig', 'unterlagen', 'unterstützung', 'verantwortlich',
+    'verfahren', 'vertreter', 'vorgehen'];
 
   /* Ein Wort, dessen längster Bestandteil auch nach der Fuge nicht in die
      Spalte passt: «Ausschreibungs-» misst 83 px, frei sind 80. Dort trennt
@@ -88,6 +90,9 @@
   /* Das weiche Trennzeichen (U+00AD) wörtlich in die Quelle zu schreiben
      hiesse, ein unsichtbares Zeichen zu pflegen. */
   var WEICH = String.fromCharCode(0xAD);
+  /* Nach einem Schrägstrich darf die Zeile brechen («Dienstleistung/»
+     «Produkt»); von selbst tut der Browser das nicht. */
+  var NULLBREIT = String.fromCharCode(0x200B);
 
   /* Meilensteine, die ihre Phase öffnen bzw. schliessen. Die Daten sagen nur,
      zu welcher Phase ein Meilenstein gehört; wann er fällt, steht im Wortlaut
@@ -107,6 +112,9 @@
   function trennen(text) {
     return String(text).split(' ').map(function (wort) {
       if (wort.length < 12) { return wort; }
+      if (wort.indexOf('/') > 0 && wort.indexOf('/') < wort.length - 1) {
+        return wort.split('/').map(function (w) { return trennen(w); }).join('/' + NULLBREIT);
+      }
       var klein = wort.toLowerCase(), stellen = (AUSNAHMEN[klein] || []).slice();
       TRENNTEILE.forEach(function (teil) {
         var i = klein.indexOf(teil, 3);
