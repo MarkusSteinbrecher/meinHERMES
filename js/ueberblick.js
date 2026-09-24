@@ -713,14 +713,20 @@
   /* Chip daneben auf der Linie: das im Graphen gewählte Element
      (Aufgabe, Ergebnis, Rolle) mit × zum Aufheben — Module und Phasen stehen
      als Umfang oben. */
+  /* Ohne Auswahl, aber mit Fokus (zweiter Klick löst nur die Auswahl):
+     der Chip bleibt, damit sich der Fokus aufheben lässt. */
+  function graphChipEintrag() {
+    if (!graph) { return null; }
+    var id = graph.auswahlId() || graph.fokusId();
+    var e = id ? HT.daten.eintragMitId(id) : null;
+    return e && (e.kategorie === 'aufgabe' || e.kategorie === 'ergebnis' || e.kategorie === 'rolle') ? e : null;
+  }
+
   function graphChipsZeichnen() {
     if (!refs.graphChips || !graph) { return; }
     HT.ui.leeren(refs.graphChips);
-    /* Ohne Auswahl, aber mit Fokus (zweiter Klick löst nur die Auswahl):
-       der Chip bleibt, damit sich der Fokus aufheben lässt. */
-    var id = graph.auswahlId() || graph.fokusId();
-    var e = id ? HT.daten.eintragMitId(id) : null;
-    if (e && (e.kategorie === 'aufgabe' || e.kategorie === 'ergebnis' || e.kategorie === 'rolle')) {
+    var e = graphChipEintrag();
+    if (e) {
       refs.graphChips.appendChild(chipBauen(e.kategorie, e.begriff, 'Auswahl «' + e.begriff + '» aufheben (Esc)', function () { graph.fokus(null); }));
     }
     refs.graphChips.hidden = !refs.graphChips.childNodes.length;
@@ -741,7 +747,10 @@
       if (name === keine) { chip('modul', 'Kein Modul', 'Wieder alle Module zeigen', function () { graph.listeSchalten('module', name); }); return; }
       chip('modul', name, 'Modul ' + name + ' entfernen', function () { graph.listeSchalten('module', name); });
     });
-    if (zustand.rolle) {
+    /* Ist die eingefärbte Rolle die im Graphen gewählte, steht sie nur
+       einmal da: als Chip des Graphen, dessen × auch die Einfärbung löst. */
+    var imGraph = graphChipEintrag();
+    if (zustand.rolle && !(imGraph && imGraph.kategorie === 'rolle' && imGraph.begriff === zustand.rolle)) {
       chip('rolle', zustand.rolle, 'Auswahl der Rolle aufheben', function () { rolleLoesen(); });
     }
     refs.suchChips.hidden = !refs.suchChips.childNodes.length;
