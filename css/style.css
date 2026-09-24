@@ -771,10 +771,9 @@ main:focus { outline: none; }
 }
 .eintraege > .eintrag:last-child { border-bottom: 1px solid var(--rand); }
 .eintrag, details.stufe-block, .hb-titel[id] { scroll-margin-top: 64px; }
-.eintrag.ist-hervorgehoben {
-  background: var(--akzent-schwach);
-  box-shadow: -12px 0 0 var(--akzent-schwach), 12px 0 0 var(--akzent-schwach);
-}
+/* Das Sprungziel trägt nur eine Titelfarbe — eine rote Fläche über dem
+   ganzen Eintrag sah wie ein Suchtreffer oder eine Markierung aus. */
+.eintrag.ist-hervorgehoben .eintrag__titel { color: var(--akzent-text); }
 
 .eintrag__kopf { padding: 0; }
 .eintrag__titelzeile {
@@ -1832,7 +1831,8 @@ html:has(.hb-fenster[open]) { overflow: hidden; }
   color: var(--text-leise);
   margin: 16px 0 4px;
 }
-.hb-nr { color: var(--akzent-text); font-variant-numeric: tabular-nums; }
+/* Abstand zum Titel über die Leerstelle hinaus: «4.2.1 Projekt» lief sonst zusammen. */
+.hb-nr { color: var(--akzent-text); font-variant-numeric: tabular-nums; margin-right: .35em; }
 .hb-seite { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-leise); font-size: .95em; }
 .hb-p { margin: 0 0 10px; color: var(--text-weich); font-size: 14.5px; line-height: 1.6; max-width: 60ch; text-wrap: pretty; }
 .hb-h { margin: 14px 0 4px; font-size: 15px; }
