@@ -698,9 +698,19 @@ class Bau(object):
                 return
             h = self.haengend
             if h and h['spalten'] == tab['spalten'] and bereich.y0 < 80 and h['_seite'] == seite_nr - 1:
+                # Nach dem Umbruch wiederholt die Tabelle ihre Kopfzeilen —
+                # alle, nicht nur die erste (Tabelle 4: Spaltentitel und
+                # darunter die Phasenbuchstaben I K R E U A).
                 zeilen_neu = tab['zeilen']
-                if zeilen_neu and h['zeilen'] and zeilen_neu[0] == h['zeilen'][0]:
-                    zeilen_neu = zeilen_neu[1:]
+                fett_neu = list(tab.get('fett') or [])
+                kopf_alt = h['zeilen'][:max(1, int(h.get('kopf') or 0))]
+                weg = 0
+                while weg < len(kopf_alt) and weg < len(zeilen_neu) and zeilen_neu[weg] == kopf_alt[weg]:
+                    weg += 1
+                zeilen_neu = zeilen_neu[weg:]
+                fett_neu = fett_neu[weg:]
+                h['fett'] = list(h.get('fett') or []) + [False] * (len(h['zeilen']) - len(h.get('fett') or []))
+                h['fett'].extend(fett_neu + [False] * (len(zeilen_neu) - len(fett_neu)))
                 h['zeilen'].extend(zeilen_neu)
                 h['_seite'] = seite_nr
                 tab = h
