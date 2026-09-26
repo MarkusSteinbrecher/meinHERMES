@@ -501,7 +501,7 @@
       h('p', { text: 'Entwurf: das Gesamtbild der Methode wie Abbildung 1 des Referenzhandbuchs — Phasen als Zeilen, Module als Spalten — in der Bildsprache des Graphen.' }),
       h('p', { text: 'Das Gerüst steht fest: links die Phasen mit ihren Meilensteinen (die Freigabe, die eine Phase öffnet, oben; die Entscheide, mit denen sie endet, unten an der Grenze zur nächsten Phase; modulspezifische dazwischen), oben die Module. Projektsteuerung und Projektführung haben je eine eigene Spalte, Projektgrundlagen liegt in der Initialisierung über drei.' }),
       h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor.' }),
-      h('p', { text: 'Filter (Icon neben der Suche): Phasen und Module blenden Zeilen und Spalten aus — die übrigen werden breiter. Ein Klick auf einen Modulkopf oder eine Phase tut dasselbe; ein zweiter Klick zeigt wieder alle. Eine Rolle (verantwortlich, beteiligt oder beides) und «Nur Entscheide» lassen nur die passenden Aufgaben stehen; Felder ohne Treffer bleiben leer, Meilensteine, die keine dieser Aufgaben erreicht, treten zurück. Der Filter steht in der Adresse und lässt sich so teilen.' })
+      h('p', { text: 'Filter (Icon neben der Suche): Ist etwas gefiltert, nennt es die rote Pille in der Leiste; ein Klick darauf öffnet den Filter, × hebt ihn auf. Phasen und Module blenden Zeilen und Spalten aus — die übrigen werden breiter. Ein Klick auf einen Modulkopf oder eine Phase tut dasselbe; ein zweiter Klick zeigt wieder alle. Eine Rolle (die drei Linien: verantwortlich, beteiligt oder beides) und «Nur Entscheide» (Raute) lassen nur die passenden Aufgaben stehen; Felder ohne Treffer bleiben leer, Meilensteine, die keine dieser Aufgaben erreicht, treten zurück. Der Filter steht in der Adresse und lässt sich so teilen.' })
     ];
   }
 
@@ -557,70 +557,105 @@
 
     /* --- Popover --- */
 
-    function abschnitt(titel, inhalt, klasse) {
-      return h('section', { class: 'gaf' + (klasse ? ' ' + klasse : '') }, [
-        h('div', { class: 'gaf__kopf' }, h('h3', { class: 'gaf__titel', text: titel })),
-        inhalt
+    /* Aufbau: oben in der Kopfzeile des Popovers die Trefferzahl, der Schalter
+       «Nur Entscheide» (Raute) und «Aufheben»; darunter vier gleich gebaute
+       Spalten — Phasen, Szenarien, Module, Rolle —, jede mit dem Zeichen ihrer
+       Kategorie im Titel und derselben Zeile (Kasten oder Punkt, Name, Zahl).
+       Die Vorgehensweise steht schon in der Leiste und fehlt hier. */
+    var IKONE_RAUTE = ['M12 3.5 20.5 12 12 20.5 3.5 12Z'];
+
+    function titelZeile(kat, titel, rechts) {
+      return h('div', { class: 'rf-titel' }, [
+        h('span', { class: 'gswatch gswatch--' + kat, 'aria-hidden': 'true' }, HT.ui.katSymbol(kat, 12)),
+        h('h3', { class: 'rf-titel__text', text: titel }),
+        rechts || null
       ]);
     }
 
-    function segment(optionen, wert, beiWahl, label) {
-      return h('div', { class: 'segment', role: 'group', 'aria-label': label }, optionen.map(function (o) {
-        return h('button', {
-          type: 'button', class: 'segment__knopf', text: o.label, 'aria-pressed': o.key === wert ? 'true' : 'false',
-          'data-fokus': label + ':' + o.key,
-          on: { click: function () { if (o.key !== wert) { beiWahl(o.key); } } }
-        });
-      }));
+    /* «Alle» rechts im Titel: wählt alle; sind schon alle gewählt, keine. */
+    function alleKnopf(feld, label) {
+      var alle = !filter[feld];
+      return h('button', {
+        type: 'button', class: 'rf-alle', 'data-fokus': 'alle:' + feld,
+        text: alle ? 'Keine' : 'Alle', title: (alle ? 'Keine ' : 'Alle ') + label,
+        on: { click: function () { filter[feld] = alle ? [] : null; geaendert(); } }
+      });
     }
 
-    function haken(feld, name, alle, zahl) {
+    /* Eine Zeile: Kasten (mehrfach) oder Punkt (eines), Name, Zahl. */
+    function zeile(art, an, name, zahl, beiWechsel, fokus) {
+      var eingabe = h('input', { type: art, class: 'gs-schalter__eingabe', 'data-fokus': fokus, tabindex: '-1' });
+      eingabe.checked = an;
+      return h('button', {
+        type: 'button', class: 'rf-zeile', role: art === 'radio' ? 'radio' : 'checkbox',
+        'aria-checked': an ? 'true' : 'false', 'data-fokus': fokus,
+        on: { click: beiWechsel }
+      }, [
+        eingabe,
+        h('span', { class: 'rf-zeile__name', text: name }),
+        zahl === undefined ? null : h('span', { class: 'rf-zeile__zahl', text: String(zahl) })
+      ]);
+    }
+
+    function haken(feld, name, alle) {
       var an = gezeigt(filter[feld], name);
-      var kasten = h('input', { type: 'checkbox', class: 'gs-schalter__eingabe', 'data-fokus': feld + ':' + name });
-      kasten.checked = an;
-      kasten.addEventListener('change', function () {
+      return zeile('checkbox', an, name, undefined, function () {
         var l = filter[feld] ? filter[feld].slice() : alle.slice();
         var i = l.indexOf(name);
-        if (kasten.checked && i === -1) { l.push(name); }
-        if (!kasten.checked && i !== -1) { l.splice(i, 1); }
+        if (i === -1) { l.push(name); } else { l.splice(i, 1); }
         filter[feld] = alle.every(function (n) { return l.indexOf(n) !== -1; }) ? null : l;
         geaendert();
-      });
-      return h('label', { class: 'gs-schalter' }, [
-        kasten,
-        h('span', { class: 'gs-schalter__label', text: name }),
-        zahl === undefined ? null : h('span', { class: 'gs-schalter__extra', text: String(zahl) })
-      ]);
-    }
-
-    function alleKasten(feld, label) {
-      var l = filter[feld];
-      var kasten = h('input', { type: 'checkbox', class: 'gs-schalter__eingabe', 'data-fokus': 'alle:' + feld, title: 'Alle ' + label });
-      kasten.checked = !l;
-      kasten.indeterminate = !!l && l.length > 0;
-      kasten.addEventListener('change', function () { filter[feld] = kasten.checked ? null : []; geaendert(); });
-      return h('label', { class: 'gs-schalter' }, [kasten, h('span', { class: 'gs-schalter__label', text: 'Alle ' + label })]);
-    }
-
-    /* Wahl aus einer Liste, die sich ausschliesst (Szenario, Rolle): Punkt
-       vorn, ein zweiter Klick hebt sie auf. */
-    function wahl(titel, an, zahl, beiKlick, fokus) {
-      return h('button', {
-        type: 'button', class: 'gaf__szenario', 'aria-pressed': an ? 'true' : 'false', 'data-fokus': fokus,
-        on: { click: beiKlick }
-      }, [
-        h('span', { class: 'gaf__szenario-haken', 'aria-hidden': 'true', text: an ? '●' : '○' }),
-        h('span', { class: 'gaf__szenario-titel', text: titel }),
-        zahl === undefined ? null : h('span', { class: 'gs-schalter__extra', text: String(zahl) })
-      ]);
+      }, feld + ':' + name);
     }
 
     function trefferText() {
       if (!a) { return ''; }
       var t = a.treffer;
       var was = filter.entscheide ? (t.aufgaben === 1 ? 'Entscheid' : 'Entscheide') : (t.aufgaben === 1 ? 'Aufgabe' : 'Aufgaben');
-      return t.aufgaben + ' ' + was + ' in ' + t.phasen + (t.phasen === 1 ? ' Phase' : ' Phasen') + ' und '
-        + t.module + (t.module === 1 ? ' Modul' : ' Modulen');
+      return t.aufgaben + ' ' + was + ' · ' + t.phasen + (t.phasen === 1 ? ' Phase' : ' Phasen') + ' · '
+        + t.module + (t.module === 1 ? ' Modul' : ' Module');
+    }
+
+    /** Was gefiltert ist, kurz — für die Pille in der Leiste. */
+    function filterText() {
+      var teile = [];
+      if (filter.rolle) {
+        teile.push(filter.rolle + (filter.bezug === 'verantwortlich' ? '' : filter.bezug === 'beteiligt' ? ' (beteiligt)' : ' (verantw. oder beteiligt)'));
+      }
+      if (filter.entscheide) { teile.push('Nur Entscheide'); }
+      [['phasen', 'Phase', 'Phasen'], ['module', 'Modul', 'Module']].forEach(function (d) {
+        var l = filter[d[0]];
+        if (!l) { return; }
+        if (!l.length) { teile.push('keine ' + d[2]); }
+        else if (l.length <= 2) { teile.push(l.join(', ')); }
+        else { teile.push(l.length + ' ' + d[2]); }
+      });
+      return teile.join(' · ');
+    }
+
+    function entscheideKnopf() {
+      return h('button', {
+        type: 'button', class: 'rf-entscheide', 'aria-pressed': filter.entscheide ? 'true' : 'false', 'data-fokus': 'entscheide',
+        title: filter.entscheide ? 'Wieder alle Aufgaben zeigen' : 'Nur die Entscheidungsaufgaben zeigen',
+        on: { click: function () {
+          filter.entscheide = !filter.entscheide;
+          /* Ein Filter auf Aufgaben braucht die Aufgaben im Bild. */
+          if (filter.entscheide && !sicht.aufgabe) { sicht.aufgabe = true; sichtSpeichern(sicht); }
+          geaendert();
+        } }
+      }, [HT.ui.symbol(IKONE_RAUTE, 13), h('span', { text: 'Nur Entscheide' })]);
+    }
+
+    function bezugKnoepfe() {
+      var glyphe = { verantwortlich: ['verantwortlich'], beteiligt: ['beteiligt'], beides: ['verantwortlich', 'beteiligt'] };
+      return h('div', { class: 'rf-bezug', role: 'group', 'aria-label': 'Bezug der Rolle' }, BEZUEGE.map(function (b) {
+        var an = filter.bezug === b.key;
+        return h('button', {
+          type: 'button', class: 'rf-bezug__knopf', 'aria-pressed': an ? 'true' : 'false', 'data-fokus': 'bezug:' + b.key,
+          title: b.key === 'beides' ? 'Verantwortlich oder beteiligt' : b.label, 'aria-label': b.label,
+          on: { click: function () { if (!an) { filter.bezug = b.key; geaendert(); } } }
+        }, glyphe[b.key].map(function (g) { return h('span', { class: 'glinie glinie--' + g, 'aria-hidden': 'true' }); }));
+      }));
     }
 
     function popInhalt() {
@@ -629,46 +664,32 @@
       var szenarien = HT.daten.eintraegeDerKategorie('szenario').map(function (sz) {
         var mods = HT.graph.szenarioModule(sz.id) || [];
         var an = !!filter.module && filter.module.length === mods.length && mods.every(function (x) { return filter.module.indexOf(x) !== -1; });
-        return wahl(sz.begriff, an, mods.length, function () { filter.module = an ? null : mods.slice(); geaendert(); }, 'sz:' + sz.id);
+        return zeile('radio', an, sz.begriff, undefined, function () { filter.module = an ? null : mods.slice(); geaendert(); }, 'sz:' + sz.id);
       });
       var rollen = HT.daten.eintraegeDerKategorie('rolle').map(function (r) { return r.begriff; })
         .filter(function (name) { return jeRolle[name] > 0 || filter.rolle === name; })
         .sort(function (x, y) { return jeRolle[y] - jeRolle[x] || x.localeCompare(y, 'de'); });
+      var bezugName = { verantwortlich: 'verantwortlich', beteiligt: 'beteiligt', beides: 'verantw. oder beteiligt' }[filter.bezug];
 
-      return h('div', { class: 'gpop__inhalt' }, [
-        h('p', { class: 'ra-pop__treffer', role: 'status' }, [
-          h('strong', { text: trefferText() }),
-          filterAktiv(filter) ? h('button', {
-            type: 'button', class: 'gauswahl__reset', text: 'Alle Filter aufheben',
-            on: { click: function () { filter = leererFilter(); geaendert(); } }
-          }) : null
+      return h('div', { class: 'gpop__inhalt rf' }, [
+        h('section', { class: 'rf-spalte' }, [
+          titelZeile('phase', 'Phasen', alleKnopf('phasen', 'Phasen')),
+          h('div', { class: 'rf-liste', role: 'group', 'aria-label': 'Phasen' }, m.phasen.map(function (p) { return haken('phasen', p, m.phasen); }))
         ]),
-        h('div', { class: 'gaf-raster ra-pop__raster' }, [
-          h('div', { class: 'gaf-spalte' }, [
-            abschnitt('Vorgehensweise', segment([{ key: 'klassisch', label: 'Klassisch' }, { key: 'agil', label: 'Agil' }], vorgehen, function (k) {
-              vorgehen = k;
-              filter.phasen = null;
-              geaendert();
-            }, 'Vorgehensweise')),
-            abschnitt('Aufgaben', segment([{ key: 'alle', label: 'Alle' }, { key: 'entscheide', label: 'Nur Entscheide' }], filter.entscheide ? 'entscheide' : 'alle', function (k) {
-              filter.entscheide = k === 'entscheide';
-              /* Ein Filter auf Aufgaben braucht die Aufgaben im Bild. */
-              if (filter.entscheide && !sicht.aufgabe) { sicht.aufgabe = true; sichtSpeichern(sicht); }
-              geaendert();
-            }, 'Aufgaben'))
-          ]),
-          abschnitt('Phasen', h('div', { class: 'gs-liste', role: 'group', 'aria-label': 'Phasen' },
-            [alleKasten('phasen', 'Phasen')].concat(m.phasen.map(function (p) { return haken('phasen', p, m.phasen); })))),
-          abschnitt('Szenarien', h('div', { class: 'gs-liste', role: 'group', 'aria-label': 'Szenarien' }, szenarien)),
-          abschnitt('Module', h('div', { class: 'gs-liste gs-liste--zwei', role: 'group', 'aria-label': 'Module' },
-            [alleKasten('module', 'Module'), h('span', { 'aria-hidden': 'true' })].concat(module.map(function (x) { return haken('module', x, module); }))), 'gaf--module'),
-          abschnitt('Rolle', h('div', { class: 'ra-pop__rolle' }, [
-            segment(BEZUEGE, filter.bezug, function (k) { filter.bezug = k; geaendert(); }, 'Bezug der Rolle'),
-            h('div', { class: 'gs-liste ra-pop__rollen', role: 'group', 'aria-label': 'Rolle' }, rollen.map(function (name) {
-              var an = filter.rolle === name;
-              return wahl(name, an, jeRolle[name], function () { filter.rolle = an ? '' : name; geaendert(); }, 'rolle:' + name);
-            }))
-          ]), 'ra-pop__rollenabschnitt')
+        h('section', { class: 'rf-spalte' }, [
+          titelZeile('szenario', 'Szenario'),
+          h('div', { class: 'rf-liste', role: 'radiogroup', 'aria-label': 'Szenario' }, szenarien)
+        ]),
+        h('section', { class: 'rf-spalte rf-spalte--zwei' }, [
+          titelZeile('modul', 'Module', alleKnopf('module', 'Module')),
+          h('div', { class: 'rf-liste rf-liste--zwei', role: 'group', 'aria-label': 'Module' }, module.map(function (x) { return haken('module', x, module); }))
+        ]),
+        h('section', { class: 'rf-spalte rf-spalte--zwei' }, [
+          titelZeile('rolle', 'Rolle · ' + bezugName, bezugKnoepfe()),
+          h('div', { class: 'rf-liste rf-liste--zwei', role: 'radiogroup', 'aria-label': 'Rolle' }, rollen.map(function (name) {
+            var an = filter.rolle === name;
+            return zeile('radio', an, name, jeRolle[name], function () { filter.rolle = an ? '' : name; geaendert(); }, 'rolle:' + name);
+          }))
         ])
       ]);
     }
@@ -681,17 +702,23 @@
       pop.hidden = !popOffen || !m;
       filterKnopf.setAttribute('aria-expanded', popOffen ? 'true' : 'false');
       filterKnopf.classList.toggle('ist-aktiv', filterAktiv(filter));
-      filterKnopf.title = filterAktiv(filter) ? 'Filter: ' + trefferText() : 'Filter: Phasen, Module, Rolle, Entscheide';
+      filterKnopf.title = filterAktiv(filter) ? 'Filter: ' + filterText() : 'Filter: Phasen, Module, Rolle, Entscheide';
       if (pop.hidden) { return; }
-      pop.appendChild(h('div', { class: 'gpop__kopf' }, [
+      pop.appendChild(h('div', { class: 'gpop__kopf rf-kopf' }, [
         h('strong', { class: 'gpop__titel', text: 'Filter' }),
+        h('span', { class: 'rf-kopf__treffer', role: 'status', text: trefferText() }),
+        entscheideKnopf(),
+        filterAktiv(filter) ? h('button', {
+          type: 'button', class: 'gauswahl__reset rf-kopf__aufheben', text: 'Aufheben',
+          title: 'Alle Filter aufheben', on: { click: function () { filter = leererFilter(); geaendert(); } }
+        }) : null,
         h('button', { type: 'button', class: 'graph-schliessen', 'aria-label': 'Filter schliessen', text: '✕', on: { click: function () { popOffen = false; popZeichnen(); filterKnopf.focus(); } } })
       ]));
       pop.appendChild(popInhalt());
       pop.scrollTop = scroll;
-      var wieder = fokusKey ? pop.querySelector('[data-fokus="' + fokusKey.replace(/"/g, '') + '"]') : null;
+      var wieder = fokusKey ? pop.querySelector('button[data-fokus="' + fokusKey.replace(/"/g, '') + '"]') : null;
       if (wieder) { wieder.focus({ preventScroll: true }); }
-      else if (fokusSetzen) { var erstes = pop.querySelector('.gpop__inhalt button, .gpop__inhalt input'); if (erstes) { erstes.focus(); } }
+      else if (fokusSetzen) { var erstes = pop.querySelector('.rf button'); if (erstes) { erstes.focus(); } }
     }
 
     /* Klick daneben und Escape schliessen. */
@@ -702,7 +729,7 @@
         return;
       }
       if (!popOffen) { return; }
-      if (pop.contains(ev.target) || filterKnopf.contains(ev.target)) { return; }
+      if (pop.contains(ev.target) || filterKnopf.contains(ev.target) || (ev.target.closest && ev.target.closest('.rf-pille'))) { return; }
       popOffen = false;
       popZeichnen();
     }
@@ -756,7 +783,20 @@
                 z ? h('span', { class: 'grail__zahl', text: String(z[kat]) }) : null
               ]);
             })))
-        ],
+        ].concat(filterAktiv(filter) ? [
+          /* Was gefiltert ist: ein Klick öffnet den Filter, × hebt ihn auf. */
+          h('span', { class: 'unterleiste__trenner', 'aria-hidden': 'true' }),
+          h('span', { class: 'rf-pille' }, [
+            h('button', {
+              type: 'button', class: 'rf-pille__text', title: 'Filter: ' + filterText() + ' — ändern',
+              on: { click: function (ev) { ev.stopPropagation(); popOffen = true; popZeichnen(true); } }
+            }, [HT.ui.symbol(IKONE_FILTER, 14), h('span', { text: filterText() })]),
+            h('button', {
+              type: 'button', class: 'rf-pille__x', 'aria-label': 'Filter aufheben', title: 'Filter aufheben', text: '×',
+              on: { click: function () { filter = leererFilter(); popOffen = false; geaendert(); } }
+            })
+          ])
+        ] : []),
         info: { titel: 'Gesamtbild', inhalt: infoInhalt }
       });
     }
