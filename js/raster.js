@@ -18,7 +18,13 @@
    im Phasenband, nicht noch einmal im Feld.
 
    Zeigen auf ein Element hebt jede seiner Stellen hervor; Zeigen auf einen
-   Meilenstein das Feld, in dem er entsteht. */
+   Meilenstein das Feld, in dem er entsteht.
+
+   Zoomen: Das Rad (und das Trackpad) zoomt um den Zeiger, statt die Seite zu
+   rollen; Ziehen verschiebt. Bei 100 % füllt das Raster die Breite der
+   Bühne. Gezoomt wird über CSS `zoom` auf dem Gitter mit fester Breite, nicht
+   über transform: so bleibt das Gitter im Fluss, die Bühne rollt nativ, und
+   Modulköpfe und Phasenband kleben weiter an ihrem Rand. */
 (function (global) {
   'use strict';
 
@@ -36,6 +42,10 @@
   var LAGEN = ['anfang', 'mitte', 'ende'];
   var KAT_REIHE = ['rolle', 'aufgabe', 'ergebnis'];
   var KAT_LABEL = { rolle: 'Rollen', aufgabe: 'Aufgaben', ergebnis: 'Ergebnisse' };
+
+  var ZOOM_MAX = 3;
+  var ZOOM_SCHRITT = 1.25;
+  var IKONE_EINPASSEN = ['M4 9V4h5', 'M20 9V4h-5', 'M4 15v5h5', 'M20 15v5h-5'];
 
   var SPEICHER = 'raster-sicht';
   var STANDARD = { rolle: false, aufgabe: false, ergebnis: true };
@@ -223,8 +233,8 @@
     return el;
   }
 
-  function aufbauen(huelle, m, sicht) {
-    var buehne = h('div', { class: 'ra-buehne' });
+  function aufbauen(huelle, m, sicht, stand) {
+    var buehne = h('div', { class: 'ra-buehne', tabindex: '0', 'aria-label': 'Gesamtbild — Rad zoomt, Ziehen verschiebt' });
     var gitter = h('div', { class: 'ra-gitter', dataset: { vorgehen: m.vorgehen } });
     gitter.style.gridTemplateColumns = 'var(--ra-band) ' + SPALTEN.map(function (s) {
       return 'minmax(var(--ra-spalte-min), ' + (GEWICHT[s] || 1) + 'fr)';
@@ -268,6 +278,7 @@
 
     buehne.appendChild(gitter);
     huelle.appendChild(buehne);
+    var zoom = zoomEinrichten(huelle, buehne, gitter, stand);
 
     /* Zeigen: jede Stelle desselben Elements; beim Meilenstein zusätzlich das
        Feld, in dem er entsteht; beim Modulkopf die Spalte, bei der Phase die
@@ -300,12 +311,13 @@
     function zielAus(el) {
       return el && el.closest ? el.closest('.ra-k, .ra-ms, .ra-modul, .ra-phase__name') : null;
     }
-    gitter.addEventListener('mouseover', function (ev) { markieren(zielAus(ev.target)); });
+    gitter.addEventListener('mouseover', function (ev) { if (!zoom.ziehtGerade()) { markieren(zielAus(ev.target)); } });
     gitter.addEventListener('mouseleave', function () { markieren(null); });
     gitter.addEventListener('focusin', function (ev) { markieren(zielAus(ev.target)); });
 
     return {
       buehne: buehne,
+      zoom: zoom,
       zeigen: function (id) {
         var el = gitter.querySelector('[data-id="' + id + '"]');
         if (!el) { return false; }
@@ -316,13 +328,159 @@
     };
   }
 
+  /* --- Zoomen und Verschieben ------------------------------------------------ */
+
+  /* stand.z überlebt den Neuaufbau (Vorgehensweise, Elemente ein/aus). */
+  function zoomEinrichten(huelle, buehne, gitter, stand) {
+    var basis = 0;
+    var wert = h('button', {
+      type: 'button', class: 'ub-zoom__wert ra-zoomwert', title: 'Auf 100 % — volle Breite',
+      on: { click: function () { zoomMitte(1 / stand.z); } }
+    });
+    var leiste = h('div', { class: 'lk-schweber lk-schweber--zoom', role: 'group', 'aria-label': 'Zoom' }, [
+      h('button', { type: 'button', class: 'ub-zoom__knopf', 'aria-label': 'Verkleinern', title: 'Verkleinern (−)', text: '−', on: { click: function () { zoomMitte(1 / ZOOM_SCHRITT); } } }),
+      wert,
+      h('button', { type: 'button', class: 'ub-zoom__knopf', 'aria-label': 'Vergrössern', title: 'Vergrössern (+)', text: '+', on: { click: function () { zoomMitte(ZOOM_SCHRITT); } } }),
+      h('span', { class: 'ub-schweber__strich', 'aria-hidden': 'true' }),
+      h('button', { type: 'button', class: 'ub-ikonknopf', 'aria-label': 'Alles zeigen', title: 'Alles zeigen (0)', on: { click: function () { allesZeigen(); } } },
+        HT.ui.symbol(IKONE_EINPASSEN, 18))
+    ]);
+    huelle.appendChild(leiste);
+
+    /* Kleinster Zoom: das ganze Raster auf der Bühne. */
+    function zoomMin() {
+      var hoehe = gitter.getBoundingClientRect().height / stand.z;
+      if (!hoehe || !buehne.clientHeight) { return 1; }
+      return Math.max(0.2, Math.min(1, buehne.clientHeight / hoehe));
+    }
+
+    function grenzen(z) { return Math.max(zoomMin(), Math.min(ZOOM_MAX, z)); }
+
+    /* Lage des Gitters in den Rollkoordinaten der Bühne — ist es schmaler als
+       die Bühne, steht es in der Mitte. */
+    function lage() {
+      var rb = buehne.getBoundingClientRect(), rg = gitter.getBoundingClientRect();
+      return { x: rg.left - rb.left + buehne.scrollLeft, y: rg.top - rb.top + buehne.scrollTop };
+    }
+
+    /* Zoomt so, dass der Punkt (px, py) der Bühne stehen bleibt; ohne Punkt
+       die Mitte. */
+    function zoomSetzen(z, um) {
+      z = grenzen(z);
+      var p = um || { x: buehne.clientWidth / 2, y: buehne.clientHeight / 2 };
+      var alt = lage();
+      var ux = (buehne.scrollLeft + p.x - alt.x) / stand.z;
+      var uy = (buehne.scrollTop + p.y - alt.y) / stand.z;
+      stand.z = z;
+      anwenden();
+      var neu = lage();
+      buehne.scrollLeft = ux * z + neu.x - p.x;
+      buehne.scrollTop = uy * z + neu.y - p.y;
+    }
+
+    function zoomMitte(faktor) { zoomSetzen(stand.z * faktor, null); }
+
+    /* Ganz klein bricht die Schrift anders um, das Raster wird dadurch etwas
+       höher als gerechnet — darum wird nachgemessen. */
+    function allesZeigen() {
+      for (var i = 0; i < 4; i++) {
+        zoomSetzen(zoomMin(), null);
+        if (gitter.getBoundingClientRect().height <= buehne.clientHeight + 1) { break; }
+      }
+    }
+
+    function anwenden() {
+      gitter.style.width = basis + 'px';
+      gitter.style.zoom = String(stand.z);
+      wert.textContent = Math.round(stand.z * 100) + ' %';
+    }
+
+    function messen() {
+      if (!document.body.contains(buehne)) { return; }
+      var neu = buehne.clientWidth;
+      if (!neu || neu === basis) { return; }
+      basis = neu;
+      stand.z = grenzen(stand.z);
+      anwenden();
+    }
+    basis = buehne.clientWidth;
+    anwenden();
+    if (global.ResizeObserver) { new global.ResizeObserver(messen).observe(buehne); }
+
+    function punkt(ev) {
+      var r = buehne.getBoundingClientRect();
+      return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+    }
+
+    buehne.addEventListener('wheel', function (ev) {
+      ev.preventDefault();
+      var dy = ev.deltaY * (ev.deltaMode === 1 ? 16 : 1);
+      var dx = ev.deltaX * (ev.deltaMode === 1 ? 16 : 1);
+      /* Seitwärts auf dem Trackpad verschiebt, alles andere zoomt. */
+      if (!ev.ctrlKey && Math.abs(dx) > Math.abs(dy)) { buehne.scrollLeft += dx; return; }
+      zoomSetzen(stand.z * Math.exp(-dy * (ev.ctrlKey ? 0.01 : 0.0015)), punkt(ev));
+    }, { passive: false });
+
+    /* Ziehen verschiebt; erst ab 5 px, damit ein Klick ein Klick bleibt. */
+    var zug = null, nachZug = false;
+    buehne.addEventListener('pointerdown', function (ev) {
+      if (ev.pointerType !== 'mouse' || ev.button !== 0) { return; }
+      zug = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, sl: buehne.scrollLeft, st: buehne.scrollTop, bewegt: false };
+    });
+    buehne.addEventListener('pointermove', function (ev) {
+      if (!zug || ev.pointerId !== zug.id) { return; }
+      var dx = ev.clientX - zug.x, dy = ev.clientY - zug.y;
+      if (!zug.bewegt) {
+        if (Math.hypot(dx, dy) <= 5) { return; }
+        zug.bewegt = true;
+        try { buehne.setPointerCapture(ev.pointerId); } catch (e) { /* egal */ }
+        buehne.classList.add('ist-am-ziehen');
+      }
+      buehne.scrollLeft = zug.sl - dx;
+      buehne.scrollTop = zug.st - dy;
+    });
+    function zugEnde(ev) {
+      if (!zug || ev.pointerId !== zug.id) { return; }
+      if (zug.bewegt) {
+        nachZug = true;
+        global.setTimeout(function () { nachZug = false; }, 0);
+      }
+      zug = null;
+      buehne.classList.remove('ist-am-ziehen');
+    }
+    buehne.addEventListener('pointerup', zugEnde);
+    buehne.addEventListener('pointercancel', zugEnde);
+    /* Ein Zug löst keinen Klick aus. */
+    buehne.addEventListener('click', function (ev) {
+      if (nachZug) { ev.preventDefault(); ev.stopPropagation(); }
+    }, true);
+
+    buehne.addEventListener('keydown', function (ev) {
+      if (ev.metaKey || ev.ctrlKey || ev.altKey) { return; }
+      var tat = true;
+      switch (ev.key) {
+        case '+': case '=': zoomMitte(ZOOM_SCHRITT); break;
+        case '-': case '_': zoomMitte(1 / ZOOM_SCHRITT); break;
+        case '0': allesZeigen(); break;
+        default: tat = false;
+      }
+      if (tat) { ev.preventDefault(); }
+    });
+
+    return {
+      ziehtGerade: function () { return !!(zug && zug.bewegt); },
+      setzen: zoomSetzen
+    };
+  }
+
   /* --- Ansicht ----------------------------------------------------------------- */
 
   function infoInhalt() {
     return [
       h('p', { text: 'Entwurf: das Gesamtbild der Methode wie Abbildung 1 des Referenzhandbuchs — Phasen als Zeilen, Module als Spalten — in der Bildsprache des Graphen.' }),
       h('p', { text: 'Das Gerüst steht fest: links die Phasen mit ihren Meilensteinen (die Freigabe, die eine Phase öffnet, oben; die Entscheide, mit denen sie endet, unten an der Grenze zur nächsten Phase; modulspezifische dazwischen), oben die Module. Projektsteuerung und Projektführung haben je eine eigene Spalte, Projektgrundlagen liegt in der Initialisierung über drei.' }),
-      h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor.' })
+      h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor.' }),
+      h('p', { text: 'Das Rad zoomt um den Mauszeiger, Ziehen verschiebt; + und − und 0 (alles zeigen) gehen auch mit der Tastatur. Bei 100 % füllt das Raster die Breite; ein Klick auf die Prozentzahl führt dorthin zurück. Modulköpfe und Phasen bleiben beim Verschieben am Rand stehen.' })
     ];
   }
 
@@ -332,6 +490,7 @@
     var huelle = h('div', { class: 'ra' }, h('p', { class: 'ub-buehne__laden', text: 'Gesamtbild wird aufgebaut' }));
     behaelter.appendChild(huelle);
     var m = null;
+    var stand = { z: 1 };
 
     function leisteSetzen() {
       var z = m ? zahlen(m) : null;
@@ -385,10 +544,12 @@
         if (!document.body.contains(huelle)) { return; }
         modelle = {};
         m = modell(vorgehen);
-        var oben = laufende && document.body.contains(laufende.buehne) ? laufende.buehne.scrollTop : 0;
+        var alt = laufende && document.body.contains(laufende.buehne) ? laufende.buehne : null;
+        var roll = alt ? { l: alt.scrollLeft, t: alt.scrollTop } : { l: 0, t: 0 };
         HT.ui.leeren(huelle);
-        laufende = aufbauen(huelle, m, sicht);
-        laufende.buehne.scrollTop = oben;
+        laufende = aufbauen(huelle, m, sicht, stand);
+        laufende.buehne.scrollLeft = roll.l;
+        laufende.buehne.scrollTop = roll.t;
         leisteSetzen();
         if (params.id) { laufende.zeigen(params.id); params.id = null; }
       });
