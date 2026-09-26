@@ -20,9 +20,10 @@
    Zeigen auf ein Element hebt jede seiner Stellen hervor; Zeigen auf einen
    Meilenstein das Feld, in dem er entsteht.
 
-   Anordnung wie in der Abbildung 1: In jeder Phase stehen die Ergebnisse in
-   Stufen nach der Höhe ihres Kastens dort, quer über alle Spalten
-   ausgerichtet, mit einer freien Gasse über jeder Stufe (ausrichten).
+   Anordnung wie in der Abbildung 1: Im Feld steht, was dort später
+   entsteht, weiter unten. Mit Pfeilen stehen die Ergebnisse zudem in Stufen
+   nach der Höhe ihres Kastens, quer über alle Spalten ausgerichtet, mit
+   einer freien Gasse über jeder Stufe (ausrichten); ohne Pfeile dicht.
    Aufeinanderfolgende Felder eines Moduls mit gleichem Inhalt stehen als
    ein Feld über mehrere Phasen.
 
@@ -176,15 +177,19 @@
     try {
       var roh = global.localStorage.getItem(SPEICHER);
       var s = roh ? JSON.parse(roh) : null;
+      /* Gespeichert als «fluss»: das frühere «pfeile: false» hiess nur
+         «Pfeile erst beim Zeigen» und schaltet den Fluss nicht aus. */
       if (s && typeof s === 'object') {
-        return { rolle: !!s.rolle, aufgabe: !!s.aufgabe, ergebnis: !!s.ergebnis, pfeile: s.pfeile !== false };
+        return { rolle: !!s.rolle, aufgabe: !!s.aufgabe, ergebnis: !!s.ergebnis, pfeile: s.fluss !== false };
       }
     } catch (e) { /* ohne Speicher gilt der Standard */ }
     return { rolle: STANDARD.rolle, aufgabe: STANDARD.aufgabe, ergebnis: STANDARD.ergebnis, pfeile: STANDARD.pfeile };
   }
 
   function sichtSpeichern(sicht) {
-    try { global.localStorage.setItem(SPEICHER, JSON.stringify(sicht)); } catch (e) { /* egal */ }
+    try {
+      global.localStorage.setItem(SPEICHER, JSON.stringify({ rolle: sicht.rolle, aufgabe: sicht.aufgabe, ergebnis: sicht.ergebnis, fluss: sicht.pfeile }));
+    } catch (e) { /* egal */ }
   }
 
   function seiteLesen() {
@@ -1053,7 +1058,9 @@
         var spurVon = spurenVerteilen(sp.felder, sp.keys, sp.anzahl, function (key, fi) { return sp.hoehen[fi][key]; }, sp.luecke);
         sp.felder.forEach(function (f) { spurenFuellen(f, sp.anzahl, spurVon); });
       });
-      ausrichten();
+      /* Stufen und Gassen nur im Fluss: ohne Pfeile stehen die Ergebnisse
+         dicht untereinander, in der Folge der Abbildung. */
+      if (fluss) { ausrichten(); }
       pfeileLegen();
     }
 
@@ -1303,7 +1310,7 @@
     return [
       h('p', { text: 'Entwurf: das Gesamtbild der Methode wie Abbildung 1 des Referenzhandbuchs — Phasen als Zeilen, Module als Spalten — in der Bildsprache des Graphen.' }),
       h('p', { text: 'Das Gerüst steht fest: links die Phasen mit ihren Meilensteinen (die Freigabe, die eine Phase öffnet, oben; die Entscheide, mit denen sie endet, unten an der Grenze zur nächsten Phase; modulspezifische dazwischen), oben die Module. Projektsteuerung und Projektführung haben je eine eigene Spalte, Projektgrundlagen liegt in der Initialisierung über drei.' }),
-      h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Ergebnisse stehen wie in Abbildung 1: Was dort in einer Phase auf gleicher Höhe liegt, beginnt quer über alle Spalten auf gleicher Höhe, und was später entsteht, steht weiter unten. Ergebnisse ohne Kasten in der Abbildung folgen darunter, in jeder Phase in derselben Reihenfolge. Haben aufeinanderfolgende Phasen eines Moduls genau dieselben Aufgaben und Ergebnisse (Projektführung von Konzept bis Einführung), stehen sie nur einmal, in einem Feld über diese Phasen. Steht ein Ergebnis im Feld unter mehreren Aufgaben, ist nur das erste Vorkommen kräftig, die weiteren sind blass.' }),
+      h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Ergebnisse stehen wie in Abbildung 1: Was später entsteht, steht weiter unten; mit Pfeilen beginnt zudem, was dort in einer Phase auf gleicher Höhe liegt, quer über alle Spalten auf gleicher Höhe. Ergebnisse ohne Kasten in der Abbildung folgen darunter, in jeder Phase in derselben Reihenfolge. Haben aufeinanderfolgende Phasen eines Moduls genau dieselben Aufgaben und Ergebnisse (Projektführung von Konzept bis Einführung), stehen sie nur einmal, in einem Feld über diese Phasen. Steht ein Ergebnis im Feld unter mehreren Aufgaben, ist nur das erste Vorkommen kräftig, die weiteren sind blass.' }),
       h('p', { text: 'Pfeile: der Fluss der Abbildung 1. Ist «Pfeile» in der Leiste an, stehen nur die Ergebnisse, die in der Abbildung einen Kasten haben, und die Pfeile führen von Kasten zu Kasten — was daraus entsteht, steht darunter. Die übrigen Ergebnisse eines Feldes (Checklisten, Listen, Protokolle …) klappt «+N» unten im Feld auf; sie sind gestrichelt. Zeigen auf ein Ergebnis hebt seine Pfeile hervor. Ist «Pfeile» aus, stehen alle Ergebnisse ohne Pfeile. Pfeile gibt es nur, wenn allein Ergebnisse eingeblendet sind.' }),
       h('p', { text: 'Filter (Icon neben der Suche): Ist etwas gefiltert, nennt es die rote Pille in der Leiste; ein Klick darauf öffnet den Filter, × hebt ihn auf. Phasen und Module blenden Zeilen und Spalten aus — die übrigen werden breiter. Der Trichter neben einem Modulkopf oder einer Phase tut dasselbe; ein zweiter Klick zeigt wieder alle. Eine Rolle (die drei Linien: verantwortlich, beteiligt oder beides) und «Nur Entscheide» (Raute) lassen nur die passenden Aufgaben stehen; Felder ohne Treffer bleiben leer, Meilensteine, die keine dieser Aufgaben erreicht, treten zurück. Der Filter steht in der Adresse und lässt sich so teilen.' }),
       h('p', { text: 'Inhaltsseite (Icon neben dem Filter, Trennlinie ziehbar): Ein Klick auf ein Element, eine Phase oder einen Modulkopf zeigt seine Seite aus dem Handbuch und darunter «Im Raster» — wo es überall steht; eine Zeile springt ins Feld, ein Name wählt das Element. Ein Klick auf die freie Fläche eines Feldes zeigt seine Bilanz: Aufgaben, Entscheide, Meilensteine, Rollen und Ergebnisse. Ein zweiter Klick oder Esc hebt die Auswahl auf. Ohne Auswahl stehen dort bei gesetztem Filter seine Treffer, Phase für Phase.' })
