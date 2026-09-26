@@ -30,12 +30,7 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
   min-height: 0;
   overflow: auto;
   background: #fff;
-  overscroll-behavior: contain;
-  cursor: grab;
 }
-.ra-buehne:focus-visible { outline: 2px solid var(--fokus); outline-offset: -2px; }
-.ra-buehne.ist-am-ziehen, .ra-buehne.ist-am-ziehen * { cursor: grabbing; user-select: none; }
-.ra-zoomwert { min-width: 4.2em; border: 0; background: none; cursor: pointer; font-variant-numeric: tabular-nums; }
 
 .ra-gitter {
   --ra-band: 150px;
@@ -45,8 +40,7 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
   grid-template-rows: auto;
   grid-auto-rows: minmax(96px, auto);
   min-width: min-content;
-  margin-inline: auto;
-  padding-bottom: 64px;
+  padding-bottom: 32px;
   color: var(--text);
 }
 
