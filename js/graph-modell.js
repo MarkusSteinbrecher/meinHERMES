@@ -100,6 +100,18 @@
     return wahl.reduce(function (min, p) { return Math.min(min, Math.round(p.y / 4) * 10000 + Math.round(p.x)); }, Infinity);
   }
 
+  /** Höhe des Kastens in Abbildung 1 (Koordinaten der Grafik) für ein
+      Ergebnis in Phase und Modul; null, wenn es dort keinen Kasten hat. */
+  function abbildungY(id, phase, modul) {
+    var l = abbLagen ? abbLagen[id] : null;
+    if (!l) { return null; }
+    var y = null;
+    l.forEach(function (p) {
+      if (p.phasen.indexOf(phase) !== -1 && p.module.indexOf(modul) !== -1 && (y === null || p.y < y)) { y = p.y; }
+    });
+    return y;
+  }
+
   /** Stelle einer Aufgabe: beim ersten ihrer Ergebnisse im Feld. Ein
       Entscheid steht am Ende der Zeile seines letzten Ergebnisses — in der
       Abbildung laufen die Analysen einer Zeile oft von beiden Seiten auf das
@@ -846,6 +858,7 @@
     teilgraph: teilgraph,
     bloecke: bloecke,
     abbildungLagenSetzen: abbildungLagenSetzen,
+    abbildungY: abbildungY,
     einstieg: einstieg,
     suchen: suchen
   };

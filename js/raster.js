@@ -20,8 +20,14 @@
    Zeigen auf ein Element hebt jede seiner Stellen hervor; Zeigen auf einen
    Meilenstein das Feld, in dem er entsteht.
 
+   Anordnung wie in der Abbildung 1: In jeder Phase stehen die Ergebnisse in
+   Stufen nach der Höhe ihres Kastens dort, quer über alle Spalten
+   ausgerichtet, mit einer freien Gasse über jeder Stufe (ausrichten).
+   Aufeinanderfolgende Felder eines Moduls mit gleichem Inhalt stehen als
+   ein Feld über mehrere Phasen.
+
    Pfeile (Knopf in der Leiste): die Pfeile der Abbildung 1 zwischen
-   Ergebnissen (PFEILE), als SVG-Ebene in den Fugen zwischen den Kästen —
+   Ergebnissen (PFEILE), als SVG-Ebene in den Gassen zwischen den Kästen —
    die Kästen behalten ihre Grösse. Zeigen auf ein Ergebnis hebt seine
    Pfeile hervor; aus zeigt der Knopf nur diese.
 
@@ -97,8 +103,7 @@
     faecher(K, 'Organisation', 'Geschäftsmodellbeschreibung', [['Organisation', 'Prozessbeschreibung'], ['Organisation', 'Organisationsbeschreibung']]);
     kette(K, 'Produkt', ['Situationsanalyse', 'Lösungsanforderungen', 'Produktkonzept']);
     kette(K, 'IT-System', ['Situationsanalyse', 'Lösungsanforderungen', 'Systemkonzept', 'Lösungsarchitektur', 'Integrationskonzept']);
-    kette(K, 'Beschaffung', ['Ausschreibungsunterlagen', 'Evaluationsbericht']);
-    p(K, 'Beschaffung', 'Evaluationsbericht', K, 'Projektführung', 'Vereinbarung');
+    kette(K, 'Beschaffung', ['Ausschreibungsunterlagen', 'Evaluationsbericht', 'Vereinbarung']);
     kette(K, 'IT-Betrieb', ['Betriebskonzept', 'Service Level Agreement']);
 
     p(K, 'Organisation', 'Prozessbeschreibung', R, 'Organisation', 'Prozessbeschreibung');
@@ -583,7 +588,7 @@
     if (!a.zeilen.length || !a.spalten.length) {
       buehne.appendChild(h('p', { class: 'ra-leer', text: 'Keine Phase oder kein Modul gewählt — im Filter wieder alle einschalten.' }));
       var nichts = function () { return false; };
-      return { buehne: buehne, spurenLegen: nichts, zeigen: nichts, gewaehlt: nichts, stelleZeigen: nichts, pfeileZeigen: nichts, pfeilZahl: function () { return 0; } };
+      return { buehne: buehne, spurenLegen: nichts, zeigen: nichts, gewaehlt: nichts, stelleZeigen: nichts, pfeileZeigen: nichts, pfeilZahl: function () { return 0; }, feldPhasen: function (p) { return [p]; } };
     }
     var gitter = h('div', { class: 'ra-gitter', dataset: { vorgehen: m.vorgehen } });
     gitter.style.gridTemplateColumns = 'var(--ra-band) ' + a.spalten.map(function (s) {
@@ -637,18 +642,41 @@
       gitter.appendChild(band);
     });
 
+    /* Folgen Felder eines Moduls mit genau denselben Aufgaben und
+       Ergebnissen aufeinander (Projektführung von Konzept bis Einführung),
+       steht ihr Inhalt nur einmal — in einem Feld über diese Phasen, wie
+       «Phasenunabhängig» in der Abbildung 1. */
+    var zeilenIndex = {};
+    a.zeilen.forEach(function (z, i) { zeilenIndex[z.phase] = i; });
+    var gruppen = [], letzte = {};
+    a.felder.forEach(function (x) {
+      var sig = x.bloecke.map(function (b) {
+        return b.aufgabe.id + ':' + b.ergebnisse.map(function (k) { return k.id; }).join('+');
+      }).join('|');
+      var i = zeilenIndex[x.feld.phase], vor = letzte[x.feld.modul];
+      if (sig && vor && vor.sig === sig && vor.bis === i - 1 && vor.x.start === x.start && vor.x.breite === x.breite) {
+        vor.bis = i;
+        vor.phasen.push(x.feld.phase);
+        return;
+      }
+      gruppen.push(letzte[x.feld.modul] = { x: x, sig: sig, von: i, bis: i, phasen: [x.feld.phase] });
+    });
+
     /* Je Spalte (Modul) ihre Felder; die Stücke darin in der gemeinsamen
        Reihenfolge, auf Spuren verteilt erst, wenn die Breite bekannt ist. */
     var spalten = {}, spaltenReihe = [];
-    a.felder.forEach(function (x) {
+    var yVon = new global.Map();   // Stück-Element → Höhe in der Abbildung 1
+    gruppen.forEach(function (gr) {
+      var x = gr.x, mehr = gr.phasen.length > 1;
       var leer = !x.bloecke.length;
       var stuecke = leer ? [] : inhaltBauen(x.bloecke, sicht);
       var inhalt = leer ? null : h('div', { class: 'ra-feld__inhalt' + (!sicht.aufgabe && !sicht.rolle ? ' ra-feld__inhalt--liste' : '') });
       var el = h('div', {
-        class: 'ra-feld' + (x.breite > 1 ? ' ra-feld--breit' : '') + (leer ? ' ra-feld--leer' : ''),
-        dataset: { phase: x.feld.phase, modul: x.feld.modul }
+        class: 'ra-feld' + (x.breite > 1 ? ' ra-feld--breit' : '') + (leer ? ' ra-feld--leer' : '') + (mehr ? ' ra-feld--phasen' : ''),
+        dataset: { phase: x.feld.phase, phasen: gr.phasen.join(' '), modul: x.feld.modul }
       }, [
         x.kopfImFeld ? modulKopf(x.feld.modul, 'ra-modulkopf--feld') : null,
+        mehr ? h('div', { class: 'ra-feld__phasen', text: gr.phasen[0] + ' bis ' + gr.phasen[gr.phasen.length - 1] }) : null,
         inhalt
       ]);
       if (inhalt) {
@@ -656,21 +684,53 @@
         if (!sp) { sp = spalten[x.feld.modul] = { modul: x.feld.modul, breit: x.breite > 1, felder: [], anzahl: 0 }; spaltenReihe.push(sp); }
         var index = {};
         stuecke.forEach(function (st) { index[st.key] = st; });
-        sp.felder.push({ inhalt: inhalt, stuecke: stuecke, index: index });
+        if (!mehr) { hoehenSetzen(x, stuecke); }
+        sp.felder.push({ inhalt: inhalt, stuecke: stuecke, index: index, zeile: gr.von, mehr: mehr });
       }
-      el.style.gridRow = String(zeileVon[x.feld.phase]);
+      el.style.gridRow = (gr.von + 2) + ' / span ' + (gr.bis - gr.von + 1);
       el.style.gridColumn = (x.start + 2) + ' / span ' + x.breite;
       gitter.appendChild(el);
     });
 
-    /* Eine Spalte mit nur einem Feld (Projektgrundlagen) hat nichts, womit
-       sie übereinstimmen müsste: ihr Inhalt fliesst in CSS-Spalten. */
-    spaltenReihe = spaltenReihe.filter(function (sp) {
+    /* Die Höhe eines Stücks in der Abbildung 1: die seines Kastens in diesem
+       Feld; ein Ergebnis ohne Kasten übernimmt die eines Ergebnisses derselben
+       Aufgabe (es entsteht zur selben Zeit), ein Block die früheste seiner
+       Ergebnisse. Ohne Höhe (null) steht das Stück unten. */
+    function hoehenSetzen(x, stuecke) {
+      var eigen = {}, erg = {}, jeAufgabe = {}, jeRolle = {};
+      function min(u, v) { return u === null ? v : v === null ? u : Math.min(u, v); }
+      x.bloecke.forEach(function (b) {
+        var by = null;
+        ohneMeilensteine(b.ergebnisse).forEach(function (k) {
+          if (!(k.id in eigen)) { eigen[k.id] = HT.graph.abbildungY(k.id, x.feld.phase, x.feld.modul); }
+          by = min(by, eigen[k.id]);
+        });
+        jeAufgabe[b.aufgabe.id] = by;
+        if (b.rolle) { jeRolle[b.rolle.id] = min(jeRolle[b.rolle.id] === undefined ? null : jeRolle[b.rolle.id], by); }
+        ohneMeilensteine(b.ergebnisse).forEach(function (k) {
+          erg[k.id] = eigen[k.id];
+        });
+      });
+      stuecke.forEach(function (st) {
+        var art = st.key.charAt(0), id = st.key.slice(2);
+        var y = art === 'e' ? erg[id] : art === 'a' ? jeAufgabe[id] : jeRolle[id];
+        yVon.set(st.el, y === undefined ? null : y);
+      });
+    }
+
+    /* Alle Spalten teilen ihre Reihenfolge über die Phasen; innerhalb eines
+       Feldes geht die Lage in der Abbildung 1 vor: was später entsteht,
+       steht weiter unten. */
+    spaltenReihe.forEach(function (sp) {
       sp.keys = spalteOrdnen(sp.felder);
-      sp.felder.forEach(function (f) { spurenFuellen(f, 1, null); });
+      sp.felder.forEach(function (f) {
+        f.stuecke.sort(function (u, v) {
+          var yu = yVon.get(u.el), yv = yVon.get(v.el);
+          return (yu === null || yu === undefined ? Infinity : yu) - (yv === null || yv === undefined ? Infinity : yv) || 0;
+        });
+        spurenFuellen(f, 1, null);
+      });
       sp.anzahl = 1;
-      if (sp.felder.length === 1) { sp.felder[0].inhalt.classList.add('ra-feld__inhalt--fluss'); }
-      return sp.felder.length > 1;
     });
 
     buehne.appendChild(gitter);
@@ -704,20 +764,21 @@
       var phase = m.vorgehen === 'agil' ? (AGIL_PHASE[ende[0]] || ende[0]) : ende[0];
       var e = HT.daten.eintragMitBegriff(ende[2], 'ergebnis');
       if (!e) { return null; }
-      var treffer = gitter.querySelectorAll('.ra-feld[data-phase="' + phase + '"] .ra-k--ergebnis[data-id="' + e.id + '"]:not(.ra-k--wieder)');
-      for (var i = 0; i < treffer.length; i++) {
-        if (treffer[i].closest('.ra-feld').dataset.modul === ende[1]) { return treffer[i]; }
+      var treffer = gitter.querySelectorAll('.ra-feld[data-phasen~="' + phase + '"] .ra-k--ergebnis[data-id="' + e.id + '"]:not(.ra-k--wieder)');
+      var el = null;
+      for (var i = 0; i < treffer.length && !el; i++) {
+        if (treffer[i].closest('.ra-feld').dataset.modul === ende[1]) { el = treffer[i]; }
       }
-      return treffer[0] || null;
+      el = el || treffer[0];
+      return el ? { el: el, phase: phase } : null;
     }
 
     /* Senkrechte Fuge rechts oder links eines Kastens: zwischen zwei Spuren
-       (bzw. Spalten des Flusses) deren Mitte, am Rand des Feldes die Mitte
+       deren Mitte, am Rand des Feldes die Mitte
        zum Nachbarfeld. */
     function fuge(el, seite, g) {
       var feld = el.closest('.ra-feld'), inhalt = el.closest('.ra-feld__inhalt');
-      var fluss = inhalt.classList.contains('ra-feld__inhalt--fluss');
-      var sp = rahmen(fluss ? (el.closest('.ra-block') || el) : el.closest('.ra-spur'), g);
+      var sp = rahmen(el.closest('.ra-spur'), g);
       var inn = rahmen(inhalt, g), f = rahmen(feld, g);
       var halb = feld.classList.contains('ra-feld--breit') ? 3 : 4;
       if (seite === 'r') { return sp.r < inn.r - 2 ? sp.r + halb : f.r + 2; }
@@ -736,14 +797,37 @@
       var zeileVon = {};
       a.zeilen.forEach(function (z, i) { zeileVon[z.phase] = i; });
       PFEILE.forEach(function (pf) {
-        var s = endeFinden(pf.von), t = endeFinden(pf.nach);
-        if (!s || !t || s === t) { return; }
+        var von = endeFinden(pf.von), nach = endeFinden(pf.nach);
+        if (!von || !nach || von.el === nach.el) { return; }
+        var s = von.el, t = nach.el;
         if (pfeile.some(function (p) { return p.s === s && p.t === t; })) { return; }
         var S = rahmen(s, g), T = rahmen(t, g);
         var sy = (S.t + S.b) / 2, ty = (T.t + T.b) / 2;
         var sFeld = s.closest('.ra-feld'), tFeld = t.closest('.ra-feld');
-        var d;
-        if (sFeld.dataset.modul === tFeld.dataset.modul && Math.abs(S.r - T.r) < 3) {
+        var d, gasse = gasseVon.get(t);
+        if (gasse) { gasse = { y: rahmen(gasse.inhalt, g).t + gasse.dy, erstes: gasse.erstes }; }
+        var tx = (T.l + T.r) / 2;
+        var gleicheSpur = sFeld === tFeld && Math.abs(S.l - T.l) < 3;
+        if (gasse && gasse.y > S.b && !gasse.erstes) {
+          /* Ziel unter einem anderen Kasten seiner Stufe: durch die Gasse in
+             die Fuge neben dem Ziel, hinunter und seitlich hinein. */
+          var rein = tx >= (S.l + S.r) / 2 && !gleicheSpur;
+          var ax = fuge(s, rein || gleicheSpur ? 'r' : 'l', g), ex = fuge(t, gleicheSpur ? 'r' : rein ? 'l' : 'r', g);
+          d = 'M' + (rein || gleicheSpur ? S.r : S.l) + ' ' + sy + 'H' + ax + 'V' + gasse.y + 'H' + ex + 'V' + ty
+            + 'H' + (gleicheSpur || !rein ? T.r : T.l);
+        } else if (gasse && gasse.y > S.b) {
+          /* Von oben in den Kasten, wie in der Abbildung: steht die Quelle
+             in der Spur gleich darüber, senkrecht hinunter; sonst seitlich
+             in die Fuge, hinunter bis in die Gasse über dem Ziel, quer und
+             hinein. */
+          if (gleicheSpur && s.nextElementSibling === t) {
+            d = 'M' + tx + ' ' + S.b + 'V' + T.t;
+          } else {
+            var nachRechts = gleicheSpur || tx >= (S.l + S.r) / 2;
+            var fx = fuge(s, nachRechts ? 'r' : 'l', g);
+            d = 'M' + (nachRechts ? S.r : S.l) + ' ' + sy + 'H' + fx + 'V' + gasse.y + 'H' + tx + 'V' + T.t;
+          }
+        } else if (sFeld.dataset.modul === tFeld.dataset.modul && Math.abs(S.r - T.r) < 3) {
           /* Untereinander: rechts in der Fuge herum, wie eine Klammer. */
           var x = fuge(s, 'r', g);
           d = 'M' + S.r + ' ' + sy + 'H' + x + 'V' + ty + 'H' + T.r;
@@ -756,9 +840,9 @@
           } else {
             /* Waagrecht an der Phasengrenze: über der Zeile des Ziels, in
                derselben Zeile oben oder unten, je nachdem, was kürzer ist. */
-            var bahn = bahnen[tFeld.dataset.phase];
+            var bahn = bahnen[nach.phase];
             var oben = bahn.t + 3, unten = bahn.b - 3, yc;
-            var zs = zeileVon[sFeld.dataset.phase], zt = zeileVon[tFeld.dataset.phase];
+            var zs = zeileVon[von.phase], zt = zeileVon[nach.phase];
             if (zs === zt) { yc = (sy - oben) + (ty - oben) <= (unten - sy) + (unten - ty) ? oben : unten; }
             else { yc = zt > zs ? oben : unten; }
             d = 'M' + aus + ' ' + sy + 'H' + xs + 'V' + yc + 'H' + xt + 'V' + ty + 'H' + ein;
@@ -860,7 +944,113 @@
         var spurVon = spurenVerteilen(sp.felder, sp.keys, sp.anzahl, function (key, fi) { return sp.hoehen[fi][key]; }, sp.luecke);
         sp.felder.forEach(function (f) { spurenFuellen(f, sp.anzahl, spurVon); });
       });
+      ausrichten();
       pfeileLegen();
+    }
+
+    /* Stufen wie in der Abbildung 1: In einer Phase beginnen Stücke, deren
+       Kästen dort auf gleicher Höhe liegen, auf gleicher Höhe — über alle
+       Spalten und Spuren —, und jede Stufe beginnt unter allem, was in der
+       Zeile davor steht. So bleibt über jeder Stufe eine freie Gasse quer
+       durch die Zeile, in der die Pfeile laufen. Stücke ohne Kasten folgen
+       unten, frühestens unter der tiefsten Gasse, die ihre Säule kreuzt —
+       so läuft kein Pfeil über einen Kasten. Nur Abstände ändern sich, die Kästen nicht. Erst alle Höhen
+       lesen, dann alle Abstände schreiben. */
+    var STUFE_TOLERANZ = 6;     // Koordinaten der Grafik
+    var GASSE = 16;             // px frei über jeder Stufe
+    /* Stück einer Stufe → { inhalt, dy: Gasse darüber, von oben im Inhalt
+       des Feldes, erstes }. Relativ, weil die Zeilen darüber beim Ausrichten
+       noch wachsen. */
+    var gasseVon = new global.Map();
+    function ausrichten() {
+      gasseVon = new global.Map();
+      var oben0 = gitter.getBoundingClientRect().top;
+      var zeilen = {};
+      spaltenReihe.forEach(function (sp) {
+        sp.felder.forEach(function (f) {
+          if (f.mehr) { return; }
+          var luecke = f.inhalt.classList.contains('ra-feld__inhalt--liste') ? 4 : 6;
+          var basis = f.inhalt.getBoundingClientRect().top - oben0;
+          Array.prototype.forEach.call(f.inhalt.children, function (spur) {
+            var stuecke = Array.prototype.map.call(spur.children, function (el) {
+              var y = yVon.get(el);
+              return { el: el, y: y === undefined ? null : y, h: el.offsetHeight };
+            });
+            var r = spur.getBoundingClientRect();
+            (zeilen[f.zeile] = zeilen[f.zeile] || []).push({
+              stuecke: stuecke, luecke: luecke, basis: basis, pos: basis, i: 0, inhalt: f.inhalt,
+              l: r.left, r: r.right, kreuz: -1
+            });
+          });
+        });
+      });
+      var stufeVonEl = new global.Map();
+      Object.keys(zeilen).forEach(function (z) {
+        var saeulen = zeilen[z];
+        var ys = [];
+        saeulen.forEach(function (c) { c.stuecke.forEach(function (st) { if (st.y !== null) { ys.push(st.y); } }); });
+        ys.sort(function (u, v) { return u - v; });
+        var stufeVon = {}, k = -1, anfang = -Infinity;
+        ys.forEach(function (y) {
+          if (y - anfang > STUFE_TOLERANZ) { k++; anfang = y; }
+          stufeVon[y] = k;
+        });
+        saeulen.forEach(function (c) {
+          c.stuecke.forEach(function (st) {
+            st.k = st.y === null ? Infinity : stufeVon[st.y];
+            stufeVonEl.set(st.el, { saeulen: saeulen, k: st.k });
+          });
+        });
+        zeilen[z].k = k;
+      });
+
+      /* Welche Gassen quer durch welche Säulen laufen: ein Pfeil in eine
+         Stufe nimmt deren Gasse vom Rand der Quelle bis über das Ziel. Stücke
+         ohne Kasten beginnen in einer Säule erst unter der tiefsten Stufe,
+         deren Gasse sie kreuzt — sonst gleich oben. */
+      if (sicht.ergebnis) {
+        PFEILE.forEach(function (pf) {
+          var von = endeFinden(pf.von), nach = endeFinden(pf.nach);
+          if (!von || !nach || von.el === nach.el) { return; }
+          var info = stufeVonEl.get(nach.el);
+          if (!info || info.k === Infinity) { return; }
+          var s = von.el.getBoundingClientRect(), t = nach.el.getBoundingClientRect();
+          var tx = (t.left + t.right) / 2, sx = tx >= (s.left + s.right) / 2 ? s.right : s.left;
+          var links = Math.min(sx, tx), rechts = Math.max(sx, tx);
+          info.saeulen.forEach(function (c) {
+            if (c.r >= links && c.l <= rechts) { c.kreuz = Math.max(c.kreuz, info.k); }
+          });
+        });
+      }
+
+      Object.keys(zeilen).forEach(function (z) {
+        var saeulen = zeilen[z], k = saeulen.k, beginn = [];
+        function setzen(c, st, oben) {
+          st.el.style.marginTop = (oben - (c.i ? c.pos : c.basis)) + 'px';
+          c.pos = oben + st.h;
+          c.i++;
+        }
+        var ziel = -Infinity;
+        for (var stufe = 0; stufe <= k; stufe++) {
+          ziel = -Infinity;
+          saeulen.forEach(function (c) { ziel = Math.max(ziel, c.pos + GASSE); });
+          beginn[stufe] = ziel;
+          saeulen.forEach(function (c) {
+            var erstes = true;
+            while (c.stuecke[c.i] && c.stuecke[c.i].k === stufe) {
+              gasseVon.set(c.stuecke[c.i].el, { inhalt: c.inhalt, dy: ziel - GASSE / 2 - c.basis, erstes: erstes });
+              setzen(c, c.stuecke[c.i], erstes ? ziel : c.pos + c.luecke);
+              erstes = false;
+            }
+          });
+        }
+        saeulen.forEach(function (c) {
+          var unten = c.kreuz >= 0 ? beginn[c.kreuz] : -Infinity;
+          while (c.stuecke[c.i]) {
+            setzen(c, c.stuecke[c.i], c.i ? Math.max(c.pos + c.luecke, unten) : Math.max(c.basis, unten));
+          }
+        });
+      });
     }
 
     /* Zeigen: jede Stelle desselben Elements; beim Meilenstein zusätzlich das
@@ -883,14 +1073,14 @@
       if (ziel.classList.contains('ra-ms')) {
         var phase = ziel.closest('.ra-phase').dataset.phase;
         ziel.dataset.module.split('|').forEach(function (modul) {
-          var feld = gitter.querySelector('.ra-feld[data-phase="' + phase + '"][data-modul="' + modul + '"]');
+          var feld = gitter.querySelector('.ra-feld[data-phasen~="' + phase + '"][data-modul="' + modul + '"]');
           if (feld) { feld.classList.add('ist-gleich'); }
         });
       } else if (ziel.classList.contains('ra-modul')) {
         Array.prototype.forEach.call(gitter.querySelectorAll('.ra-feld[data-modul="' + ziel.dataset.modul + '"]'), function (x) { x.classList.add('ist-gleich'); });
       } else if (ziel.classList.contains('ra-phase__name')) {
         var p = ziel.closest('.ra-phase').dataset.phase;
-        Array.prototype.forEach.call(gitter.querySelectorAll('.ra-feld[data-phase="' + p + '"]'), function (x) { x.classList.add('ist-gleich'); });
+        Array.prototype.forEach.call(gitter.querySelectorAll('.ra-feld[data-phasen~="' + p + '"]'), function (x) { x.classList.add('ist-gleich'); });
       }
     }
     function zielAus(el) {
@@ -922,7 +1112,7 @@
         Array.prototype.forEach.call(gitter.querySelectorAll('[data-id="' + id + '"]'), function (x) { x.classList.add('ist-gewaehlt'); });
       }
       if (feld) {
-        var el = gitter.querySelector('.ra-feld[data-phase="' + feld.phase + '"][data-modul="' + feld.modul + '"]');
+        var el = gitter.querySelector('.ra-feld[data-phasen~="' + feld.phase + '"][data-modul="' + feld.modul + '"]');
         if (el) { el.classList.add('ist-gewaehlt'); }
       }
     }
@@ -932,7 +1122,7 @@
     function stelleZeigen(phase, modul, id) {
       var el = null;
       if (modul) {
-        var feld = gitter.querySelector('.ra-feld[data-phase="' + phase + '"][data-modul="' + modul + '"]');
+        var feld = gitter.querySelector('.ra-feld[data-phasen~="' + phase + '"][data-modul="' + modul + '"]');
         el = (feld && id && feld.querySelector('[data-id="' + id + '"]')) || feld;
       } else {
         var band = gitter.querySelector('.ra-phase[data-phase="' + phase + '"]');
@@ -953,6 +1143,11 @@
       /* Alle Pfeile zeigen oder nur die des gezeigten bzw. gewählten Ergebnisses. */
       pfeileZeigen: function (an) { ebene.classList.toggle('ist-alle', an); },
       pfeilZahl: function () { return pfeile.length; },
+      /* Die Phasen, über die das Feld dieser Phase und dieses Moduls reicht. */
+      feldPhasen: function (phase, modul) {
+        var el = gitter.querySelector('.ra-feld[data-phasen~="' + phase + '"][data-modul="' + modul + '"]');
+        return el ? el.dataset.phasen.split(' ') : [phase];
+      },
       zeigen: function (id) {
         var el = gitter.querySelector('[data-id="' + id + '"]');
         if (!el) { return false; }
@@ -973,8 +1168,8 @@
     return [
       h('p', { text: 'Entwurf: das Gesamtbild der Methode wie Abbildung 1 des Referenzhandbuchs — Phasen als Zeilen, Module als Spalten — in der Bildsprache des Graphen.' }),
       h('p', { text: 'Das Gerüst steht fest: links die Phasen mit ihren Meilensteinen (die Freigabe, die eine Phase öffnet, oben; die Entscheide, mit denen sie endet, unten an der Grenze zur nächsten Phase; modulspezifische dazwischen), oben die Module. Projektsteuerung und Projektführung haben je eine eigene Spalte, Projektgrundlagen liegt in der Initialisierung über drei.' }),
-      h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Felder eines Moduls teilen eine Reihenfolge: dieselbe Aufgabe, dasselbe Ergebnis steht in jeder Phase an derselben Stelle — in einem breiten Feld auch in derselben Spur. Steht ein Ergebnis im Feld unter mehreren Aufgaben, ist nur das erste Vorkommen kräftig, die weiteren sind blass.' }),
-      h('p', { text: 'Pfeile: die Abhängigkeiten zwischen Ergebnissen aus Abbildung 1. Sie laufen in den Fugen zwischen den Kästen — senkrecht neben den Spalten, waagrecht an der Grenze zwischen den Phasen — und zeigen seitlich auf das Ergebnis, das daraus entsteht; wo mehrere dieselbe Fuge nehmen, laufen sie zusammen wie die Sammelschienen der Grafik. Zeigen auf ein Ergebnis hebt seine Pfeile hervor. Ist «Pfeile» in der Leiste aus, erscheinen nur diese.' }),
+      h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Ergebnisse stehen wie in Abbildung 1: Was dort in einer Phase auf gleicher Höhe liegt, beginnt quer über alle Spalten auf gleicher Höhe, und was später entsteht, steht weiter unten. Ergebnisse ohne Kasten in der Abbildung folgen darunter, in jeder Phase in derselben Reihenfolge. Haben aufeinanderfolgende Phasen eines Moduls genau dieselben Aufgaben und Ergebnisse (Projektführung von Konzept bis Einführung), stehen sie nur einmal, in einem Feld über diese Phasen. Steht ein Ergebnis im Feld unter mehreren Aufgaben, ist nur das erste Vorkommen kräftig, die weiteren sind blass.' }),
+      h('p', { text: 'Pfeile: die Abhängigkeiten zwischen Ergebnissen aus Abbildung 1. Sie laufen nur in den freien Gassen — senkrecht neben den Spalten, waagrecht über jeder Stufe — und zeigen meist von oben auf das Ergebnis, das daraus entsteht; wo mehrere dieselbe Gasse nehmen, laufen sie zusammen wie die Sammelschienen der Grafik. Zeigen auf ein Ergebnis hebt seine Pfeile hervor. Ist «Pfeile» in der Leiste aus, erscheinen nur diese.' }),
       h('p', { text: 'Filter (Icon neben der Suche): Ist etwas gefiltert, nennt es die rote Pille in der Leiste; ein Klick darauf öffnet den Filter, × hebt ihn auf. Phasen und Module blenden Zeilen und Spalten aus — die übrigen werden breiter. Der Trichter neben einem Modulkopf oder einer Phase tut dasselbe; ein zweiter Klick zeigt wieder alle. Eine Rolle (die drei Linien: verantwortlich, beteiligt oder beides) und «Nur Entscheide» (Raute) lassen nur die passenden Aufgaben stehen; Felder ohne Treffer bleiben leer, Meilensteine, die keine dieser Aufgaben erreicht, treten zurück. Der Filter steht in der Adresse und lässt sich so teilen.' }),
       h('p', { text: 'Inhaltsseite (Icon neben dem Filter, Trennlinie ziehbar): Ein Klick auf ein Element, eine Phase oder einen Modulkopf zeigt seine Seite aus dem Handbuch und darunter «Im Raster» — wo es überall steht; eine Zeile springt ins Feld, ein Name wählt das Element. Ein Klick auf die freie Fläche eines Feldes zeigt seine Bilanz: Aufgaben, Entscheide, Meilensteine, Rollen und Ergebnisse. Ein zweiter Klick oder Esc hebt die Auswahl auf. Ohne Auswahl stehen dort bei gesetztem Filter seine Treffer, Phase für Phase.' })
     ];
@@ -1250,6 +1445,9 @@
       m.felder.forEach(function (x) { if (x.phase === phase && x.modul === modul) { feld = x; } });
       if (!feld) { return null; }
       var bl = feld.bloecke;
+      /* Ein Feld über mehrere Phasen hat in jeder dieselben Aufgaben. */
+      var phasen = laufende ? laufende.feldPhasen(phase, modul) : [phase];
+      var phasenText = phasen.length > 1 ? phasen[0] + ' bis ' + phasen[phasen.length - 1] : phase;
       var entscheide = bl.filter(function (b) { return istEntscheid(b.aufgabe); }).length;
       var erg = {}, ergReihe = [], ms = {}, msReihe = [], rollen = {}, rollenReihe = [];
       function rolleVon(name) {
@@ -1286,7 +1484,7 @@
           h('span', { class: 'ub-kopf__kicker', text: 'Feld' }),
           zuKnopf()
         ]),
-        h('h2', { class: 'ub-kopf__titel', text: phase + ' · ' + modul }),
+        h('h2', { class: 'ub-kopf__titel', text: phasenText + ' · ' + modul }),
         h('div', { class: 'ub-kopf__lead' }, h('p', { text: zahlen.join(' · ') + '.' }))
       ])];
 
