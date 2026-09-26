@@ -294,17 +294,6 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 }
 .rf-titel .gswatch { width: 18px; height: 18px; flex: 0 0 auto; }
 .rf-titel__text { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--text-leise); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rf-alle {
-  padding: 2px 4px;
-  border: 0;
-  background: none;
-  color: var(--text-leise);
-  font: 700 10.5px/1 var(--schrift);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.rf-alle:hover { color: var(--akzent-text); }
 
 .rf-liste { display: grid; }
 .rf-liste--zwei { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; }
@@ -326,6 +315,9 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 .rf-liste > .rf-zeile:first-child,
 .rf-liste--zwei > .rf-zeile:nth-child(2) { border-top: 0; }
 .rf-zeile .gs-schalter__eingabe { pointer-events: none; }
+.rf-zeile--alle { grid-column: 1 / -1; }
+.rf-zeile--alle .rf-zeile__name { font-weight: 600; }
+.rf-liste > .rf-zeile--alle + .rf-zeile { border-top: 1px solid var(--rand-fein); }
 .rf-zeile__name { flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; }
 .rf-zeile[role="radio"][aria-checked="true"] .rf-zeile__name { font-weight: 700; }
 .rf-zeile:hover .rf-zeile__name { color: var(--akzent-text); }

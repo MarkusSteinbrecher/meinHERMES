@@ -572,14 +572,19 @@
       ]);
     }
 
-    /* «Alle» rechts im Titel: wählt alle; sind schon alle gewählt, keine. */
-    function alleKnopf(feld, label) {
-      var alle = !filter[feld];
-      return h('button', {
-        type: 'button', class: 'rf-alle', 'data-fokus': 'alle:' + feld,
-        text: alle ? 'Keine' : 'Alle', title: (alle ? 'Keine ' : 'Alle ') + label,
-        on: { click: function () { filter[feld] = alle ? [] : null; geaendert(); } }
-      });
+    /* Erste Zeile der Liste: «Alle …» als Kasten — an, wenn alle gewählt
+       sind, halb, wenn einige; ein Klick wählt alle, sind schon alle
+       gewählt, keine. */
+    function alleZeile(feld, label) {
+      var l = filter[feld];
+      var z = zeile('checkbox', !l, 'Alle ' + label, undefined, function () {
+        filter[feld] = l ? null : [];
+        geaendert();
+      }, 'alle:' + feld);
+      z.classList.add('rf-zeile--alle');
+      if (l && l.length) { z.setAttribute('aria-checked', 'mixed'); z.querySelector('input').indeterminate = true; }
+      z.title = l ? 'Alle ' + label + ' zeigen' : 'Keine ' + label + ' zeigen';
+      return z;
     }
 
     /* Eine Zeile: Kasten (mehrfach) oder Punkt (eines), Name, Zahl. */
@@ -673,16 +678,16 @@
 
       return h('div', { class: 'gpop__inhalt rf' }, [
         h('section', { class: 'rf-spalte' }, [
-          titelZeile('phase', 'Phasen', alleKnopf('phasen', 'Phasen')),
-          h('div', { class: 'rf-liste', role: 'group', 'aria-label': 'Phasen' }, m.phasen.map(function (p) { return haken('phasen', p, m.phasen); }))
+          titelZeile('phase', 'Phasen'),
+          h('div', { class: 'rf-liste', role: 'group', 'aria-label': 'Phasen' }, [alleZeile('phasen', 'Phasen')].concat(m.phasen.map(function (p) { return haken('phasen', p, m.phasen); })))
         ]),
         h('section', { class: 'rf-spalte' }, [
           titelZeile('szenario', 'Szenario'),
           h('div', { class: 'rf-liste', role: 'radiogroup', 'aria-label': 'Szenario' }, szenarien)
         ]),
         h('section', { class: 'rf-spalte rf-spalte--zwei' }, [
-          titelZeile('modul', 'Module', alleKnopf('module', 'Module')),
-          h('div', { class: 'rf-liste rf-liste--zwei', role: 'group', 'aria-label': 'Module' }, module.map(function (x) { return haken('module', x, module); }))
+          titelZeile('modul', 'Module'),
+          h('div', { class: 'rf-liste rf-liste--zwei', role: 'group', 'aria-label': 'Module' }, [alleZeile('module', 'Module')].concat(module.map(function (x) { return haken('module', x, module); })))
         ]),
         h('section', { class: 'rf-spalte rf-spalte--zwei' }, [
           titelZeile('rolle', 'Rolle · ' + bezugName, bezugKnoepfe()),
