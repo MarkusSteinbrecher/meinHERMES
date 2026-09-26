@@ -85,7 +85,14 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 .ra-modul:hover .ra-modul__name, .ra-modul.ist-gleich .ra-modul__name { color: var(--akzent-text); }
 .ra-modul:focus-visible { outline: 2px solid var(--fokus); outline-offset: 2px; }
 
-.ra-modul--kopf {
+.ra-modul.ist-gewaehlt .ra-modul__name { color: var(--akzent-text); text-decoration: underline; text-underline-offset: 3px; }
+
+/* Modulkopf: Name (zeigt die Seite des Moduls) und Trichter (filtert). */
+.ra-modulkopf { display: flex; align-items: flex-start; gap: 2px; min-width: 0; }
+.ra-modulkopf .ra-modul { flex: 1 1 auto; min-width: 0; }
+/* Der Trichter sitzt in der freien Ecke oben rechts, damit der Name die
+   ganze Breite behält. */
+.ra-modulkopf--kopf {
   position: sticky;
   top: 0;
   z-index: 3;
@@ -95,8 +102,30 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
   border-bottom: 1px solid var(--ra-linie);
 }
 
+.ra-modulkopf--kopf .ra-trichter { position: absolute; top: 1px; right: 1px; width: 18px; height: 18px; }
+
 /* Projektgrundlagen: kein Platz in der Kopfzeile, der Kopf steht im Feld. */
-.ra-modul--feld { margin-bottom: 8px; }
+.ra-modulkopf--feld { margin-bottom: 8px; }
+
+/* Trichter: leise, bis man auf Kopf oder Phase zeigt; kräftig, wenn er filtert. */
+.ra-trichter {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-leise);
+  opacity: .45;
+  cursor: pointer;
+}
+.ra-modulkopf:hover .ra-trichter, .ra-phase__streifen:hover .ra-trichter, .ra-trichter:focus-visible { opacity: 1; }
+.ra-trichter:hover { color: var(--akzent-text); background: var(--akzent-schwach); }
+.ra-trichter.ist-aktiv { opacity: 1; color: var(--akzent); }
+.ra-trichter:focus-visible { outline: 2px solid var(--fokus); outline-offset: 0; }
 
 /* --- Phasen: Bahnen und Band ------------------------------------------------ */
 
@@ -115,7 +144,12 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
   background: #fff;
 }
 
+.ra-phase__streifen { display: flex; flex-direction: column; min-height: 0; background: var(--gk-phase-bg); }
+.ra-phase__streifen .ra-trichter { width: 26px; height: 26px; border-radius: 0; color: var(--gk-phase-fg); }
+.ra-phase__streifen .ra-trichter:hover { background: var(--gk-phase); color: var(--gk-phase-glyph-auf); }
+
 .ra-phase__name {
+  flex: 1 1 auto;
   display: grid;
   place-items: center;
   margin: 0;
@@ -129,7 +163,7 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
   cursor: pointer;
 }
 .ra-phase__name > span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
-.ra-phase__name:hover, .ra-phase__name.ist-gleich { background: var(--gk-phase); color: var(--gk-phase-glyph-auf); }
+.ra-phase__name:hover, .ra-phase__name.ist-gleich, .ra-phase__name.ist-gewaehlt { background: var(--gk-phase); color: var(--gk-phase-glyph-auf); }
 .ra-phase__name:focus-visible { outline: 2px solid var(--fokus); outline-offset: -2px; }
 
 .ra-phase__ms {
@@ -238,7 +272,10 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 .ra-k--zustand { background: #fff; }
 .ra-k--rolle { color: var(--gk-rolle-fg); }
 
-.ra-k.ist-gleich { box-shadow: 0 0 0 2px var(--akzent); }
+.ra-k.ist-gleich, .ra-k.ist-gewaehlt, .ra-ms.ist-gewaehlt { box-shadow: 0 0 0 2px var(--akzent); }
+.ra-k--wieder.ist-gewaehlt { opacity: 1; }
+/* Aus der Inhaltsseite angesprungen: kurz ein kräftiger Ring. */
+.ra-k.ist-angesprungen, .ra-feld.ist-angesprungen, .ra-phase__name.ist-angesprungen { box-shadow: 0 0 0 3px var(--akzent); opacity: 1; }
 /* Zweites und weiteres Vorkommen eines Ergebnisses im selben Feld. */
 .ra-k--wieder { opacity: .45; }
 .ra-k--wieder:hover, .ra-k--wieder:focus-visible, .ra-gitter.hat-zeigen .ra-k--wieder.ist-gleich { opacity: 1; }
@@ -256,7 +293,7 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 }
 .ra-ms.ist-blass { opacity: .3; }
 .ra-ms.ist-blass:hover { opacity: 1; }
-.ra-modul--kopf:hover .ra-modul__name, .ra-phase__name:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ra-modul:hover .ra-modul__name { text-decoration: underline; text-underline-offset: 3px; }
 
 .ra-leer { margin: 32px auto; max-width: 30rem; color: var(--text-leise); text-align: center; }
 
@@ -404,3 +441,84 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
   cursor: pointer;
 }
 .rf-pille__x:hover { color: var(--akzent); }
+
+/* --- Inhaltsseite rechts ------------------------------------------------------ */
+
+/* Filter und Inhaltsseite teilen sich den Platz neben der Suche. */
+.ra-werkzeuge { display: flex; align-items: center; gap: 2px; }
+.kopf-werkzeug .ra-seiteknopf[aria-pressed="true"] { color: var(--akzent-text); }
+
+.ra-trenner { flex: 0 0 9px; }
+.ra-inhalt { position: relative; flex: 0 0 var(--ra-seite, 400px); width: var(--ra-seite, 400px); min-width: 0; min-height: 0; }
+.ra.ist-seite-zu .ra-trenner, .ra.ist-seite-zu .ra-inhalt { display: none; }
+/* Mit offener Seite reicht die Breite nicht mehr für alle Spalten; ab 120 px
+   bricht kein Name mitten im Wort (per Skript geprüft, klassisch und agil,
+   alle Sichten). Das Raster rollt dann waagrecht. */
+.ra:not(.ist-seite-zu) .ra-gitter { --ra-spalte-min: 120px; }
+
+.ra-inhalt__zu {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin: -4px -8px -4px auto;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-leise);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ub-kopf__zeichen + .ra-inhalt__zu { margin-left: 4px; }
+.ra-inhalt__zu:hover { color: var(--text); background: var(--flaeche-2); }
+
+/* «Im Raster» und die Trefferliste: je Zeile links wo, rechts was. */
+.ra-ort-vorspann { margin: 0 0 8px; font-size: 14px; line-height: 1.45; color: var(--text-weich); }
+.ra-orte { list-style: none; margin: 0; padding: 0; }
+.ra-ort {
+  display: grid;
+  grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr);
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid var(--rand-fein);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.ra-ort:first-child { border-top: 0; }
+.ra-ort--treffer { grid-template-columns: minmax(0, 1fr); }
+.ra-ort__wo {
+  align-self: start;
+  padding: 2px 0 0;
+  border: 0;
+  background: none;
+  color: var(--text-leise);
+  font: 700 10.5px/1.35 var(--schrift);
+  letter-spacing: .07em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ra-ort__wo:hover { color: var(--akzent-text); }
+.ra-ort__wo:disabled { cursor: default; color: var(--text-leise-hell); }
+.ra-ort.ist-aus .ra-ort__was { opacity: .55; }
+.ra-ort__was { min-width: 0; }
+.ra-ort__link {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--rand);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ra-ort__link:hover { color: var(--akzent-text); border-bottom-color: var(--akzent); }
+.ra-ort__leise { color: var(--text-leise); font-size: 12.5px; }
+.ra-ort__block { display: block; }
+.ra-ort__ms { display: block; color: var(--gk-ergebnis-fg); }
+
+/* Schmal ist für eine zweite Spalte kein Platz. */
+@media (max-width: 699.98px) {
+  .ra-trenner, .ra-inhalt, .ra-seiteknopf { display: none; }
+}

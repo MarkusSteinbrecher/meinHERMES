@@ -78,7 +78,7 @@
     'dokumentation', 'entscheide', 'entwicklung', 'erfahrungen', 'ergebnis', 'freigabe', 'führung',
     'grundlagen', 'handbuch', 'infrastruktur', 'initialisierung', 'integration', 'interessen',
     'konzept', 'leistung', 'liste', 'management', 'manager', 'massnahmen', 'modell', 'organisation',
-    'plan', 'protokoll', 'prozess', 'schluss', 'spezifikation', 'status',
+    'plan', 'protokoll', 'prozess', 'schluss', 'sicherung', 'spezifikation', 'status',
     'steuerung', 'system', 'unabhängig', 'unterlagen', 'unterstützung', 'verantwortlich',
     'verfahren', 'vertreter', 'vorgehen'];
 

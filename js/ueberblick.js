@@ -82,14 +82,6 @@
     { form: 'iteration', text: 'Iteration — agile Vorgehensweise' }
   ];
 
-  var LEGENDE = [
-    { kat: 'rolle', text: 'Rolle — wer verantwortet und mitwirkt' },
-    { kat: 'aufgabe', text: 'Aufgabe — was getan wird' },
-    { kat: 'ergebnis', text: 'Ergebnis — was dabei entsteht' },
-    { kat: 'meilenstein', text: 'Meilenstein — Ergebnis als Quality Gate' },
-    { kat: 'modul', text: 'Modul — Bündel von Aufgaben und Ergebnissen' },
-    { kat: 'phase', text: 'Phase — Abschnitt im Projektverlauf' }
-  ];
 
   var zustand = {
     modus: 'erkunden',        // 'erkunden' | 'abfragen'
@@ -1417,16 +1409,9 @@
     malen();
   }
 
-  function ikone(kat, groesse, klasse) {
-    var svg = HT.ui.katSymbol(kat, groesse);
-    if (klasse) { svg.setAttribute('class', svg.getAttribute('class') + ' ' + klasse); }
-    return svg;
-  }
-
-  function ikoneFuer(e) {
-    if (e.kategorie === 'ergebnis' && e.typ === 'Meilenstein') { return 'meilenstein'; }
-    return e.kategorie;
-  }
+  /* Zeichen der Kategorie — dieselben wie auf der Inhaltsseite (js/inhaltsseite.js). */
+  var ikone = HT.inhaltsseite.ikone;
+  var ikoneFuer = HT.inhaltsseite.ikoneFuer;
 
   function promptZeichnen() {
     if (!refs.prompt) { return; }
@@ -1502,109 +1487,6 @@
 
   /* --- Inhaltsseite -------------------------------------------------------- */
 
-  var TYP_KICKER = { Dokument: 'Dokument', Zustand: 'Zustand', Checkliste: 'Checkliste', Meilenstein: 'Meilenstein' };
-
-  function kickerVon(e) {
-    if (e.kategorie === 'ergebnis') { return TYP_KICKER[e.typ] || 'Ergebnis'; }
-    var meta = HT.daten.kategorieMeta ? HT.daten.kategorieMeta(e.kategorie) : null;
-    return meta ? meta.singular : e.kategorie;
-  }
-
-  function markerVon(e) {
-    if (e.kategorie === 'ergebnis' && e.minimalGefordert) { return 'Minimal gefordert'; }
-    if (e.kategorie === 'modul' && HT.karte.ZWINGENDE_MODULE.indexOf(e.begriff) !== -1) {
-      return 'Zwingend in jedem Projekt';
-    }
-    return '';
-  }
-
-  /* Siegel in der Akzentfarbe statt Wortmarke; der Wortlaut («Minimal
-     gefordert», «Zwingend in jedem Projekt») steht im Tooltip und für den
-     Screenreader. */
-  function markerIkone(text) {
-    var svg = svgEl('svg', { viewBox: '0 0 24 24', width: 20, height: 20, 'aria-hidden': 'true', focusable: 'false' });
-    svg.appendChild(svgEl('circle', { cx: 12, cy: 12, r: 10 }));
-    svg.appendChild(svgEl('path', { d: 'M7.6 12.4l2.9 2.9 5.9-6.2' }));
-    return h('span', { class: 'ub-marker', role: 'img', title: text, 'aria-label': text }, svg);
-  }
-
-  var IKONE_DOWNLOAD = ['M12 4v11', 'M7.5 10.5 12 15l4.5-4.5', 'M4.5 19.5h15'];
-
-  /* Der erste Vorlagenverweis (.dotx) aus dem Handbuchtext — auf der
-     Quellseite ein eigener Abschnitt, hier ein Download-Icon im Kopf. */
-  function vorlageVon(text) {
-    var abschnitte = text && text.abschnitte ? text.abschnitte : [];
-    for (var i = 0; i < abschnitte.length; i++) {
-      var bs = abschnitte[i].bloecke || [];
-      for (var j = 0; j < bs.length; j++) {
-        if (bs[j].t === 'download' && bs[j].url) { return bs[j]; }
-      }
-    }
-    return null;
-  }
-
-  function vorlageIkone(block) {
-    var meta = [block.datei, block.groesse].filter(Boolean).join(' · ');
-    var titel = 'Dokumentvorlage herunterladen' + (meta ? ' (' + meta + ')' : '');
-    return h('a', {
-      class: 'ub-kopf__vorlage',
-      href: block.url,
-      target: '_blank',
-      rel: 'noopener',
-      download: block.datei || true,
-      title: titel,
-      'aria-label': titel
-    }, HT.ui.symbol(IKONE_DOWNLOAD, 20));
-  }
-
-  function abschnitt(titel, kinder, klasse) {
-    return h('section', { class: 'ub-abschnitt' + (klasse ? ' ' + klasse : '') }, [
-      h('h3', { class: 'ub-mikro', text: titel })
-    ].concat(kinder));
-  }
-
-  /* --- Handbuchabschnitte --------------------------------------------------- */
-
-  function hbAbschnitt(text, titel) {
-    if (!text || !text.abschnitte) { return null; }
-    for (var i = 0; i < text.abschnitte.length; i++) {
-      if ((text.abschnitte[i].titel || '').trim().toLowerCase() === titel.toLowerCase()) {
-        return text.abschnitte[i];
-      }
-    }
-    return null;
-  }
-
-  function absaetze(a) {
-    return a ? a.bloecke.filter(function (b) { return b.t === 'p'; }) : [];
-  }
-
-  /* Quelle des Leads: der Abschnitt «Beschreibung», sonst der erste Absatzblock
-     des ersten Abschnitts (Phasenseiten tragen keine Zwischentitel). Die
-     verwendeten Blöcke werden mitgegeben, damit sie unten nicht ein zweites
-     Mal erscheinen. Der Lead zeigt alle Absätze, nicht nur den ersten Satz —
-     diese Seite hat keine Stufen, an denen mehr nachkäme. */
-  function leadQuelle(text) {
-    var a = hbAbschnitt(text, 'Beschreibung');
-    if (a) { return { abschnitt: a, bloecke: absaetze(a) }; }
-    var erster = text && text.abschnitte && text.abschnitte[0];
-    if (!erster) { return { abschnitt: null, bloecke: [] }; }
-    var raus = [];
-    for (var i = 0; i < erster.bloecke.length; i++) {
-      if (erster.bloecke[i].t === 'p') { raus.push(erster.bloecke[i]); }
-      else if (raus.length) { break; }
-    }
-    return { abschnitt: null, bloecke: raus };
-  }
-
-  function leadBauen(e, lead) {
-    if (lead.bloecke.length) {
-      return lead.bloecke.map(function (b) { return h('p', { text: b.text }); });
-    }
-    var ersatz = e.definition || e.kurz || '';
-    return ersatz ? [h('p', { text: ersatz })] : [];
-  }
-
   function leerseite() {
     return h('div', { class: 'ub-leerseite' }, [
       h('h2', { class: 'ub-leerseite__titel', text: 'Noch nichts ausgewählt' }),
@@ -1615,31 +1497,8 @@
           + 'diese Seite. Ein Klick hält den Eintrag fest, die Trennlinie links lässt sich ziehen.' }),
         h('span', { class: 'ub-leerseite__schmal', text:
           'Antippen eines Ergebniskastens, eines Modulkopfs oder eines Phasenbalkens zeigt den Eintrag hier.' })
-      ]),
-      h('h3', { class: 'ub-mikro ub-mikro--legende', text: 'Die Elemente der Methode' }),
-      h('ul', { class: 'ub-legende' }, LEGENDE.map(function (l) {
-        return h('li', {}, [ikone(l.kat, 20, 'ub-ikone--legende'), h('span', { text: l.text })]);
-      }))
-    ]);
-  }
-
-  /* Handbuchtexte je Eintrag, sobald geladen (null = keiner vorhanden). Die
-     Kategoriedatei holt HT.daten einmalig; danach löst das Versprechen sofort
-     auf und das Nachzeichnen ist nicht sichtbar. */
-  var hbTexte = {};
-
-  function handbuchHolen(e) {
-    if (Object.prototype.hasOwnProperty.call(hbTexte, e.id)) { return; }
-    hbTexte[e.id] = null;                       // nicht zweimal anfragen
-    var id = e.id;
-    HT.daten.handbuchElement(e).then(function (t) {
-      hbTexte[id] = t || null;
-      if (t && zustand.aktiv && zustand.aktiv.id === id) { inhaltZeichnen(); }
-    }).catch(function () { /* Fallback bleibt «Aus der Dokumentation» */ });
-  }
-
-  function lexikonZiel(x) {
-    return '#/handbuch?id=' + encodeURIComponent(x.id);
+      ])
+    ].concat(HT.inhaltsseite.legende()));
   }
 
   function inhaltZeichnen() {
@@ -1662,65 +1521,16 @@
       return;
     }
 
-    handbuchHolen(e);
-    var text = hbTexte[e.id] || null;
-    var lead = leadQuelle(text);
-    var marker = markerVon(e);
-    var vorlage = vorlageVon(text);
-
-    refs.inhalt.appendChild(h('article', { class: 'ub-kopf' }, [
-      h('div', { class: 'ub-kopf__zeile' }, [
-        ikone(ikoneFuer(e), 24, 'ub-ikone--kopf'),
-        h('span', { class: 'ub-kopf__kicker', text: kickerVon(e) }),
-        (marker || vorlage) ? h('span', { class: 'ub-kopf__zeichen' }, [
-          marker ? markerIkone(marker) : null,
-          vorlage ? vorlageIkone(vorlage) : null
-        ]) : null
-      ]),
-      h('h2', { class: 'ub-kopf__titel', text: e.begriff }),
-      h('div', { class: 'ub-kopf__lead' }, leadBauen(e, lead))
-    ]));
-
-    /* Kein Steckbrief: Ergebnistyp, «minimal gefordert» und die Dokument-
-       vorlage stehen als Kicker und Zeichen im Kopf, alles andere zeigt das
-       Beziehungsbild unten. */
-
-    /* Die übrigen Abschnitte der Quellseite in ihrer Reihenfolge — «Inhalt»
-       und «Beziehungen» also genau so, wie sie auf hermes.admin.ch stehen.
-       Der Vorlagenverweis hängt als Icon im Kopf; bleibt vom Abschnitt
-       «Dokumentenvorlage» sonst nichts übrig, entfällt er. Das Bild der
-       Beziehungen ist die Graph-Sicht der Bühne («Im Graph»). */
-    (text && text.abschnitte ? text.abschnitte : []).forEach(function (a) {
-      if (a === lead.abschnitt) { return; }                     // steht im Lead
-      var titel = (a.titel || '').trim();
-      var bs = (a.bloecke || []).filter(function (b) {
-        return lead.bloecke.indexOf(b) === -1 && b.t !== 'download';
-      });
-      if (!bs.length) { return; }
-      refs.inhalt.appendChild(abschnitt(titel || 'Aus dem Handbuch',
-        [HT.ui.bloecke(bs, { verlinken: false, ebene: 4 })], 'ub-abschnitt--regel'));
-    });
-
-    /* Ohne Handbuchtext bleibt die kuratierte Fassung die einzige Quelle. */
-    if (!text && e.details) {
-      refs.inhalt.appendChild(abschnitt('Aus der Dokumentation', [
-        h('p', { class: 'ub-doku', text: e.details })
-      ], 'ub-abschnitt--regel'));
-    }
+    HT.inhaltsseite.seite(e, {
+      beiGeladen: function (id) { if (zustand.aktiv && zustand.aktiv.id === id) { inhaltZeichnen(); } }
+    }).forEach(function (teil) { refs.inhalt.appendChild(teil); });
 
     /* «Im Graph»: die Graph-Sicht der Bühne zeigt das Element mit allem,
-       was direkt daran hängt — in der Graph-Sicht selbst überflüssig. */
-    refs.inhalt.appendChild(h('section', { class: 'ub-verweise' }, [
+       was direkt daran hängt. */
+    refs.inhalt.appendChild(HT.inhaltsseite.verweise(e, [
       h('button', {
         type: 'button', class: 'ub-verweis ub-verweis--knopf', text: 'Im Graph',
         on: { click: function () { imGraphZeigen(e); } }
-      }),
-      h('a', { class: 'ub-verweis', href: '#/handbuch?id=' + encodeURIComponent(e.id), text: 'Im Handbuch' }),
-      h('a', {
-        class: 'ub-verweis ub-verweis--akzent',
-        href: (e.quelle && e.quelle.url) || QUELLE_ALLGEMEIN,
-        target: '_blank', rel: 'noopener',
-        text: 'Offizielle Seite ↗'
       })
     ]));
 

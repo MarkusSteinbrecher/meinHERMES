@@ -22,12 +22,17 @@
 
    Filter (Icon in der Kopfzeile neben der Suche, Popover im Stil «Alle
    Filter» des Graphen): Phasen und Module blenden Zeilen und Spalten aus,
-   die übrigen werden breiter; ein Klick auf Modulkopf oder Phase tut
+   die übrigen werden breiter; der Trichter an Modulkopf oder Phase tut
    dasselbe. Rolle (verantwortlich, beteiligt, beides) und «Nur Entscheide»
    lassen nur die passenden Aufgaben stehen; das Gerüst bleibt, Felder ohne
    Treffer bleiben leer. So beantwortet das Raster etwa: welche Entscheide
    trifft der Projektleiter in welchen Phasen und Modulen? Der Filter steht in
-   der Adresse (#/raster?rolle=…&entscheide=1). */
+   der Adresse (#/raster?rolle=…&entscheide=1).
+
+   Inhaltsseite rechts (Icon neben dem Filter): Ein Klick auf ein Element,
+   eine Phase oder einen Modulkopf zeigt dessen Seite (js/inhaltsseite.js,
+   dieselbe wie im Überblick) und darunter «Im Raster»; ohne Auswahl die
+   Treffer des Filters. */
 (function (global) {
   'use strict';
 
@@ -49,8 +54,15 @@
   var SPEICHER = 'raster-sicht';
   var STANDARD = { rolle: false, aufgabe: false, ergebnis: true };
 
+  /* Inhaltsseite rechts: offen oder zu und ihre Breite. */
+  var SEITE_SPEICHER = 'raster-seite';
+  var SEITE_STANDARD = 400;
+  var SEITE_MIN = 280;
+  var BUEHNE_MIN = 420;
+
   var modelle = {};
   var breiten = null;
+  var wahlVonAussen = null;   // Suchtreffer → Auswahl der laufenden Ansicht
   var lagenBereit = null;
   var laufende = null;
 
@@ -69,6 +81,21 @@
 
   function sichtSpeichern(sicht) {
     try { global.localStorage.setItem(SPEICHER, JSON.stringify(sicht)); } catch (e) { /* egal */ }
+  }
+
+  function seiteLesen() {
+    try {
+      var s = JSON.parse(global.localStorage.getItem(SEITE_SPEICHER) || 'null');
+      if (s && typeof s === 'object') {
+        return { offen: !!s.offen, breite: typeof s.breite === 'number' ? s.breite : SEITE_STANDARD };
+      }
+    } catch (e) { /* ohne Speicher gilt der Standard */ }
+    /* Zu, bis man etwas wählt: das Raster braucht bei 1470 px die ganze Breite. */
+    return { offen: false, breite: SEITE_STANDARD };
+  }
+
+  function seiteSpeichern(z) {
+    try { global.localStorage.setItem(SEITE_SPEICHER, JSON.stringify(z)); } catch (e) { /* egal */ }
   }
 
   /* --- Modell ---------------------------------------------------------------- */
@@ -392,14 +419,23 @@
     return spurVon;
   }
 
+  /* Der Trichter neben Modulkopf und Phase filtert; der Name selbst zeigt
+     die Seite des Moduls bzw. der Phase. */
+  function trichter(art, name) {
+    return h('button', { type: 'button', class: 'ra-trichter', dataset: { art: art, name: name } }, HT.ui.symbol(IKONE_FILTER, 12));
+  }
+
   function modulKopf(modul, klasse) {
     var e = HT.daten.eintragMitBegriff(modul, 'modul');
-    return h('button', {
-      type: 'button', class: 'ra-modul' + (klasse ? ' ' + klasse : ''),
-      dataset: { id: e ? e.id : '', modul: modul }, title: 'Modul ' + modul
-    }, [
-      h('span', { class: 'gswatch gswatch--modul', 'aria-hidden': 'true' }, HT.ui.katSymbol('modul', 12)),
-      h('span', { class: 'ra-modul__name', text: HT.gesamtbild.trennen(modul) })
+    return h('div', { class: 'ra-modulkopf' + (klasse ? ' ' + klasse : '') }, [
+      h('button', {
+        type: 'button', class: 'ra-modul',
+        dataset: { id: e ? e.id : '', modul: modul }, title: 'Modul ' + modul + ' — Seite zeigen'
+      }, [
+        h('span', { class: 'gswatch gswatch--modul', 'aria-hidden': 'true' }, HT.ui.katSymbol('modul', 12)),
+        h('span', { class: 'ra-modul__name', text: HT.gesamtbild.trennen(modul) })
+      ]),
+      trichter('modul', modul)
     ]);
   }
 
@@ -419,9 +455,12 @@
   function phaseBauen(z, gitterZeile) {
     var e = HT.daten.eintragMitBegriff(z.phase, 'phase');
     var el = h('div', { class: 'ra-phase', dataset: { phase: z.phase } }, [
-      h('button', {
-        type: 'button', class: 'ra-phase__name', dataset: { id: e ? e.id : '' }, title: 'Phase ' + z.phase
-      }, h('span', { text: z.phase })),
+      h('div', { class: 'ra-phase__streifen' }, [
+        h('button', {
+          type: 'button', class: 'ra-phase__name', dataset: { id: e ? e.id : '' }, title: 'Phase ' + z.phase + ' — Seite zeigen'
+        }, h('span', { text: z.phase })),
+        trichter('phase', z.phase)
+      ]),
       h('div', { class: 'ra-phase__ms' }, LAGEN.map(function (lage) {
         return h('div', { class: 'ra-ms-gruppe', dataset: { lage: lage } }, z.meilensteine[lage].map(meilensteinBauen));
       }))
@@ -432,13 +471,15 @@
 
   /**
    * Das Raster für einen Ausschnitt (siehe ausschnitt()).
-   * aktionen: { modul(name), phase(name) } — Klick auf Modulkopf bzw. Phase.
+   * aktionen: { modul(name), phase(name) } — Trichter an Modulkopf bzw. Phase;
+   *   waehlen(id) — Klick auf ein Element, einen Modulkopf, eine Phase.
    */
   function aufbauen(m, a, sicht, f, aktionen) {
     var buehne = h('div', { class: 'ra-buehne' });
     if (!a.zeilen.length || !a.spalten.length) {
       buehne.appendChild(h('p', { class: 'ra-leer', text: 'Keine Phase oder kein Modul gewählt — im Filter wieder alle einschalten.' }));
-      return { buehne: buehne, spurenLegen: function () {}, zeigen: function () { return false; } };
+      var nichts = function () { return false; };
+      return { buehne: buehne, spurenLegen: nichts, zeigen: nichts, gewaehlt: nichts, stelleZeigen: nichts };
     }
     var gitter = h('div', { class: 'ra-gitter', dataset: { vorgehen: m.vorgehen } });
     gitter.style.gridTemplateColumns = 'var(--ra-band) ' + a.spalten.map(function (s) {
@@ -446,9 +487,13 @@
     }).join(' ');
     gitter.classList.toggle('hat-filter', trefferFilter(f));
 
-    function kopfTitel(modul) {
-      return f.module && f.module.length === 1 && f.module[0] === modul
-        ? 'Wieder alle Module zeigen' : 'Modul ' + modul + ' ' + (f.module ? 'dazu- oder wegnehmen' : 'allein zeigen');
+    function trichterSetzen(knopf, liste, name, art) {
+      var titel = liste && liste.length === 1 && liste[0] === name
+        ? 'Wieder alle ' + (art === 'modul' ? 'Module' : 'Phasen') + ' zeigen'
+        : (art === 'modul' ? 'Modul ' : 'Phase ') + name + ' ' + (liste ? 'dazu- oder wegnehmen' : 'allein zeigen');
+      knopf.title = titel;
+      knopf.setAttribute('aria-label', 'Filter: ' + titel);
+      knopf.classList.toggle('ist-aktiv', !!liste && liste.indexOf(name) !== -1);
     }
 
     /* Kopfzeile: Ecke und die Modulköpfe. Projektgrundlagen hat nur eine
@@ -458,8 +503,8 @@
       h('span', { class: 'ra-ecke__text', text: 'Phase · Meilensteine' })
     ]));
     a.spalten.forEach(function (s, i) {
-      var kopf = modulKopf(s, 'ra-modul--kopf');
-      kopf.title = kopfTitel(s);
+      var kopf = modulKopf(s, 'ra-modulkopf--kopf');
+      trichterSetzen(kopf.querySelector('.ra-trichter'), f.module, s, 'modul');
       kopf.style.gridColumn = String(i + 2);
       kopf.style.gridRow = '1';
       gitter.appendChild(kopf);
@@ -475,9 +520,7 @@
       bahn.style.gridColumn = '1 / -1';
       gitter.appendChild(bahn);
       var band = phaseBauen(z, zeile);
-      var name = band.querySelector('.ra-phase__name');
-      name.title = f.phasen && f.phasen.length === 1 && f.phasen[0] === z.phase
-        ? 'Wieder alle Phasen zeigen' : 'Phase ' + z.phase + ' ' + (f.phasen ? 'dazu- oder wegnehmen' : 'allein zeigen');
+      trichterSetzen(band.querySelector('.ra-trichter'), f.phasen, z.phase, 'phase');
       /* Meilensteine, die der Filter nicht erreicht, treten zurück: bei Rolle
          oder Entscheiden die, die keine gefilterte Aufgabe erzeugt; bei
          gewählten Modulen die aus den übrigen. */
@@ -501,7 +544,7 @@
         class: 'ra-feld' + (x.breite > 1 ? ' ra-feld--breit' : '') + (leer ? ' ra-feld--leer' : ''),
         dataset: { phase: x.feld.phase, modul: x.feld.modul }
       }, [
-        x.kopfImFeld ? modulKopf(x.feld.modul, 'ra-modul--feld') : null,
+        x.kopfImFeld ? modulKopf(x.feld.modul, 'ra-modulkopf--feld') : null,
         inhalt
       ]);
       if (inhalt) {
@@ -553,12 +596,13 @@
        Zahl ändert; die Höhen misst eine Spur in der Zielbreite. Erst alles
        lesen, dann alles schreiben — sonst rechnet der Browser das Layout für
        jede Spalte neu. */
-    function spurenLegen() {
-      /* Die Breiten hängen nur an den gezeigten Spalten und der Fensterbreite
-         (die Spuren haben eine feste Mindestbreite, der Inhalt zählt nicht):
-         beim Umschalten von Rollen, Aufgaben, Ergebnissen gilt die letzte
-         Messung weiter und erspart ein ganzes Layout. */
-      var schluessel = a.spalten.join('|') + '@' + global.innerWidth;
+    function spurenLegen(zusatz) {
+      /* Die Breiten hängen nur an den gezeigten Spalten, der Fensterbreite
+         und der Breite der Inhaltsseite (zusatz) — die Spuren haben eine feste
+         Mindestbreite, der Inhalt zählt nicht: beim Umschalten von Rollen,
+         Aufgaben, Ergebnissen gilt die letzte Messung weiter und erspart ein
+         ganzes Layout. */
+      var schluessel = a.spalten.join('|') + '@' + zusatz;
       if (!breiten || breiten.schluessel !== schluessel) { breiten = { schluessel: schluessel, werte: {} }; }
       var neu = spaltenReihe.filter(function (sp) {
         var min = sp.breit ? 100 : 190, abstand = sp.breit ? 6 : 8;
@@ -621,17 +665,45 @@
     gitter.addEventListener('mouseleave', function () { markieren(null); });
     gitter.addEventListener('focusin', function (ev) { markieren(zielAus(ev.target)); });
 
-    /* Klick auf Modulkopf oder Phase filtert. */
+    /* Klick auf den Trichter filtert; auf ein Element, einen Modulkopf oder
+       eine Phase wählt es für die Inhaltsseite. */
     gitter.addEventListener('click', function (ev) {
-      var kopf = ev.target.closest('.ra-modul');
-      if (kopf && kopf.dataset.modul) { aktionen.modul(kopf.dataset.modul); return; }
-      var phase = ev.target.closest('.ra-phase__name');
-      if (phase) { aktionen.phase(phase.closest('.ra-phase').dataset.phase); }
+      var t = ev.target.closest('.ra-trichter');
+      if (t) { aktionen[t.dataset.art](t.dataset.name); return; }
+      var ziel = zielAus(ev.target);
+      if (ziel && ziel.dataset.id) { aktionen.waehlen(ziel.dataset.id); }
     });
+
+    /* Die Auswahl bleibt markiert, an jeder ihrer Stellen. */
+    function gewaehlt(id) {
+      Array.prototype.forEach.call(gitter.querySelectorAll('.ist-gewaehlt'), function (x) { x.classList.remove('ist-gewaehlt'); });
+      if (!id) { return; }
+      Array.prototype.forEach.call(gitter.querySelectorAll('[data-id="' + id + '"]'), function (x) { x.classList.add('ist-gewaehlt'); });
+    }
+
+    /* Aus der Inhaltsseite: eine Stelle anspringen — das Element im Feld,
+       sonst das Feld, ohne Modul die Phase — und kurz aufleuchten lassen. */
+    function stelleZeigen(phase, modul, id) {
+      var el = null;
+      if (modul) {
+        var feld = gitter.querySelector('.ra-feld[data-phase="' + phase + '"][data-modul="' + modul + '"]');
+        el = (feld && id && feld.querySelector('[data-id="' + id + '"]')) || feld;
+      } else {
+        var band = gitter.querySelector('.ra-phase[data-phase="' + phase + '"]');
+        el = band ? band.querySelector('.ra-phase__name') : null;
+      }
+      if (!el) { return false; }
+      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+      el.classList.add('ist-angesprungen');
+      global.setTimeout(function () { el.classList.remove('ist-angesprungen'); }, 1400);
+      return true;
+    }
 
     return {
       buehne: buehne,
       spurenLegen: spurenLegen,
+      gewaehlt: gewaehlt,
+      stelleZeigen: stelleZeigen,
       zeigen: function (id) {
         var el = gitter.querySelector('[data-id="' + id + '"]');
         if (!el) { return false; }
@@ -645,13 +717,15 @@
   /* --- Ansicht ----------------------------------------------------------------- */
 
   var IKONE_FILTER = ['M3.5 5h17', 'M6.5 12h11', 'M10 19h4'];
+  var IKONE_SEITE = ['M4 5h16v14H4Z', 'M14.5 5v14'];
 
   function infoInhalt() {
     return [
       h('p', { text: 'Entwurf: das Gesamtbild der Methode wie Abbildung 1 des Referenzhandbuchs — Phasen als Zeilen, Module als Spalten — in der Bildsprache des Graphen.' }),
       h('p', { text: 'Das Gerüst steht fest: links die Phasen mit ihren Meilensteinen (die Freigabe, die eine Phase öffnet, oben; die Entscheide, mit denen sie endet, unten an der Grenze zur nächsten Phase; modulspezifische dazwischen), oben die Module. Projektsteuerung und Projektführung haben je eine eigene Spalte, Projektgrundlagen liegt in der Initialisierung über drei.' }),
       h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Felder eines Moduls teilen eine Reihenfolge: dieselbe Aufgabe, dasselbe Ergebnis steht in jeder Phase an derselben Stelle — in einem breiten Feld auch in derselben Spur. Steht ein Ergebnis im Feld unter mehreren Aufgaben, ist nur das erste Vorkommen kräftig, die weiteren sind blass.' }),
-      h('p', { text: 'Filter (Icon neben der Suche): Ist etwas gefiltert, nennt es die rote Pille in der Leiste; ein Klick darauf öffnet den Filter, × hebt ihn auf. Phasen und Module blenden Zeilen und Spalten aus — die übrigen werden breiter. Ein Klick auf einen Modulkopf oder eine Phase tut dasselbe; ein zweiter Klick zeigt wieder alle. Eine Rolle (die drei Linien: verantwortlich, beteiligt oder beides) und «Nur Entscheide» (Raute) lassen nur die passenden Aufgaben stehen; Felder ohne Treffer bleiben leer, Meilensteine, die keine dieser Aufgaben erreicht, treten zurück. Der Filter steht in der Adresse und lässt sich so teilen.' })
+      h('p', { text: 'Filter (Icon neben der Suche): Ist etwas gefiltert, nennt es die rote Pille in der Leiste; ein Klick darauf öffnet den Filter, × hebt ihn auf. Phasen und Module blenden Zeilen und Spalten aus — die übrigen werden breiter. Der Trichter neben einem Modulkopf oder einer Phase tut dasselbe; ein zweiter Klick zeigt wieder alle. Eine Rolle (die drei Linien: verantwortlich, beteiligt oder beides) und «Nur Entscheide» (Raute) lassen nur die passenden Aufgaben stehen; Felder ohne Treffer bleiben leer, Meilensteine, die keine dieser Aufgaben erreicht, treten zurück. Der Filter steht in der Adresse und lässt sich so teilen.' }),
+      h('p', { text: 'Inhaltsseite (Icon neben dem Filter, Trennlinie ziehbar): Ein Klick auf ein Element, eine Phase oder einen Modulkopf zeigt seine Seite aus dem Handbuch und darunter «Im Raster» — wo es überall steht; eine Zeile springt ins Feld, ein Name wählt das Element. Ein zweiter Klick oder Esc hebt die Auswahl auf. Ohne Auswahl stehen dort bei gesetztem Filter seine Treffer, Phase für Phase.' })
     ];
   }
 
@@ -671,11 +745,292 @@
       title: 'Filter: Phasen, Module, Rolle, Entscheide', 'aria-expanded': 'false', 'aria-haspopup': 'dialog',
       on: { click: function () { popOffen = !popOffen; popZeichnen(true); } }
     }, HT.ui.symbol(IKONE_FILTER, 18));
-    HT.app.kopfWerkzeug(filterKnopf);
+
+    /* --- Inhaltsseite rechts ---
+       Ein Klick auf ein Element, eine Phase oder einen Modulkopf zeigt dessen
+       Seite (js/inhaltsseite.js), gleich unter dem Kopf «Im Raster»: wo es
+       überall steht. Ohne Auswahl stehen dort bei gesetztem Filter seine
+       Treffer, sonst eine kurze Anleitung. Die Auswahl steht in der Adresse
+       (id=…); offen oder zu und die Breite bleiben in localStorage. */
+    var seiteZustand = seiteLesen();
+    var auswahl = params.id ? HT.daten.eintragMitId(params.id) || null : null;
+    var gezeichnet = null;
+    var seiteText = h('div', { class: 'ub-inhalt__text ra-inhalt__text' });
+    var seite = h('aside', { class: 'ub-inhalt ra-inhalt', 'aria-label': 'Inhaltsseite' }, seiteText);
+    var trenner = h('div', {
+      class: 'ub-trenner ra-trenner', role: 'separator', 'aria-orientation': 'vertical',
+      'aria-label': 'Breite der Inhaltsseite', tabindex: '0',
+      title: 'Ziehen ändert die Breite · Doppelklick setzt zurück'
+    }, h('span', { class: 'ub-trenner__strich', 'aria-hidden': 'true' }));
+    var seiteKnopf = h('button', {
+      type: 'button', class: 'graph-werkzeug ra-seiteknopf',
+      on: { click: function () { seiteOeffnen(!seiteZustand.offen); } }
+    }, HT.ui.symbol(IKONE_SEITE, 18));
+    HT.app.kopfWerkzeug(h('span', { class: 'ra-werkzeuge' }, [filterKnopf, seiteKnopf]));
+
+    function breitenSchluessel() {
+      return global.innerWidth + '|' + (seiteZustand.offen ? seiteZustand.breite : 0);
+    }
+
+    function seiteAnwenden() {
+      var grenze = Math.max(SEITE_MIN, global.innerWidth - BUEHNE_MIN);
+      seiteZustand.breite = Math.round(Math.max(SEITE_MIN, Math.min(seiteZustand.breite, grenze)));
+      huelle.style.setProperty('--ra-seite', seiteZustand.breite + 'px');
+      huelle.classList.toggle('ist-seite-zu', !seiteZustand.offen);
+      seiteKnopf.setAttribute('aria-pressed', seiteZustand.offen ? 'true' : 'false');
+      seiteKnopf.title = seiteZustand.offen ? 'Inhaltsseite schliessen' : 'Inhaltsseite öffnen';
+      seiteKnopf.setAttribute('aria-label', seiteKnopf.title);
+    }
+
+    function seiteOeffnen(offen) {
+      seiteZustand.offen = offen;
+      seiteSpeichern(seiteZustand);
+      seiteAnwenden();
+      if (laufende) { laufende.spurenLegen(breitenSchluessel()); }
+    }
+
+    trenner.addEventListener('mousedown', function (ev) {
+      if (ev.button !== 0) { return; }
+      ev.preventDefault();
+      var startX = ev.clientX, start = seiteZustand.breite;
+      function bewegen(e) { seiteZustand.breite = start - (e.clientX - startX); seiteAnwenden(); }
+      function beenden() {
+        global.removeEventListener('mousemove', bewegen);
+        global.removeEventListener('mouseup', beenden);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        seiteSpeichern(seiteZustand);
+        if (laufende) { laufende.spurenLegen(breitenSchluessel()); }
+      }
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      global.addEventListener('mousemove', bewegen);
+      global.addEventListener('mouseup', beenden);
+    });
+    trenner.addEventListener('keydown', function (ev) {
+      var schritt = ev.key === 'ArrowLeft' ? 24 : ev.key === 'ArrowRight' ? -24 : 0;
+      if (!schritt) { return; }
+      ev.preventDefault();
+      seiteZustand.breite += schritt;
+      seiteAnwenden();
+      seiteSpeichern(seiteZustand);
+      if (laufende) { laufende.spurenLegen(breitenSchluessel()); }
+    });
+    trenner.addEventListener('dblclick', function () {
+      seiteZustand.breite = SEITE_STANDARD;
+      seiteAnwenden();
+      seiteSpeichern(seiteZustand);
+      if (laufende) { laufende.spurenLegen(breitenSchluessel()); }
+    });
+    seiteAnwenden();
+
+    /** Wählt e (Eintrag oder id) für die Inhaltsseite; umschalten: ein zweiter Klick hebt auf. */
+    function waehlen(x, umschalten) {
+      var e = typeof x === 'string' ? HT.daten.eintragMitId(x) : x;
+      if (umschalten && e && auswahl && e.id === auswahl.id) { e = null; }
+      auswahl = e || null;
+      if (auswahl && !seiteZustand.offen) { seiteOeffnen(true); }
+      adresseSetzen();
+      if (laufende) { laufende.gewaehlt(auswahl ? auswahl.id : null); }
+      inhaltZeichnen();
+    }
+    wahlVonAussen = function (e) {
+      if (!laufende || !laufende.zeigen(e.id)) { return false; }
+      waehlen(e, false);
+      return true;
+    };
 
     function adresseSetzen() {
       var q = (vorgehen === 'agil' ? ['vorgehen=agil'] : []).concat(filterAlsQuery(filter));
+      if (auswahl) { q.push('id=' + encodeURIComponent(auswahl.id)); }
       global.history.replaceState(null, '', '#/raster' + (q.length ? '?' + q.join('&') : ''));
+    }
+
+    /* --- Inhalt der Seite --- */
+
+    function verweis(k) {
+      return h('button', {
+        type: 'button', class: 'ra-ort__link', text: k.begriff,
+        on: { click: function () { waehlen(k.id, false); } }
+      });
+    }
+
+    function mitKomma(teile) {
+      var aus = [];
+      teile.forEach(function (t, i) { if (i) { aus.push(', '); } aus.push(t); });
+      return aus;
+    }
+
+    function ortZeile(wo, phase, modul, zeigeId, inhalt) {
+      var sichtbar = gezeigt(filter.phasen, phase) && (!modul || gezeigt(filter.module, modul));
+      return h('li', { class: 'ra-ort' + (sichtbar ? '' : ' ist-aus') }, [
+        h('button', {
+          type: 'button', class: 'ra-ort__wo', text: wo, disabled: !sichtbar,
+          title: sichtbar ? 'Im Raster zeigen' : 'Vom Filter ausgeblendet',
+          on: { click: function () { if (laufende) { laufende.stelleZeigen(phase, modul, zeigeId); } } }
+        }),
+        h('div', { class: 'ra-ort__was' }, inhalt)
+      ]);
+    }
+
+    function zahlText(n, eins, viele) { return n + ' ' + (n === 1 ? eins : viele); }
+
+    /* «Im Raster»: wo das Element überall steht — im ganzen Raster der
+       Vorgehensweise, auch wo der Filter es ausblendet (dort blass). Eine
+       Zeile springt ins Feld, ein Name wählt das Element. */
+    function imRaster(e) {
+      var zeilen = [], vorspann = null, phasen = {}, module = {};
+      function merken(phase, modul) { phasen[phase] = true; if (modul) { module[modul] = true; } }
+      var kat = e.kategorie;
+      if (kat === 'aufgabe') {
+        var rolle = null;
+        m.felder.forEach(function (feld) {
+          feld.bloecke.forEach(function (b) {
+            if (b.aufgabe.id !== e.id) { return; }
+            rolle = rolle || b.rolle;
+            var erg = b.ergebnisse.filter(function (k) { return !istMeilenstein(k); });
+            var ms = b.ergebnisse.filter(istMeilenstein);
+            merken(feld.phase, feld.modul);
+            zeilen.push(ortZeile(feld.phase + ' · ' + feld.modul, feld.phase, feld.modul, e.id, [
+              mitKomma(erg.map(verweis)),
+              ms.length ? h('span', { class: 'ra-ort__ms' }, ['◆ '].concat(mitKomma(ms.map(verweis)))) : null
+            ]));
+          });
+        });
+        if (rolle) { vorspann = ['Verantwortlich: ', verweis(rolle)]; }
+      } else if (kat === 'ergebnis') {
+        var ms = e.typ === 'Meilenstein';
+        m.felder.forEach(function (feld) {
+          var aufgaben = feld.bloecke.filter(function (b) {
+            return b.ergebnisse.some(function (k) { return k.id === e.id; });
+          }).map(function (b) { return b.aufgabe; });
+          if (!aufgaben.length) { return; }
+          merken(feld.phase, feld.modul);
+          zeilen.push(ortZeile(feld.phase + ' · ' + feld.modul, feld.phase, feld.modul, ms ? aufgaben[0].id : e.id,
+            [h('span', { class: 'ra-ort__leise', text: 'erzeugt von ' })].concat(mitKomma(aufgaben.map(verweis)))));
+        });
+      } else if (kat === 'rolle') {
+        var mit = { rolle: e.begriff, bezug: 'beteiligt' };
+        var summe = 0;
+        m.zeilen.forEach(function (z) {
+          var verantw = {}, reihe = [], beteiligt = {};
+          m.felder.forEach(function (feld) {
+            if (feld.phase !== z.phase) { return; }
+            feld.bloecke.forEach(function (b) {
+              if (b.rolle && b.rolle.id === e.id) {
+                if (!verantw[b.aufgabe.id]) { verantw[b.aufgabe.id] = true; reihe.push(b.aufgabe); }
+              } else if (bezugPasst(b.aufgabe, mit)) { beteiligt[b.aufgabe.id] = true; }
+            });
+          });
+          var nBet = Object.keys(beteiligt).length;
+          if (!reihe.length && !nBet) { return; }
+          summe += reihe.length;
+          merken(z.phase, null);
+          zeilen.push(ortZeile(z.phase, z.phase, null, e.id, [
+            mitKomma(reihe.map(verweis)),
+            nBet ? h('span', { class: 'ra-ort__leise ra-ort__block', text: (reihe.length ? 'dazu ' : '') + 'beteiligt an ' + zahlText(nBet, 'Aufgabe', 'Aufgaben') }) : null
+          ]));
+        });
+        vorspann = ['Verantwortet ' + zahlText(summe, 'Aufgabe', 'Aufgaben') + ' (je Phase gezählt).'];
+      } else if (kat === 'phase' || kat === 'modul') {
+        m.felder.forEach(function (feld) {
+          if ((kat === 'phase' ? feld.phase : feld.modul) !== e.begriff) { return; }
+          merken(feld.phase, feld.modul);
+          var n = feld.bloecke.length;
+          var entscheide = feld.bloecke.filter(function (b) { return istEntscheid(b.aufgabe); }).length;
+          zeilen.push(ortZeile(kat === 'phase' ? feld.modul : feld.phase, feld.phase, feld.modul, null, [
+            zahlText(n, 'Aufgabe', 'Aufgaben'),
+            entscheide ? h('span', { class: 'ra-ort__leise', text: ', davon ' + zahlText(entscheide, 'Entscheid', 'Entscheide') }) : null
+          ]));
+        });
+      }
+      if (!zeilen.length) { return null; }
+      var np = Object.keys(phasen).length, nm = Object.keys(module).length;
+      var titel = 'Im Raster · ' + zahlText(np, 'Phase', 'Phasen') + (nm ? ' · ' + zahlText(nm, 'Modul', 'Module') : '');
+      return HT.inhaltsseite.abschnitt(titel, [
+        vorspann ? h('p', { class: 'ra-ort-vorspann' }, vorspann) : null,
+        h('ul', { class: 'ra-orte' }, zeilen)
+      ], 'ub-abschnitt--regel ra-im-raster');
+    }
+
+    /* Ohne Auswahl bei gesetztem Filter: seine Treffer als Liste, Phase für
+       Phase — je Aufgabe die Module und die Meilensteine, die sie erzeugt. */
+    function trefferSeite() {
+      var teile = [h('div', { class: 'ub-leerseite ra-treffer' }, [
+        h('h2', { class: 'ub-leerseite__titel', text: filterText() || 'Treffer' }),
+        h('p', { class: 'ub-leerseite__text', text: trefferText() + '. Ein Klick auf eine Aufgabe zeigt ihre Seite.' })
+      ])];
+      a.zeilen.forEach(function (z) {
+        var nachId = {}, reihe = [];
+        a.felder.forEach(function (x) {
+          if (x.feld.phase !== z.phase) { return; }
+          x.bloecke.forEach(function (b) {
+            var t = nachId[b.aufgabe.id];
+            if (!t) { t = nachId[b.aufgabe.id] = { aufgabe: b.aufgabe, module: [], ms: [] }; reihe.push(t); }
+            if (t.module.indexOf(x.feld.modul) === -1) { t.module.push(x.feld.modul); }
+            b.ergebnisse.filter(istMeilenstein).forEach(function (k) {
+              if (!t.ms.some(function (y) { return y.id === k.id; })) { t.ms.push(k); }
+            });
+          });
+        });
+        if (!reihe.length) { return; }
+        teile.push(HT.inhaltsseite.abschnitt(z.phase + ' · ' + reihe.length, [
+          h('ul', { class: 'ra-orte' }, reihe.map(function (t) {
+            return h('li', { class: 'ra-ort ra-ort--treffer' }, [
+              h('div', { class: 'ra-ort__was' }, [
+                verweis(t.aufgabe),
+                h('span', { class: 'ra-ort__leise ra-ort__block', text: t.module.join(', ') }),
+                t.ms.length ? h('span', { class: 'ra-ort__ms ra-ort__block' }, ['◆ '].concat(mitKomma(t.ms.map(verweis)))) : null
+              ])
+            ]);
+          }))
+        ], 'ub-abschnitt--regel'));
+      });
+      return teile;
+    }
+
+    function leerSeite() {
+      return [h('div', { class: 'ub-leerseite' }, [
+        h('h2', { class: 'ub-leerseite__titel', text: 'Noch nichts ausgewählt' }),
+        h('p', { class: 'ub-leerseite__text', text: 'Ein Klick auf eine Aufgabe, ein Ergebnis, eine Rolle, einen Meilenstein, eine Phase oder einen Modulkopf zeigt hier seine Seite und wo es im Raster steht. Ist ein Filter gesetzt, stehen hier seine Treffer.' })
+      ].concat(HT.inhaltsseite.legende()))];
+    }
+
+    function inhaltZeichnen() {
+      if (!m || !a) { return; }
+      var vorher = seiteText.scrollTop;
+      HT.ui.leeren(seiteText);
+      var e = auswahl, teile, schluessel;
+      /* Ort für Markierungen — derselbe wie die Karte im Handbuch. */
+      if (e) { seiteText.dataset.markOrt = '#/handbuch?id=' + encodeURIComponent(e.id); }
+      else { delete seiteText.dataset.markOrt; }
+      if (e) {
+        teile = HT.inhaltsseite.seite(e, {
+          beiGeladen: function (id) { if (auswahl && auswahl.id === id && document.body.contains(huelle)) { inhaltZeichnen(); } }
+        });
+        var zeile = teile[0].querySelector('.ub-kopf__zeile');
+        if (zeile) {
+          zeile.appendChild(h('button', {
+            type: 'button', class: 'ra-inhalt__zu', 'aria-label': 'Auswahl aufheben', title: 'Auswahl aufheben (Esc)', text: '×',
+            on: { click: function () { waehlen(null); } }
+          }));
+        }
+        var ort = imRaster(e);
+        if (ort) { teile.splice(1, 0, ort); }
+        teile.push(HT.inhaltsseite.verweise(e));
+        schluessel = e.id;
+      } else if (filterAktiv(filter)) {
+        teile = trefferSeite();
+        schluessel = 'treffer';
+      } else {
+        teile = leerSeite();
+        schluessel = '';
+      }
+      teile.forEach(function (t) { seiteText.appendChild(t); });
+      /* Nur beim Wechsel nach oben springen — Nachzeichnen (Handbuchtext,
+         Filter) behält die Leseposition. */
+      if (gezeichnet !== schluessel) { seiteText.scrollTop = 0; gezeichnet = schluessel; }
+      else { seiteText.scrollTop = vorher; }
     }
 
     /* Nach jeder Änderung am Filter: Adresse, Raster, Leiste, Popover. */
@@ -702,7 +1057,8 @@
 
     var aktionen = {
       modul: function (name) { listeSchalten('module', name, alleModule()); },
-      phase: function (name) { listeSchalten('phasen', name, m.phasen); }
+      phase: function (name) { listeSchalten('phasen', name, m.phasen); },
+      waehlen: function (id) { waehlen(id, true); }
     };
 
     /* --- Popover --- */
@@ -889,7 +1245,9 @@
       popZeichnen();
     }
     function taste(ev) {
-      if (ev.key === 'Escape' && popOffen && document.body.contains(huelle)) { popOffen = false; popZeichnen(); filterKnopf.focus(); }
+      if (ev.key !== 'Escape' || !document.body.contains(huelle)) { return; }
+      if (popOffen) { popOffen = false; popZeichnen(); filterKnopf.focus(); return; }
+      if (auswahl && !(ev.target.closest && ev.target.closest('input, textarea'))) { waehlen(null); }
     }
     document.addEventListener('pointerdown', draussen, true);
     document.addEventListener('keydown', taste);
@@ -897,7 +1255,8 @@
     /* Breiter oder schmaler: die Spuren neu legen, wenn mehr oder weniger passen. */
     function breite() {
       if (!document.body.contains(huelle)) { global.removeEventListener('resize', breite); return; }
-      if (laufende) { laufende.spurenLegen(); }
+      seiteAnwenden();
+      if (laufende) { laufende.spurenLegen(breitenSchluessel()); }
     }
     global.addEventListener('resize', breite);
 
@@ -971,8 +1330,13 @@
       var oben = alt ? alt.scrollTop : 0;
       laufende = aufbauen(m, a, sicht, filter, aktionen);
       if (alt) { huelle.replaceChild(laufende.buehne, alt); }
-      else { HT.ui.leeren(huelle); huelle.appendChild(laufende.buehne); huelle.appendChild(pop); }
-      laufende.spurenLegen();
+      else {
+        HT.ui.leeren(huelle);
+        [laufende.buehne, trenner, seite, pop].forEach(function (x) { huelle.appendChild(x); });
+      }
+      laufende.gewaehlt(auswahl ? auswahl.id : null);
+      laufende.spurenLegen(breitenSchluessel());
+      inhaltZeichnen();
       laufende.buehne.scrollTop = oben;
       leisteSetzen();
       popZeichnen();
@@ -992,7 +1356,7 @@
     nav: 'ueberblick',
     render: render,
     suchtreffer: function (e) {
-      return !!(laufende && document.body.contains(laufende.buehne) && laufende.zeigen(e.id));
+      return !!(laufende && document.body.contains(laufende.buehne) && wahlVonAussen && wahlVonAussen(e));
     }
   };
 }(window));
