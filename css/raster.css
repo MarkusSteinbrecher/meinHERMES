@@ -188,13 +188,20 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 }
 .ra-feld.ist-gleich { box-shadow: 0 0 0 2px var(--akzent); }
 
-/* Der Inhalt fliesst in Spalten: schmal eine, in einem breiten Feld (nur
-   ein Modul gefiltert, Projektgrundlagen) so viele, wie hineinpassen. */
-.ra-feld__inhalt { column-width: 190px; column-gap: 8px; }
-.ra-feld__inhalt > * { break-inside: avoid; margin-bottom: 6px; }
-.ra-feld--breit .ra-feld__inhalt { column-width: 100px; column-gap: 6px; }
+/* Der Inhalt steht in Spuren: schmal eine, in einem breiten Feld (nur ein
+   Modul gefiltert, Projektgrundlagen) so viele, wie hineinpassen — ab 190 px,
+   im breiten Feld ab 100 px. Welches Stück in welche Spur kommt, legt
+   spurenLegen() in js/raster.js fest, für alle Phasen gleich. */
+.ra-feld__inhalt { display: flex; align-items: flex-start; gap: 8px; }
+.ra-feld--breit .ra-feld__inhalt { gap: 6px; }
+.ra-spur { flex: 1 1 0; min-width: 0; }
+.ra-spur > * + * { margin-top: 6px; }
+.ra-feld__inhalt--liste .ra-spur > * + * { margin-top: 4px; }
+.ra-feld__inhalt--fluss { display: block; column-width: 190px; column-gap: 8px; }
+.ra-feld--breit .ra-feld__inhalt--fluss { column-width: 100px; column-gap: 6px; }
+.ra-feld__inhalt--fluss .ra-spur > * { break-inside: avoid; margin: 0 0 6px; }
+.ra-feld__inhalt--fluss.ra-feld__inhalt--liste .ra-spur > * { margin-bottom: 4px; }
 
-.ra-liste { display: grid; gap: 4px; }
 .ra-block { display: grid; gap: 3px; }
 .ra-block__ergebnisse {
   display: grid;

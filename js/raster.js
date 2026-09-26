@@ -50,6 +50,7 @@
   var STANDARD = { rolle: false, aufgabe: false, ergebnis: true };
 
   var modelle = {};
+  var breiten = null;
   var lagenBereit = null;
   var laufende = null;
 
@@ -284,18 +285,21 @@
     return liste.filter(function (k) { return !istMeilenstein(k); });
   }
 
-  /* Der Inhalt eines Feldes nach der Sicht. Mit Aufgaben je Aufgabe ein Block;
-     ohne Aufgaben die Ergebnisse, bei eingeblendeten Rollen nach der
-     verantwortlichen Rolle gruppiert — jedes Element steht im Feld einmal. */
+  /* Der Inhalt eines Feldes nach der Sicht, als Stücke { key, el }. Mit
+     Aufgaben je Aufgabe ein Block; ohne Aufgaben die Ergebnisse einzeln oder,
+     bei eingeblendeten Rollen, nach der verantwortlichen Rolle gruppiert —
+     jedes Element steht im Feld einmal. Der Schlüssel ist in jeder Phase
+     derselbe, damit ein Stück in allen Feldern seiner Spalte an derselben
+     Stelle steht (spurenLegen). */
   function inhaltBauen(bloecke, sicht) {
     if (sicht.aufgabe) {
       return bloecke.map(function (b) {
         var erg = sicht.ergebnis ? ohneMeilensteine(b.ergebnisse) : [];
-        return h('div', { class: 'ra-block' }, [
+        return { key: 'a:' + b.aufgabe.id, el: h('div', { class: 'ra-block' }, [
           sicht.rolle && b.rolle ? knoten(b.rolle) : null,
           knoten(b.aufgabe),
           erg.length ? h('div', { class: 'ra-block__ergebnisse' }, erg.map(knoten)) : null
-        ]);
+        ]) };
       });
     }
     var gruppen = [], nachRolle = {}, gesehen = {};
@@ -314,13 +318,78 @@
         g.ergebnisse.push(k);
       });
     });
-    return gruppen.map(function (g) {
-      if (!g.rolle) { return h('div', { class: 'ra-liste' }, g.ergebnisse.map(knoten)); }
-      return h('div', { class: 'ra-block' }, [
+    var stuecke = [];
+    gruppen.forEach(function (g) {
+      if (!g.rolle) {
+        g.ergebnisse.forEach(function (k) { stuecke.push({ key: 'e:' + k.id, el: knoten(k) }); });
+        return;
+      }
+      stuecke.push({ key: 'r:' + g.rolle.id, el: h('div', { class: 'ra-block' }, [
         knoten(g.rolle),
         g.ergebnisse.length ? h('div', { class: 'ra-block__ergebnisse' }, g.ergebnisse.map(knoten)) : null
-      ]);
+      ]) });
     });
+    return stuecke;
+  }
+
+  /* --- Spuren: dasselbe Stück in jeder Phase an derselben Stelle -------------- */
+
+  /* Die Felder einer Spalte teilen eine Reihenfolge: jedes Stück bekommt den
+     Mittelwert seiner Stellen in den Feldern, in denen es steht (die Folge der
+     Abbildung 1 je Feld), Gleichstand nach dem ersten Vorkommen. So steht
+     «Projekt führen und kontrollieren» in der Initialisierung nicht unten
+     und ab dem Konzept oben, sondern überall an derselben Stelle der Folge. */
+  function spalteOrdnen(felder) {
+    var summe = {}, zahl = {}, erstes = {}, n = 0;
+    felder.forEach(function (f) {
+      f.stuecke.forEach(function (st, i) {
+        summe[st.key] = (summe[st.key] || 0) + (i + 0.5) / f.stuecke.length;
+        zahl[st.key] = (zahl[st.key] || 0) + 1;
+        if (!(st.key in erstes)) { erstes[st.key] = n++; }
+      });
+    });
+    var rang = {};
+    Object.keys(erstes).sort(function (x, y) {
+      return summe[x] / zahl[x] - summe[y] / zahl[y] || erstes[x] - erstes[y];
+    }).forEach(function (key, i) { rang[key] = i; });
+    felder.forEach(function (f) {
+      f.stuecke.sort(function (x, y) { return rang[x.key] - rang[y.key]; });
+    });
+    return Object.keys(rang).sort(function (x, y) { return rang[x] - rang[y]; });
+  }
+
+  /* Ist ein Feld breit genug für mehrere Spuren (nur ein Modul gefiltert,
+     Projektgrundlagen), bekommt jedes Stück eine feste Spur — in allen
+     Feldern der Spalte dieselbe. Verteilt wird der Reihe nach: jedes Stück
+     in die Spur, die die Felder, in denen es steht, am wenigsten höher macht;
+     bei Gleichstand in die niedrigste, dann die linke. Stücke, die nie im
+     selben Feld stehen, teilen sich so eine Spur, statt Lücken zu lassen. */
+  function spurenVerteilen(felder, keys, anzahl, hoehe, abstand) {
+    var spurVon = {};
+    var hoch = [], max = felder.map(function () { return 0; });
+    for (var s = 0; s < anzahl; s++) { hoch.push(felder.map(function () { return 0; })); }
+    keys.forEach(function (key) {
+      var wo = [];
+      felder.forEach(function (f, fi) { if (key in f.index) { wo.push(fi); } });
+      var beste = 0, besteKosten = Infinity, besteLast = Infinity;
+      for (var sp = 0; sp < anzahl; sp++) {
+        var kosten = 0, last = 0;
+        wo.forEach(function (fi) {
+          var neu = hoch[sp][fi] + (hoch[sp][fi] ? abstand : 0) + hoehe(key, fi);
+          kosten += Math.max(0, neu - max[fi]);
+          last += hoch[sp][fi];
+        });
+        if (kosten < besteKosten - 0.5 || (Math.abs(kosten - besteKosten) <= 0.5 && last < besteLast)) {
+          beste = sp; besteKosten = kosten; besteLast = last;
+        }
+      }
+      spurVon[key] = beste;
+      wo.forEach(function (fi) {
+        hoch[beste][fi] += (hoch[beste][fi] ? abstand : 0) + hoehe(key, fi);
+        max[fi] = Math.max(max[fi], hoch[beste][fi]);
+      });
+    });
+    return spurVon;
   }
 
   function modulKopf(modul, klasse) {
@@ -369,7 +438,7 @@
     var buehne = h('div', { class: 'ra-buehne' });
     if (!a.zeilen.length || !a.spalten.length) {
       buehne.appendChild(h('p', { class: 'ra-leer', text: 'Keine Phase oder kein Modul gewählt — im Filter wieder alle einschalten.' }));
-      return { buehne: buehne, zeigen: function () { return false; } };
+      return { buehne: buehne, spurenLegen: function () {}, zeigen: function () { return false; } };
     }
     var gitter = h('div', { class: 'ra-gitter', dataset: { vorgehen: m.vorgehen } });
     gitter.style.gridTemplateColumns = 'var(--ra-band) ' + a.spalten.map(function (s) {
@@ -421,21 +490,88 @@
       gitter.appendChild(band);
     });
 
+    /* Je Spalte (Modul) ihre Felder; die Stücke darin in der gemeinsamen
+       Reihenfolge, auf Spuren verteilt erst, wenn die Breite bekannt ist. */
+    var spalten = {}, spaltenReihe = [];
     a.felder.forEach(function (x) {
       var leer = !x.bloecke.length;
+      var stuecke = leer ? [] : inhaltBauen(x.bloecke, sicht);
+      var inhalt = leer ? null : h('div', { class: 'ra-feld__inhalt' + (!sicht.aufgabe && !sicht.rolle ? ' ra-feld__inhalt--liste' : '') });
       var el = h('div', {
         class: 'ra-feld' + (x.breite > 1 ? ' ra-feld--breit' : '') + (leer ? ' ra-feld--leer' : ''),
         dataset: { phase: x.feld.phase, modul: x.feld.modul }
       }, [
         x.kopfImFeld ? modulKopf(x.feld.modul, 'ra-modul--feld') : null,
-        leer ? null : h('div', { class: 'ra-feld__inhalt' }, inhaltBauen(x.bloecke, sicht))
+        inhalt
       ]);
+      if (inhalt) {
+        var sp = spalten[x.feld.modul];
+        if (!sp) { sp = spalten[x.feld.modul] = { modul: x.feld.modul, breit: x.breite > 1, felder: [], anzahl: 0 }; spaltenReihe.push(sp); }
+        var index = {};
+        stuecke.forEach(function (st) { index[st.key] = st; });
+        sp.felder.push({ inhalt: inhalt, stuecke: stuecke, index: index });
+      }
       el.style.gridRow = String(zeileVon[x.feld.phase]);
       el.style.gridColumn = (x.start + 2) + ' / span ' + x.breite;
       gitter.appendChild(el);
     });
 
+    /* Eine Spalte mit nur einem Feld (Projektgrundlagen) hat nichts, womit
+       sie übereinstimmen müsste: ihr Inhalt fliesst in CSS-Spalten. */
+    spaltenReihe = spaltenReihe.filter(function (sp) {
+      sp.keys = spalteOrdnen(sp.felder);
+      sp.felder.forEach(function (f) { spurenFuellen(f, 1, null); });
+      sp.anzahl = 1;
+      if (sp.felder.length === 1) { sp.felder[0].inhalt.classList.add('ra-feld__inhalt--fluss'); }
+      return sp.felder.length > 1;
+    });
+
     buehne.appendChild(gitter);
+
+    function spurenFuellen(f, anzahl, spurVon) {
+      HT.ui.leeren(f.inhalt);
+      var spuren = [];
+      for (var i = 0; i < anzahl; i++) { spuren.push(f.inhalt.appendChild(h('div', { class: 'ra-spur' }))); }
+      f.stuecke.forEach(function (st) { spuren[spurVon ? spurVon[st.key] : 0].appendChild(st.el); });
+    }
+
+    /* Wie viele Spuren passen, folgt der Breite der Spalte (wie column-width:
+       190 px, im breiten Feld 100 px). Neu verteilt wird nur, wo sich die
+       Zahl ändert; die Höhen misst eine Spur in der Zielbreite. Erst alles
+       lesen, dann alles schreiben — sonst rechnet der Browser das Layout für
+       jede Spalte neu. */
+    function spurenLegen() {
+      /* Die Breiten hängen nur an den gezeigten Spalten und der Fensterbreite
+         (die Spuren haben eine feste Mindestbreite, der Inhalt zählt nicht):
+         beim Umschalten von Rollen, Aufgaben, Ergebnissen gilt die letzte
+         Messung weiter und erspart ein ganzes Layout. */
+      var schluessel = a.spalten.join('|') + '@' + global.innerWidth;
+      if (!breiten || breiten.schluessel !== schluessel) { breiten = { schluessel: schluessel, werte: {} }; }
+      var neu = spaltenReihe.filter(function (sp) {
+        var min = sp.breit ? 100 : 190, abstand = sp.breit ? 6 : 8;
+        var w = breiten.werte[sp.modul];
+        if (w === undefined) { w = breiten.werte[sp.modul] = sp.felder[0].inhalt.clientWidth; }
+        sp.soll = Math.max(1, Math.floor((w + abstand) / (min + abstand)));
+        return sp.soll !== sp.anzahl;
+      });
+      neu.forEach(function (sp) {
+        sp.anzahl = sp.soll;
+        sp.felder.forEach(function (f) { spurenFuellen(f, sp.anzahl, null); });
+      });
+      var mehr = neu.filter(function (sp) { return sp.anzahl > 1; });
+      mehr.forEach(function (sp) {
+        sp.luecke = sp.felder[0].inhalt.classList.contains('ra-feld__inhalt--liste') ? 4 : 6;
+        sp.hoehen = sp.felder.map(function (f) {
+          var m = {};
+          f.stuecke.forEach(function (st) { m[st.key] = st.el.offsetHeight; });
+          return m;
+        });
+      });
+      mehr.forEach(function (sp) {
+        var spurVon = spurenVerteilen(sp.felder, sp.keys, sp.anzahl, function (key, fi) { return sp.hoehen[fi][key]; }, sp.luecke);
+        sp.felder.forEach(function (f) { spurenFuellen(f, sp.anzahl, spurVon); });
+      });
+    }
 
     /* Zeigen: jede Stelle desselben Elements; beim Meilenstein zusätzlich das
        Feld, in dem er entsteht; beim Modulkopf die Spalte, bei der Phase die
@@ -482,6 +618,7 @@
 
     return {
       buehne: buehne,
+      spurenLegen: spurenLegen,
       zeigen: function (id) {
         var el = gitter.querySelector('[data-id="' + id + '"]');
         if (!el) { return false; }
@@ -500,7 +637,7 @@
     return [
       h('p', { text: 'Entwurf: das Gesamtbild der Methode wie Abbildung 1 des Referenzhandbuchs — Phasen als Zeilen, Module als Spalten — in der Bildsprache des Graphen.' }),
       h('p', { text: 'Das Gerüst steht fest: links die Phasen mit ihren Meilensteinen (die Freigabe, die eine Phase öffnet, oben; die Entscheide, mit denen sie endet, unten an der Grenze zur nächsten Phase; modulspezifische dazwischen), oben die Module. Projektsteuerung und Projektführung haben je eine eigene Spalte, Projektgrundlagen liegt in der Initialisierung über drei.' }),
-      h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor.' }),
+      h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Felder eines Moduls teilen eine Reihenfolge: dieselbe Aufgabe, dasselbe Ergebnis steht in jeder Phase an derselben Stelle — in einem breiten Feld auch in derselben Spur.' }),
       h('p', { text: 'Filter (Icon neben der Suche): Ist etwas gefiltert, nennt es die rote Pille in der Leiste; ein Klick darauf öffnet den Filter, × hebt ihn auf. Phasen und Module blenden Zeilen und Spalten aus — die übrigen werden breiter. Ein Klick auf einen Modulkopf oder eine Phase tut dasselbe; ein zweiter Klick zeigt wieder alle. Eine Rolle (die drei Linien: verantwortlich, beteiligt oder beides) und «Nur Entscheide» (Raute) lassen nur die passenden Aufgaben stehen; Felder ohne Treffer bleiben leer, Meilensteine, die keine dieser Aufgaben erreicht, treten zurück. Der Filter steht in der Adresse und lässt sich so teilen.' })
     ];
   }
@@ -744,6 +881,13 @@
     document.addEventListener('pointerdown', draussen, true);
     document.addEventListener('keydown', taste);
 
+    /* Breiter oder schmaler: die Spuren neu legen, wenn mehr oder weniger passen. */
+    function breite() {
+      if (!document.body.contains(huelle)) { global.removeEventListener('resize', breite); return; }
+      if (laufende) { laufende.spurenLegen(); }
+    }
+    global.addEventListener('resize', breite);
+
     /* --- Leiste --- */
 
     function leisteSetzen() {
@@ -815,6 +959,7 @@
       laufende = aufbauen(m, a, sicht, filter, aktionen);
       if (alt) { huelle.replaceChild(laufende.buehne, alt); }
       else { HT.ui.leeren(huelle); huelle.appendChild(laufende.buehne); huelle.appendChild(pop); }
+      laufende.spurenLegen();
       laufende.buehne.scrollTop = oben;
       leisteSetzen();
       popZeichnen();
