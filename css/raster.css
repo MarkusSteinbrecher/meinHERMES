@@ -1,0 +1,234 @@
+/* ==========================================================================
+   meinHERMES — Raster: Gesamtbild und Graph in einer Ansicht (Entwurf,
+   js/raster.js). Gerüst aus Phasen (Zeilen) und Modulen (Spalten), darin die
+   Elemente in den Kategoriefarben des Graphen (css/graph.css, --gk-*).
+   ========================================================================== */
+
+body[data-route="raster"] .view { max-width: none; margin: 0; padding: 0; }
+body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
+
+@media (min-width: 700px) {
+  body[data-route="raster"] {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+  }
+  body[data-route="raster"] .topbar { position: static; flex: 0 0 auto; }
+  body[data-route="raster"] main { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
+  body[data-route="raster"] .view { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
+  body[data-route="raster"] .fusszeile { display: none; }
+}
+
+.ra { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
+.ra > .ub-buehne__laden { margin: 24px; }
+
+.ra-buehne {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: #fff;
+}
+
+.ra-gitter {
+  --ra-band: 150px;
+  --ra-spalte-min: 104px;
+  --ra-linie: var(--linie-stark);
+  display: grid;
+  grid-template-rows: auto;
+  grid-auto-rows: minmax(96px, auto);
+  min-width: min-content;
+  padding-bottom: 32px;
+  color: var(--text);
+}
+
+/* --- Kopfzeile ------------------------------------------------------------- */
+
+.ra-ecke {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  grid-row: 1;
+  grid-column: 1;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 10px 9px 12px;
+  background: #fff;
+  border-bottom: 1px solid var(--ra-linie);
+}
+.ra-ecke__text {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-leise);
+}
+
+.ra-modul {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--gk-modul-fg);
+  font: 700 11.5px/1.2 var(--schrift);
+  text-align: left;
+  cursor: pointer;
+}
+.ra-modul .gswatch { width: 16px; height: 16px; flex: 0 0 auto; }
+.ra-modul__name { min-width: 0; overflow-wrap: break-word; hyphens: manual; }
+.ra-modul:hover .ra-modul__name, .ra-modul.ist-gleich .ra-modul__name { color: var(--akzent-text); }
+.ra-modul:focus-visible { outline: 2px solid var(--fokus); outline-offset: 2px; }
+
+.ra-modul--kopf {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  align-items: flex-end;
+  padding: 14px 4px 9px 5px;
+  background: #fff;
+  border-bottom: 1px solid var(--ra-linie);
+}
+
+/* Projektgrundlagen: kein Platz in der Kopfzeile, der Kopf steht im Feld. */
+.ra-modul--feld { margin-bottom: 8px; }
+
+/* --- Phasen: Bahnen und Band ------------------------------------------------ */
+
+.ra-bahn { z-index: 0; border-top: 1px solid var(--ra-linie); background: #fff; }
+.ra-bahn--zwei { background: var(--graph-bahn-2, #f3f2f2); }
+
+.ra-phase {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  grid-column: 1;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  border-top: 1px solid var(--ra-linie);
+  border-right: 1px solid var(--ra-linie);
+  background: #fff;
+}
+
+.ra-phase__name {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 10px 0;
+  border: 0;
+  background: var(--gk-phase-bg);
+  color: var(--gk-phase-fg);
+  font: 800 10.5px/1 var(--schrift);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ra-phase__name > span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+.ra-phase__name:hover, .ra-phase__name.ist-gleich { background: var(--gk-phase); color: var(--gk-phase-glyph-auf); }
+.ra-phase__name:focus-visible { outline: 2px solid var(--fokus); outline-offset: -2px; }
+
+.ra-phase__ms {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 8px 8px 9px;
+}
+.ra-ms-gruppe { display: grid; gap: 5px; }
+.ra-ms-gruppe:empty { display: none; }
+.ra-ms-gruppe[data-lage="mitte"] { margin-block: auto; }
+
+.ra-ms {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0;
+  padding: 2px 4px 2px 2px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--gk-ergebnis-fg);
+  font: 600 11.5px/1.2 var(--schrift);
+  text-align: left;
+  cursor: pointer;
+}
+.ra-ms__raute {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  margin: 3px 1px 0;
+  transform: rotate(45deg);
+  border: 1.5px solid var(--gkante-meilenstein, #164a8a);
+  background: var(--gk-ergebnis-bg);
+}
+.ra-ms-gruppe[data-lage="ende"] .ra-ms__raute,
+.ra-ms-gruppe[data-lage="anfang"] .ra-ms__raute { background: var(--gkante-meilenstein, #164a8a); }
+.ra-ms__name { min-width: 0; overflow-wrap: break-word; hyphens: manual; }
+.ra-ms:hover, .ra-ms.ist-gleich { background: var(--akzent-schwach); color: var(--akzent-text); }
+.ra-ms:focus-visible { outline: 2px solid var(--fokus); outline-offset: 0; }
+
+/* --- Felder ------------------------------------------------------------------ */
+
+/* Ein Feld gibt es nur, wo das Modul in der Phase Aufgaben hat — die leeren
+   Stellen des Rasters zeigen, wann ein Modul nicht arbeitet. */
+.ra-feld {
+  z-index: 1;
+  align-self: stretch;
+  min-width: 0;
+  margin: 5px 2px;
+  padding: 5px 3px;
+  border: 1px solid color-mix(in srgb, var(--gk-modul) 22%, #fff);
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--gk-modul-bg) 38%, #fff);
+}
+.ra-feld.ist-gleich { box-shadow: 0 0 0 2px var(--akzent); }
+
+.ra-feld__inhalt { display: grid; align-content: start; gap: 6px; }
+.ra-feld--breit .ra-feld__inhalt { display: block; column-width: 100px; column-gap: 6px; }
+.ra-feld--breit .ra-feld__inhalt > * { break-inside: avoid; margin-bottom: 6px; }
+
+.ra-liste { display: grid; gap: 4px; }
+.ra-block { display: grid; gap: 3px; }
+.ra-block__ergebnisse {
+  display: grid;
+  gap: 3px;
+  margin-left: 3px;
+  padding-left: 4px;
+  border-left: 1px solid var(--rand-stark);
+}
+
+/* --- Elemente in der Bildsprache des Graphen -------------------------------- */
+
+.ra-k {
+  display: flex;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 3px 2px 3px 2px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-s);
+  background: none;
+  font: 600 10.5px/1.25 var(--schrift);
+  text-align: left;
+  cursor: pointer;
+}
+.ra-k .gswatch { width: 13px; height: 13px; flex: 0 0 auto; margin-top: 1px; }
+.ra-k__name { min-width: 0; padding-top: 1px; overflow-wrap: break-word; hyphens: manual; }
+.ra-k--rolle { padding-left: 0; }
+.ra-k:focus-visible { outline: 2px solid var(--fokus); outline-offset: 1px; }
+
+.ra-k--aufgabe { background: var(--gk-aufgabe-bg); border-color: var(--gk-aufgabe); color: var(--gk-aufgabe-fg); }
+.ra-k--ergebnis { background: var(--gk-ergebnis-bg); border-color: color-mix(in srgb, var(--gk-ergebnis) 55%, #fff); color: var(--gk-ergebnis-fg); }
+.ra-k--zustand { background: #fff; }
+.ra-k--rolle { color: var(--gk-rolle-fg); }
+
+.ra-k.ist-gleich { box-shadow: 0 0 0 2px var(--akzent); }
+.ra-gitter.hat-zeigen .ra-k:not(.ist-gleich) { opacity: .55; }
+.ra-gitter.hat-zeigen .ra-feld.ist-gleich .ra-k { opacity: 1; }

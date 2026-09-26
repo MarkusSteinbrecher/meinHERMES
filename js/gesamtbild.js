@@ -76,7 +76,7 @@
     'anforderungen', 'anfrage', 'angepasst', 'anleitung', 'antrag', 'architektur',
     'anpassung', 'aufnahme', 'auftrag', 'ausschuss', 'bedarfs', 'bericht', 'beschreibung', 'beurteilung',
     'dokumentation', 'entscheide', 'entwicklung', 'erfahrungen', 'ergebnis', 'freigabe', 'führung',
-    'grundlagen', 'handbuch', 'infrastruktur', 'initialisierung', 'interessen',
+    'grundlagen', 'handbuch', 'infrastruktur', 'initialisierung', 'integration', 'interessen',
     'konzept', 'leistung', 'liste', 'management', 'manager', 'massnahmen', 'modell', 'organisation',
     'plan', 'protokoll', 'prozess', 'schluss', 'spezifikation', 'status',
     'steuerung', 'system', 'unabhängig', 'unterlagen', 'unterstützung', 'verantwortlich',
@@ -435,6 +435,7 @@
   HT.gesamtbild = {
     SPALTEN: SPALTEN,
     trennen: trennen,     // auch für die Karte des Lernpfads
+    meilensteineVon: meilensteineVon,   // auch für das Raster (js/raster.js)
     breite: breite,
     bauen: bauen,
     malen: malen,
