@@ -20,6 +20,11 @@
    Zeigen auf ein Element hebt jede seiner Stellen hervor; Zeigen auf einen
    Meilenstein das Feld, in dem er entsteht.
 
+   Pfeile (Knopf in der Leiste): die Pfeile der Abbildung 1 zwischen
+   Ergebnissen (PFEILE), als SVG-Ebene in den Fugen zwischen den Kästen —
+   die Kästen behalten ihre Grösse. Zeigen auf ein Ergebnis hebt seine
+   Pfeile hervor; aus zeigt der Knopf nur diese.
+
    Filter (Icon in der Kopfzeile neben der Suche, Popover im Stil «Alle
    Filter» des Graphen): Phasen und Module blenden Zeilen und Spalten aus,
    die übrigen werden breiter; der Trichter an Modulkopf oder Phase tut
@@ -52,7 +57,97 @@
   var KAT_LABEL = { rolle: 'Rollen', aufgabe: 'Aufgaben', ergebnis: 'Ergebnisse' };
 
   var SPEICHER = 'raster-sicht';
-  var STANDARD = { rolle: false, aufgabe: false, ergebnis: true };
+  var STANDARD = { rolle: false, aufgabe: false, ergebnis: true, pfeile: true };
+
+  /* Die Pfeile der Abbildung 1 zwischen Ergebnissen, abgeschrieben aus der
+     Grafik: [Phase, Modul, Ergebnis] → [Phase, Modul, Ergebnis]. Das Modul
+     sagt, welches Vorkommen gemeint ist, wenn ein Ergebnis in der Phase in
+     mehreren Feldern steht; fehlt es dort, gilt das erste in der Phase.
+     Sammelschienen der Grafik (eine Linie zu vielen Kästen) stehen als
+     einzelne Pfeile. Agil liegen Konzept, Realisierung und Einführung in
+     der Umsetzung; Pfeile von einem Kasten auf sich selbst fallen dann weg. */
+  var PFEILE = (function () {
+    var liste = [];
+    function p(vonPhase, vonModul, von, nachPhase, nachModul, nach) {
+      liste.push({ von: [vonPhase, vonModul, von], nach: [nachPhase, nachModul, nach] });
+    }
+    /* Innerhalb einer Phase, Kette durch ein Modul und Fächer aus einem Kasten. */
+    function kette(phase, modul, namen) {
+      for (var i = 1; i < namen.length; i++) { p(phase, modul, namen[i - 1], phase, modul, namen[i]); }
+    }
+    function faecher(phase, modul, von, ziele) {
+      ziele.forEach(function (z) { p(phase, modul, von, phase, z[0], z[1]); });
+    }
+    var I = 'Initialisierung', K = 'Konzept', R = 'Realisierung', E = 'Einführung', A = 'Abschluss';
+
+    p(I, 'Projektsteuerung', 'Projektinitialisierungsauftrag', I, 'Projektführung', 'Stakeholderliste');
+    faecher(I, 'Projektführung', 'Stakeholderliste', [['Projektgrundlagen', 'Rechtsgrundlagenanalyse'],
+      ['Projektgrundlagen', 'Studie'], ['Projektgrundlagen', 'Schutzbedarfsanalyse'], ['Projektgrundlagen', 'Beschaffungsanalyse']]);
+    p(I, 'Projektgrundlagen', 'Rechtsgrundlagenanalyse', I, 'Projektgrundlagen', 'Studie');
+    p(I, 'Projektgrundlagen', 'Schutzbedarfsanalyse', I, 'Projektgrundlagen', 'Studie');
+    p(I, 'Projektgrundlagen', 'Studie', I, 'Projektführung', 'Projektmanagementplan');
+    p(I, 'Projektgrundlagen', 'Beschaffungsanalyse', I, 'Projektführung', 'Projektmanagementplan');
+    p(I, 'Projektführung', 'Projektmanagementplan', I, 'Projektführung', 'Durchführungsauftrag');
+
+    kette(K, 'Organisation', ['Situationsanalyse', 'Organisationsanforderungen']);
+    faecher(K, 'Organisation', 'Organisationsanforderungen', [['Organisation', 'Organisationskonzept'],
+      ['IT-System', 'Integrationskonzept'], ['Beschaffung', 'Ausschreibungsunterlagen'], ['Tests', 'Testkonzept'],
+      ['Einführungsorganisation', 'Einführungskonzept'], ['IT-Migration', 'Migrationskonzept'],
+      ['IT-Betrieb', 'Betriebskonzept'], ['ISDS', 'ISDS-Konzept']]);
+    faecher(K, 'Organisation', 'Geschäftsmodellbeschreibung', [['Organisation', 'Prozessbeschreibung'], ['Organisation', 'Organisationsbeschreibung']]);
+    kette(K, 'Produkt', ['Situationsanalyse', 'Lösungsanforderungen', 'Produktkonzept']);
+    kette(K, 'IT-System', ['Situationsanalyse', 'Lösungsanforderungen', 'Systemkonzept', 'Lösungsarchitektur', 'Integrationskonzept']);
+    kette(K, 'Beschaffung', ['Ausschreibungsunterlagen', 'Evaluationsbericht']);
+    p(K, 'Beschaffung', 'Evaluationsbericht', K, 'Projektführung', 'Vereinbarung');
+    kette(K, 'IT-Betrieb', ['Betriebskonzept', 'Service Level Agreement']);
+
+    p(K, 'Organisation', 'Prozessbeschreibung', R, 'Organisation', 'Prozessbeschreibung');
+    p(K, 'Organisation', 'Organisationsbeschreibung', R, 'Organisation', 'Organisationsbeschreibung');
+    p(K, 'Produkt', 'Produktkonzept', R, 'Produkt', 'Detailspezifikation');
+    p(K, 'IT-System', 'Lösungsarchitektur', R, 'IT-System', 'Detailspezifikation');
+    p(K, 'IT-System', 'Integrationskonzept', R, 'IT-System', 'Detailspezifikation');
+    p(K, 'Tests', 'Testkonzept', R, 'Tests', 'Testinfrastruktur realisiert');
+    p(K, 'Einführungsorganisation', 'Einführungskonzept', R, 'Einführungsorganisation', 'Einführungsmassnahmen realisiert');
+    p(K, 'IT-Migration', 'Migrationskonzept', R, 'IT-Migration', 'Detailspezifikation');
+    p(K, 'IT-Betrieb', 'Service Level Agreement', R, 'IT-Betrieb', 'Betriebsinfrastruktur realisiert');
+    p(K, 'IT-Betrieb', 'Service Level Agreement', R, 'IT-Betrieb', 'Betriebshandbuch');
+    p(K, 'ISDS', 'ISDS-Konzept', R, 'ISDS', 'ISDS-Massnahmen realisiert');
+
+    p(R, 'Organisation', 'Prozessbeschreibung', R, 'Organisation', 'Organisation umgesetzt');
+    p(R, 'Organisation', 'Organisationsbeschreibung', R, 'Organisation', 'Organisation umgesetzt');
+    kette(R, 'Produkt', ['Detailspezifikation', 'Produkt entwickelt oder angepasst', 'Anwendungshandbuch']);
+    kette(R, 'IT-System', ['Detailspezifikation', 'System entwickelt oder parametrisiert', 'Anwendungshandbuch']);
+    kette(R, 'IT-System', ['Detailspezifikation', 'Schnittstellen realisiert', 'Integrations- und Installationsanleitung']);
+    kette(R, 'Tests', ['Testinfrastruktur realisiert', 'Testprotokoll', 'Testkonzept']);
+    kette(R, 'IT-Migration', ['Detailspezifikation', 'Migrationsverfahren realisiert']);
+    kette(R, 'IT-Betrieb', ['Betriebsinfrastruktur realisiert', 'System integriert']);
+    kette(R, 'IT-Betrieb', ['Betriebshandbuch', 'Betriebsorganisation realisiert']);
+    kette(R, 'ISDS', ['ISDS-Massnahmen realisiert', 'ISDS-Konzept']);
+    [['Einführungsorganisation', 'Einführungsmassnahmen realisiert'], ['Organisation', 'Organisation umgesetzt'],
+      ['Produkt', 'Anwendungshandbuch'], ['IT-System', 'Anwendungshandbuch'], ['IT-System', 'Integrations- und Installationsanleitung'],
+      ['Tests', 'Testkonzept'], ['IT-Migration', 'Migrationsverfahren realisiert'], ['IT-Betrieb', 'System integriert'],
+      ['IT-Betrieb', 'Betriebsorganisation realisiert'], ['ISDS', 'ISDS-Konzept']].forEach(function (q) {
+      p(R, q[0], q[1], R, 'Einführungsorganisation', 'Abnahmeprotokoll');
+    });
+
+    [['Organisation', 'Organisation aktiviert'], ['Produkt', 'Produkt aktiviert'], ['IT-System', 'System aktiviert'],
+      ['Einführungsorganisation', 'Einführungsmassnahmen durchgeführt'], ['IT-Migration', 'Migration durchgeführt'],
+      ['IT-Betrieb', 'Betrieb aktiviert'], ['ISDS', 'ISDS-Konzept überführt']].forEach(function (z) {
+      p(R, 'Einführungsorganisation', 'Abnahmeprotokoll', E, z[0], z[1]);
+    });
+    p(R, 'Tests', 'Testkonzept', A, 'Tests', 'Testkonzept');
+
+    [['Organisation', 'Organisation aktiviert'], ['Produkt', 'Produkt aktiviert'], ['IT-System', 'System aktiviert'],
+      ['Einführungsorganisation', 'Einführungsmassnahmen durchgeführt'], ['IT-Migration', 'Migration durchgeführt'],
+      ['IT-Betrieb', 'Betrieb aktiviert']].forEach(function (q) {
+      p(E, q[0], q[1], E, 'Einführungsorganisation', 'Abnahmeprotokoll');
+    });
+    kette(E, 'ISDS', ['ISDS-Konzept überführt', 'ISDS-Konzept']);
+    p(E, 'IT-Migration', 'Migration durchgeführt', A, 'IT-Migration', 'Altsystem entfernt');
+    kette(A, 'Tests', ['Testkonzept', 'Testinfrastruktur überführt']);
+    return liste;
+  }());
+  var AGIL_PHASE = { Konzept: 'Umsetzung', Realisierung: 'Umsetzung', 'Einführung': 'Umsetzung' };
 
   /* Inhaltsseite rechts: offen oder zu und ihre Breite. */
   var SEITE_SPEICHER = 'raster-seite';
@@ -73,10 +168,10 @@
       var roh = global.localStorage.getItem(SPEICHER);
       var s = roh ? JSON.parse(roh) : null;
       if (s && typeof s === 'object') {
-        return { rolle: !!s.rolle, aufgabe: !!s.aufgabe, ergebnis: !!s.ergebnis };
+        return { rolle: !!s.rolle, aufgabe: !!s.aufgabe, ergebnis: !!s.ergebnis, pfeile: s.pfeile !== false };
       }
     } catch (e) { /* ohne Speicher gilt der Standard */ }
-    return { rolle: STANDARD.rolle, aufgabe: STANDARD.aufgabe, ergebnis: STANDARD.ergebnis };
+    return { rolle: STANDARD.rolle, aufgabe: STANDARD.aufgabe, ergebnis: STANDARD.ergebnis, pfeile: STANDARD.pfeile };
   }
 
   function sichtSpeichern(sicht) {
@@ -290,6 +385,14 @@
 
   /* --- Bauen ----------------------------------------------------------------- */
 
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+
+  function svgEl(tag, attrs) {
+    var el = document.createElementNS(SVG_NS, tag);
+    Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+    return el;
+  }
+
   /* Ein Element in der Bildsprache des Graphen: farbiger Kreis mit dem
      Zeichen der Kategorie, daneben der Name; Aufgabe und Ergebnis im Kasten
      ihrer Farbe, die Rolle ohne Kasten. */
@@ -480,7 +583,7 @@
     if (!a.zeilen.length || !a.spalten.length) {
       buehne.appendChild(h('p', { class: 'ra-leer', text: 'Keine Phase oder kein Modul gewählt — im Filter wieder alle einschalten.' }));
       var nichts = function () { return false; };
-      return { buehne: buehne, spurenLegen: nichts, zeigen: nichts, gewaehlt: nichts, stelleZeigen: nichts };
+      return { buehne: buehne, spurenLegen: nichts, zeigen: nichts, gewaehlt: nichts, stelleZeigen: nichts, pfeileZeigen: nichts, pfeilZahl: function () { return 0; } };
     }
     var gitter = h('div', { class: 'ra-gitter', dataset: { vorgehen: m.vorgehen } });
     gitter.style.gridTemplateColumns = 'var(--ra-band) ' + a.spalten.map(function (s) {
@@ -572,6 +675,134 @@
 
     buehne.appendChild(gitter);
 
+    /* --- Pfeile der Abbildung 1 ---
+       Eine SVG-Ebene über den Feldern. Die Linien laufen nur in den Fugen —
+       senkrecht zwischen den Spalten bzw. Spuren, waagrecht an der Grenze
+       zwischen den Phasen — und treten seitlich in den Kasten ein; so bleiben
+       die Kästen, wie sie sind, und nichts wird verdeckt. Wo Linien dieselbe
+       Fuge nehmen, laufen sie zusammen wie die Sammelschienen der Grafik. */
+    var ebene = svgEl('svg', { class: 'ra-pfeile' + (sicht.pfeile ? ' ist-alle' : ''), 'aria-hidden': 'true' });
+    var defs = ebene.appendChild(svgEl('defs', {}));
+    ['ra-spitze', 'ra-spitze-an'].forEach(function (id) {
+      var marker = defs.appendChild(svgEl('marker', {
+        id: id, viewBox: '0 0 8 8', refX: '7.4', refY: '4', markerWidth: '8', markerHeight: '8',
+        markerUnits: 'userSpaceOnUse', orient: 'auto'
+      }));
+      marker.appendChild(svgEl('path', { d: 'M1.2 .9 7.2 4 1.2 7.1', class: 'ra-spitze' }));
+    });
+    gitter.appendChild(ebene);
+    var pfeile = [];
+
+    function rahmen(el, g) {
+      var r = el.getBoundingClientRect();
+      return { l: r.left - g.left, r: r.right - g.left, t: r.top - g.top, b: r.bottom - g.top };
+    }
+
+    /* Das Vorkommen eines Endes im Raster: im Feld des genannten Moduls, sonst
+       das erste in der Phase; je Feld nur das kräftige (nicht wiederholte). */
+    function endeFinden(ende) {
+      var phase = m.vorgehen === 'agil' ? (AGIL_PHASE[ende[0]] || ende[0]) : ende[0];
+      var e = HT.daten.eintragMitBegriff(ende[2], 'ergebnis');
+      if (!e) { return null; }
+      var treffer = gitter.querySelectorAll('.ra-feld[data-phase="' + phase + '"] .ra-k--ergebnis[data-id="' + e.id + '"]:not(.ra-k--wieder)');
+      for (var i = 0; i < treffer.length; i++) {
+        if (treffer[i].closest('.ra-feld').dataset.modul === ende[1]) { return treffer[i]; }
+      }
+      return treffer[0] || null;
+    }
+
+    /* Senkrechte Fuge rechts oder links eines Kastens: zwischen zwei Spuren
+       (bzw. Spalten des Flusses) deren Mitte, am Rand des Feldes die Mitte
+       zum Nachbarfeld. */
+    function fuge(el, seite, g) {
+      var feld = el.closest('.ra-feld'), inhalt = el.closest('.ra-feld__inhalt');
+      var fluss = inhalt.classList.contains('ra-feld__inhalt--fluss');
+      var sp = rahmen(fluss ? (el.closest('.ra-block') || el) : el.closest('.ra-spur'), g);
+      var inn = rahmen(inhalt, g), f = rahmen(feld, g);
+      var halb = feld.classList.contains('ra-feld--breit') ? 3 : 4;
+      if (seite === 'r') { return sp.r < inn.r - 2 ? sp.r + halb : f.r + 2; }
+      return sp.l > inn.l + 2 ? sp.l - halb : f.l - 2;
+    }
+
+    function pfeileLegen() {
+      pfeile.forEach(function (p) { ebene.removeChild(p.el); });
+      pfeile = [];
+      if (!sicht.ergebnis) { return; }
+      var g = gitter.getBoundingClientRect();
+      ebene.setAttribute('width', String(Math.ceil(g.width)));
+      ebene.setAttribute('height', String(Math.ceil(g.height)));
+      var bahnen = {};
+      Array.prototype.forEach.call(gitter.querySelectorAll('.ra-bahn'), function (b) { bahnen[b.dataset.phase] = rahmen(b, g); });
+      var zeileVon = {};
+      a.zeilen.forEach(function (z, i) { zeileVon[z.phase] = i; });
+      PFEILE.forEach(function (pf) {
+        var s = endeFinden(pf.von), t = endeFinden(pf.nach);
+        if (!s || !t || s === t) { return; }
+        if (pfeile.some(function (p) { return p.s === s && p.t === t; })) { return; }
+        var S = rahmen(s, g), T = rahmen(t, g);
+        var sy = (S.t + S.b) / 2, ty = (T.t + T.b) / 2;
+        var sFeld = s.closest('.ra-feld'), tFeld = t.closest('.ra-feld');
+        var d;
+        if (sFeld.dataset.modul === tFeld.dataset.modul && Math.abs(S.r - T.r) < 3) {
+          /* Untereinander: rechts in der Fuge herum, wie eine Klammer. */
+          var x = fuge(s, 'r', g);
+          d = 'M' + S.r + ' ' + sy + 'H' + x + 'V' + ty + 'H' + T.r;
+        } else {
+          var rechts = (T.l + T.r) / 2 > (S.l + S.r) / 2;
+          var xs = fuge(s, rechts ? 'r' : 'l', g), xt = fuge(t, rechts ? 'l' : 'r', g);
+          var aus = rechts ? S.r : S.l, ein = rechts ? T.l : T.r;
+          if (Math.abs(xs - xt) < 1.5) {
+            d = 'M' + aus + ' ' + sy + 'H' + xs + 'V' + ty + 'H' + ein;
+          } else {
+            /* Waagrecht an der Phasengrenze: über der Zeile des Ziels, in
+               derselben Zeile oben oder unten, je nachdem, was kürzer ist. */
+            var bahn = bahnen[tFeld.dataset.phase];
+            var oben = bahn.t + 3, unten = bahn.b - 3, yc;
+            var zs = zeileVon[sFeld.dataset.phase], zt = zeileVon[tFeld.dataset.phase];
+            if (zs === zt) { yc = (sy - oben) + (ty - oben) <= (unten - sy) + (unten - ty) ? oben : unten; }
+            else { yc = zt > zs ? oben : unten; }
+            d = 'M' + aus + ' ' + sy + 'H' + xs + 'V' + yc + 'H' + xt + 'V' + ty + 'H' + ein;
+          }
+        }
+        var el = svgEl('path', { class: 'ra-pfeil', d: d, 'data-von': s.dataset.id, 'data-nach': t.dataset.id });
+        ebene.appendChild(el);
+        pfeile.push({ s: s, t: t, el: el });
+      });
+      pfeileHervorheben('ist-an', angezeigtId);
+      pfeileHervorheben('ist-gewaehlt', gewaehltId);
+    }
+
+    /* Die Pfeile eines Ergebnisses (an allen seinen Stellen) treten hervor,
+       die Kästen am anderen Ende bleiben kräftig. Hervorgehobene nach oben. */
+    var angezeigtId = null, gewaehltId = null;
+    function pfeileHervorheben(klasse, id) {
+      var verbunden = klasse === 'ist-an' ? 'ist-verbunden' : 'ist-verbunden-gewaehlt';
+      Array.prototype.forEach.call(gitter.querySelectorAll('.' + verbunden), function (x) { x.classList.remove(verbunden); });
+      var treffer = 0;
+      pfeile.forEach(function (p) {
+        var an = !!id && (p.s.dataset.id === id || p.t.dataset.id === id);
+        p.el.classList.toggle(klasse, an);
+        if (!an) { return; }
+        treffer++;
+        p.s.classList.add(verbunden);
+        p.t.classList.add(verbunden);
+        ebene.appendChild(p.el);
+      });
+      if (klasse === 'ist-an') { ebene.classList.toggle('hat-an', treffer > 0); }
+    }
+
+    if (global.ResizeObserver) {
+      var beobachtet = null;
+      var beobachter = new global.ResizeObserver(function () {
+        if (!document.body.contains(gitter)) { beobachter.disconnect(); return; }
+        var g = gitter.getBoundingClientRect(), masse = Math.round(g.width) + 'x' + Math.round(g.height);
+        if (masse === beobachtet) { return; }
+        beobachtet = masse;
+        pfeileLegen();
+      });
+      beobachter.observe(gitter);
+    }
+
     /* Steht ein Ergebnis im Feld unter mehreren Aufgaben (der
        Projektmanagementplan im Konzept unter sechs), bleibt das erste
        Vorkommen kräftig, die weiteren treten zurück. Erstes heisst: wie man
@@ -629,6 +860,7 @@
         var spurVon = spurenVerteilen(sp.felder, sp.keys, sp.anzahl, function (key, fi) { return sp.hoehen[fi][key]; }, sp.luecke);
         sp.felder.forEach(function (f) { spurenFuellen(f, sp.anzahl, spurVon); });
       });
+      pfeileLegen();
     }
 
     /* Zeigen: jede Stelle desselben Elements; beim Meilenstein zusätzlich das
@@ -641,6 +873,8 @@
       gezeigtSchluessel = schluessel;
       Array.prototype.forEach.call(gitter.querySelectorAll('.ist-gleich'), function (x) { x.classList.remove('ist-gleich'); });
       gitter.classList.toggle('hat-zeigen', !!ziel);
+      angezeigtId = ziel && ziel.classList.contains('ra-k--ergebnis') ? ziel.dataset.id : null;
+      pfeileHervorheben('ist-an', angezeigtId);
       if (!ziel) { return; }
       var id = ziel.dataset.id;
       if (id) {
@@ -682,6 +916,8 @@
        trägt den Ring selbst. */
     function gewaehlt(id, feld) {
       Array.prototype.forEach.call(gitter.querySelectorAll('.ist-gewaehlt'), function (x) { x.classList.remove('ist-gewaehlt'); });
+      gewaehltId = id;
+      pfeileHervorheben('ist-gewaehlt', id);
       if (id) {
         Array.prototype.forEach.call(gitter.querySelectorAll('[data-id="' + id + '"]'), function (x) { x.classList.add('ist-gewaehlt'); });
       }
@@ -714,6 +950,9 @@
       spurenLegen: spurenLegen,
       gewaehlt: gewaehlt,
       stelleZeigen: stelleZeigen,
+      /* Alle Pfeile zeigen oder nur die des gezeigten bzw. gewählten Ergebnisses. */
+      pfeileZeigen: function (an) { ebene.classList.toggle('ist-alle', an); },
+      pfeilZahl: function () { return pfeile.length; },
       zeigen: function (id) {
         var el = gitter.querySelector('[data-id="' + id + '"]');
         if (!el) { return false; }
@@ -728,12 +967,14 @@
 
   var IKONE_FILTER = ['M3.5 5h17', 'M6.5 12h11', 'M10 19h4'];
   var IKONE_SEITE = ['M4 5h16v14H4Z', 'M14.5 5v14'];
+  var IKONE_PFEIL = ['M4 6h8v12h8', 'M16.5 14.5 20 18l-3.5 3.5'];
 
   function infoInhalt() {
     return [
       h('p', { text: 'Entwurf: das Gesamtbild der Methode wie Abbildung 1 des Referenzhandbuchs — Phasen als Zeilen, Module als Spalten — in der Bildsprache des Graphen.' }),
       h('p', { text: 'Das Gerüst steht fest: links die Phasen mit ihren Meilensteinen (die Freigabe, die eine Phase öffnet, oben; die Entscheide, mit denen sie endet, unten an der Grenze zur nächsten Phase; modulspezifische dazwischen), oben die Module. Projektsteuerung und Projektführung haben je eine eigene Spalte, Projektgrundlagen liegt in der Initialisierung über drei.' }),
       h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Felder eines Moduls teilen eine Reihenfolge: dieselbe Aufgabe, dasselbe Ergebnis steht in jeder Phase an derselben Stelle — in einem breiten Feld auch in derselben Spur. Steht ein Ergebnis im Feld unter mehreren Aufgaben, ist nur das erste Vorkommen kräftig, die weiteren sind blass.' }),
+      h('p', { text: 'Pfeile: die Abhängigkeiten zwischen Ergebnissen aus Abbildung 1. Sie laufen in den Fugen zwischen den Kästen — senkrecht neben den Spalten, waagrecht an der Grenze zwischen den Phasen — und zeigen seitlich auf das Ergebnis, das daraus entsteht; wo mehrere dieselbe Fuge nehmen, laufen sie zusammen wie die Sammelschienen der Grafik. Zeigen auf ein Ergebnis hebt seine Pfeile hervor. Ist «Pfeile» in der Leiste aus, erscheinen nur diese.' }),
       h('p', { text: 'Filter (Icon neben der Suche): Ist etwas gefiltert, nennt es die rote Pille in der Leiste; ein Klick darauf öffnet den Filter, × hebt ihn auf. Phasen und Module blenden Zeilen und Spalten aus — die übrigen werden breiter. Der Trichter neben einem Modulkopf oder einer Phase tut dasselbe; ein zweiter Klick zeigt wieder alle. Eine Rolle (die drei Linien: verantwortlich, beteiligt oder beides) und «Nur Entscheide» (Raute) lassen nur die passenden Aufgaben stehen; Felder ohne Treffer bleiben leer, Meilensteine, die keine dieser Aufgaben erreicht, treten zurück. Der Filter steht in der Adresse und lässt sich so teilen.' }),
       h('p', { text: 'Inhaltsseite (Icon neben dem Filter, Trennlinie ziehbar): Ein Klick auf ein Element, eine Phase oder einen Modulkopf zeigt seine Seite aus dem Handbuch und darunter «Im Raster» — wo es überall steht; eine Zeile springt ins Feld, ein Name wählt das Element. Ein Klick auf die freie Fläche eines Feldes zeigt seine Bilanz: Aufgaben, Entscheide, Meilensteine, Rollen und Ergebnisse. Ein zweiter Klick oder Esc hebt die Auswahl auf. Ohne Auswahl stehen dort bei gesetztem Filter seine Treffer, Phase für Phase.' })
     ];
@@ -1434,7 +1675,9 @@
                 h('span', { class: 'gauswahl__name', text: KAT_LABEL[kat] }),
                 z ? h('span', { class: 'grail__zahl', text: String(z[kat]) }) : null
               ]);
-            })))
+            }))),
+          h('span', { class: 'unterleiste__trenner', 'aria-hidden': 'true' }),
+          pfeilKnopf()
         ].concat(filterAktiv(filter) ? [
           /* Was gefiltert ist: ein Klick öffnet den Filter, × hebt ihn auf. */
           h('span', { class: 'unterleiste__trenner', 'aria-hidden': 'true' }),
@@ -1451,6 +1694,28 @@
         ] : []),
         info: { titel: 'Gesamtbild', inhalt: infoInhalt }
       });
+    }
+
+    /* Pfeile der Abbildung 1: an zeigt alle, aus nur die des Ergebnisses,
+       auf das man zeigt oder das gewählt ist. Ohne Ergebnisse keine Pfeile. */
+    function pfeilKnopf() {
+      var an = !!sicht.pfeile;
+      var moeglich = !!sicht.ergebnis;
+      return h('div', { class: 'gauswahl' }, h('button', {
+        type: 'button', class: 'grail__knopf ra-pfeilknopf', 'aria-pressed': an && moeglich ? 'true' : 'false', disabled: !moeglich,
+        title: !moeglich ? 'Pfeile verbinden Ergebnisse — erst Ergebnisse einblenden'
+          : an ? 'Pfeile der Abbildung 1 zwischen Ergebnissen — nur beim Zeigen' : 'Pfeile der Abbildung 1 zwischen Ergebnissen — alle zeigen',
+        on: { click: function () {
+          sicht.pfeile = !sicht.pfeile;
+          sichtSpeichern(sicht);
+          if (laufende) { laufende.pfeileZeigen(sicht.pfeile); }
+          leisteSetzen();
+        } }
+      }, [
+        HT.ui.symbol(IKONE_PFEIL, 18),
+        h('span', { class: 'gauswahl__name', text: 'Pfeile' }),
+        moeglich && laufende ? h('span', { class: 'grail__zahl', text: String(laufende.pfeilZahl()) }) : null
+      ]));
     }
 
     function zeichnen() {

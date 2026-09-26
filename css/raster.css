@@ -284,6 +284,35 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 .ra-gitter.hat-zeigen .ra-k:not(.ist-gleich) { opacity: .55; }
 .ra-gitter.hat-zeigen .ra-feld.ist-gleich .ra-k:not(.ra-k--wieder) { opacity: 1; }
 
+/* --- Pfeile der Abbildung 1 --------------------------------------------------- */
+
+/* Eine Ebene über den Feldern, unter Phasenband und Modulköpfen. Die Linien
+   laufen in den Fugen; die Kästen behalten ihre Grösse. «Pfeile» aus: nur die
+   des gezeigten oder gewählten Ergebnisses. */
+.ra-gitter { position: relative; }
+.ra-pfeile {
+  --ra-pfeil: color-mix(in srgb, var(--gk-ergebnis-fg) 62%, #fff);
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+.ra-pfeil {
+  fill: none;
+  stroke: var(--ra-pfeil);
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+  marker-end: url(#ra-spitze);
+}
+#ra-spitze .ra-spitze { fill: none; stroke: var(--ra-pfeil); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+#ra-spitze-an .ra-spitze { fill: none; stroke: var(--akzent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ra-pfeile:not(.ist-alle) .ra-pfeil:not(.ist-an):not(.ist-gewaehlt) { display: none; }
+.ra-pfeile.hat-an .ra-pfeil:not(.ist-an) { opacity: .2; }
+.ra-pfeil.ist-an, .ra-pfeil.ist-gewaehlt { stroke: var(--akzent); stroke-width: 1.7; marker-end: url(#ra-spitze-an); }
+.ra-gitter.hat-zeigen .ra-k.ist-verbunden { opacity: 1; }
+
 /* --- Filter ------------------------------------------------------------------ */
 
 /* Ohne Treffer bleibt das Feld stehen, aber leer und gestrichelt: dort
