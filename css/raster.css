@@ -239,8 +239,11 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 .ra-k--rolle { color: var(--gk-rolle-fg); }
 
 .ra-k.ist-gleich { box-shadow: 0 0 0 2px var(--akzent); }
+/* Zweites und weiteres Vorkommen eines Ergebnisses im selben Feld. */
+.ra-k--wieder { opacity: .45; }
+.ra-k--wieder:hover, .ra-k--wieder:focus-visible, .ra-gitter.hat-zeigen .ra-k--wieder.ist-gleich { opacity: 1; }
 .ra-gitter.hat-zeigen .ra-k:not(.ist-gleich) { opacity: .55; }
-.ra-gitter.hat-zeigen .ra-feld.ist-gleich .ra-k { opacity: 1; }
+.ra-gitter.hat-zeigen .ra-feld.ist-gleich .ra-k:not(.ra-k--wieder) { opacity: 1; }
 
 /* --- Filter ------------------------------------------------------------------ */
 

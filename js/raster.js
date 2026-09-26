@@ -528,11 +528,24 @@
 
     buehne.appendChild(gitter);
 
+    /* Steht ein Ergebnis im Feld unter mehreren Aufgaben (der
+       Projektmanagementplan im Konzept unter sechs), bleibt das erste
+       Vorkommen kräftig, die weiteren treten zurück. Erstes heisst: wie man
+       liest — Spur für Spur von links, darin von oben. */
+    function wiederholungenDaempfen(f) {
+      var gesehen = {};
+      Array.prototype.forEach.call(f.inhalt.querySelectorAll('.ra-k--ergebnis'), function (k) {
+        k.classList.toggle('ra-k--wieder', !!gesehen[k.dataset.id]);
+        gesehen[k.dataset.id] = true;
+      });
+    }
+
     function spurenFuellen(f, anzahl, spurVon) {
       HT.ui.leeren(f.inhalt);
       var spuren = [];
       for (var i = 0; i < anzahl; i++) { spuren.push(f.inhalt.appendChild(h('div', { class: 'ra-spur' }))); }
       f.stuecke.forEach(function (st) { spuren[spurVon ? spurVon[st.key] : 0].appendChild(st.el); });
+      wiederholungenDaempfen(f);
     }
 
     /* Wie viele Spuren passen, folgt der Breite der Spalte (wie column-width:
@@ -637,7 +650,7 @@
     return [
       h('p', { text: 'Entwurf: das Gesamtbild der Methode wie Abbildung 1 des Referenzhandbuchs — Phasen als Zeilen, Module als Spalten — in der Bildsprache des Graphen.' }),
       h('p', { text: 'Das Gerüst steht fest: links die Phasen mit ihren Meilensteinen (die Freigabe, die eine Phase öffnet, oben; die Entscheide, mit denen sie endet, unten an der Grenze zur nächsten Phase; modulspezifische dazwischen), oben die Module. Projektsteuerung und Projektführung haben je eine eigene Spalte, Projektgrundlagen liegt in der Initialisierung über drei.' }),
-      h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Felder eines Moduls teilen eine Reihenfolge: dieselbe Aufgabe, dasselbe Ergebnis steht in jeder Phase an derselben Stelle — in einem breiten Feld auch in derselben Spur.' }),
+      h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Felder eines Moduls teilen eine Reihenfolge: dieselbe Aufgabe, dasselbe Ergebnis steht in jeder Phase an derselben Stelle — in einem breiten Feld auch in derselben Spur. Steht ein Ergebnis im Feld unter mehreren Aufgaben, ist nur das erste Vorkommen kräftig, die weiteren sind blass.' }),
       h('p', { text: 'Filter (Icon neben der Suche): Ist etwas gefiltert, nennt es die rote Pille in der Leiste; ein Klick darauf öffnet den Filter, × hebt ihn auf. Phasen und Module blenden Zeilen und Spalten aus — die übrigen werden breiter. Ein Klick auf einen Modulkopf oder eine Phase tut dasselbe; ein zweiter Klick zeigt wieder alle. Eine Rolle (die drei Linien: verantwortlich, beteiligt oder beides) und «Nur Entscheide» (Raute) lassen nur die passenden Aufgaben stehen; Felder ohne Treffer bleiben leer, Meilensteine, die keine dieser Aufgaben erreicht, treten zurück. Der Filter steht in der Adresse und lässt sich so teilen.' })
     ];
   }
