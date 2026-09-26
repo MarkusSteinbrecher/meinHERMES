@@ -710,6 +710,14 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 .lp-leinwand.ist-hoch .lp-rollen { grid-template-columns: repeat(2, minmax(0, 1fr)); align-self: start; }
 .lp-leinwand.ist-hoch .lp-rolle__text { font-size: 17px; }
 .lp-leinwand.ist-hoch .lp-balken__zeile { grid-template-columns: 170px 1fr 80px; }
+/* Hochkant: je Modul eine Zeile, darunter die Rollen mit ihren Entscheiden. */
+.lp-leinwand.ist-hoch .lp-em { grid-template-columns: minmax(0, 1fr) !important; font-size: 18px; }
+.lp-leinwand.ist-hoch .lp-em__ecke, .lp-leinwand.ist-hoch .lp-em__rolle, .lp-leinwand.ist-hoch .lp-em__zelle.ist-leer { display: none; }
+.lp-leinwand.ist-hoch .lp-em__modul { padding-top: 10px; }
+.lp-leinwand.ist-hoch .lp-em__zelle, .lp-leinwand.ist-hoch .lp-em__leer { border-top: 0; border-left: 0; padding-left: 31px; }
+.lp-leinwand.ist-hoch .lp-em__leer { grid-column: auto !important; }
+.lp-leinwand.ist-hoch .lp-em__zelle { flex-direction: column; align-items: flex-start; gap: 4px; }
+.lp-leinwand.ist-hoch .lp-em__zelle::before { content: attr(data-rolle); font-size: 15px; font-weight: 700; color: var(--gk-rolle-fg); }
 .lp-leinwand.ist-hoch .lp-f--deck,
 .lp-leinwand.ist-hoch .lp-f--kapitel { flex-direction: column; align-items: stretch; justify-content: center; gap: 40px; padding: 56px 40px; }
 .lp-leinwand.ist-hoch .lp-deck__kapitel { flex: 0 0 auto; }
@@ -760,6 +768,32 @@ body[data-route="lernpfad"].lp-ersatzvollbild .nav-bottom { display: none; }
 }
 .lp-ergliste__legende { position: relative; margin: 0; padding-left: 16px; font-size: 15px; color: var(--text-leise); }
 .lp-ergliste__punkt { top: .5em; }
+
+/* Entscheide je Modul und Rolle (entscheidmatrix): Module als Zeilen, die
+   entscheidenden Rollen als Spalten. Eine Zeile ohne Entscheid ist
+   schraffiert, damit die Lücke auffällt. */
+.lp-em { display: grid; align-content: start; flex: 0 0 auto; font-size: 16px; }
+.lp-em > * { padding: 5px 14px; border-top: 1px solid var(--rand); min-width: 0; }
+.lp-em__ecke, .lp-em__rolle { border-top: 0; padding-top: 0; padding-bottom: 8px; }
+.lp-em__rolle { display: flex; flex-direction: column; gap: 2px; }
+.lp-em__rollenname { display: inline-flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; color: var(--gk-rolle-fg); }
+.lp-em__rollenname .gswatch { width: 24px; height: 24px; }
+.lp-em__ebene { font-size: 14px; color: var(--text-leise); padding-left: 32px; }
+.lp-em__modul { display: flex; align-items: center; gap: 9px; padding-left: 0; font-weight: 600; color: var(--gk-modul-fg); }
+.lp-em__modul .gswatch { width: 22px; height: 22px; }
+.lp-em__modul.ist-leer { color: var(--text-leise); font-weight: 500; }
+.lp-em__modul.ist-leer .gswatch { opacity: .45; }
+.lp-em__leer {
+  display: flex; align-items: center;
+  color: var(--text-leise); font-style: italic;
+  background: repeating-linear-gradient(-45deg, transparent 0 7px, var(--rand-fein) 7px 8px);
+}
+.lp-em__zelle { display: flex; align-items: center; }
+.lp-em__zelle + .lp-em__zelle { border-left: 1px solid var(--rand-fein); }
+.lp-em .lp-els { gap: 5px 6px; }
+.lp-em .lp-el { padding: 2px 10px; font-size: 15px; }
+.lp-f--matrix.ist-dicht .lp-em > * { padding-top: 3px; padding-bottom: 3px; }
+.lp-f--matrix.ist-dichter .lp-em .lp-el { font-size: 14px; padding-top: 1px; padding-bottom: 1px; }
 
 /* --- Deep Dive: die Karte ------------------------------------------------
    Aufgebaut wie das Gesamtbild: Phasen als Zeilen, Module als Spalten, je

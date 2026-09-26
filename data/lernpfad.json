@@ -3933,6 +3933,7 @@
           "dauer": 20,
           "ziele": [
             "zwischen Entscheiden der Steuerung und der Führung unterscheiden und Beispiele nennen",
+            "sagen, in welchen Modulen welche Rolle entscheidet — und in welchen Modulen nicht",
             "erklären, wie Checkliste, Meilenstein und Liste Projektentscheide zusammenhängen",
             "die Entscheide in der Reihenfolge des Projektverlaufs einordnen",
             "sagen, was bei einem negativen Entscheid geschieht — bis hin zum Projektabbruch"
@@ -3987,6 +3988,65 @@
                     "5.1.2.1",
                     "5.1.2.2",
                     "5.1.2.3"
+                  ]
+                }
+              ]
+            },
+            {
+              "typ": "entscheidmatrix",
+              "titel": "Wer entscheidet wo",
+              "kern": "Nur zwei Rollen entscheiden — und in vier Modulen fällt keiner.",
+              "quelle": [
+                {
+                  "kapitel": "aufgaben",
+                  "abschnitte": [
+                    "5.1.2.2",
+                    "5.1.2.3",
+                    "5.4.1",
+                    "5.4.2"
+                  ]
+                }
+              ]
+            },
+            {
+              "typ": "spalten",
+              "titel": "Nicht dort, wo man sucht",
+              "kern": "Wer entscheidet, folgt der Hierarchieebene, nicht dem Modul. Daraus ergeben sich einige Fälle, die man leicht verwechselt.",
+              "spalten": [
+                {
+                  "titel": "Module ohne Entscheid",
+                  "punkte": [
+                    "Projektführung: Der Projektleiter entscheidet — aber in Projektgrundlagen und den Fachmodulen",
+                    "Organisation, Tests, IT-Betrieb: Ihre Konzepte haben keinen eigenen Entscheid",
+                    "Anders Produkt, IT-System und ISDS: Produktkonzept, Lösungsarchitektur und ISDS-Konzept werden je eigens entschieden"
+                  ]
+                },
+                {
+                  "titel": "Auftraggeber ausserhalb der Projektsteuerung",
+                  "punkte": [
+                    "Ausschreibung und Zuschlag im Modul Beschaffung",
+                    "Betriebsaufnahme in der Einführungsorganisation, nicht im IT-Betrieb",
+                    "Die Einführungsorganisation kennt so beide Ebenen"
+                  ]
+                },
+                {
+                  "titel": "Projektleiter, nicht Auftraggeber",
+                  "punkte": [
+                    "Abnahme: beendet die Leistungserbringung, ist aber ein Entscheid der Führung",
+                    "Weiteres Vorgehen: Lösungsvariante, klassisch oder agil und Szenario — nach Konsultation des Auftraggebers",
+                    "Vorabnahme und Abnahme Migration als Voraussetzung für die Betriebsaufnahme"
+                  ]
+                }
+              ],
+              "quelle": [
+                {
+                  "kapitel": "aufgaben",
+                  "abschnitte": [
+                    "5.4.1.1",
+                    "5.4.1.2",
+                    "5.4.1.10",
+                    "5.4.2.2",
+                    "5.4.2.7"
                   ]
                 }
               ]
@@ -4431,6 +4491,7 @@
           "merke": [
             "Jede der 17 Entscheidungsaufgaben wird mit einer Checkliste vorbereitet und endet mit einem Meilenstein — der Projektabbruch mit dem Meilenstein Projektabschluss.",
             "Zehn Entscheide trifft der Auftraggeber (Steuerung), sieben der Projektleiter (Führung) zu Projektergebnissen.",
+            "Keinen Entscheid haben die Module Projektführung, Organisation, Tests und IT-Betrieb. Ausschreibung, Zuschlag und Betriebsaufnahme entscheidet der Auftraggeber, die Abnahme der Projektleiter.",
             "Die Steuerung gibt nur frei, wenn die benötigten Fachentscheide vorliegen.",
             "Festgehalten werden die Entscheide in der Liste Projektentscheide Steuerung bzw. Führung.",
             "Ein Nein heisst zurückweisen und nacharbeiten, Korrekturmassnahmen oder Projektabbruch; ein Ende in der Initialisierung ist kein Abbruch."

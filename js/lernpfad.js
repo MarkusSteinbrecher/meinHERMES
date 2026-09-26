@@ -29,7 +29,9 @@
    Kapitels), abschnitt (näher an eine Gruppe, ohne Karte eine Trennfolie),
    lebenslauf und entscheid (näher an einen Kasten), rollenweg und rolle
    (die Karte einer Rolle), rollenphase (näher an eine Phase der Rolle);
-   dazu ergebnisliste (alle Ergebnisse einiger Module). Zwischen Folien derselben Karte schwenkt die Ansicht.
+   dazu ergebnisliste (alle Ergebnisse einiger Module) und entscheidmatrix
+   (alle Module als Zeilen, die entscheidenden Rollen als Spalten, darin
+   die Entscheide). Zwischen Folien derselben Karte schwenkt die Ansicht.
    Die Fakten kommen aus aufgaben.ergebnisse/ergebnisPhasen/grundlagen; die
    `punkte` dieser Folien stehen in den Notizen, nicht auf der Folie.
 
@@ -1582,6 +1584,66 @@
     ]);
   }
 
+  /* --- Entscheide je Modul und Rolle -------------------------------------
+     Alle Module als Zeilen, die Rollen, die Entscheide verantworten, als
+     Spalten (nach Hierarchieebene); in den Zellen die Entscheide in der
+     Reihenfolge der Entscheid-Folien des Kapitels. Module ohne Entscheid
+     bleiben als leere Zeile stehen — gerade sie sind die Frage. Hochkant
+     stehen die Rollen einer Zeile untereinander, je mit ihrem Namen. */
+  function entscheidmatrixFolie(e, ctx) {
+    var f = e.folie;
+    var folge = [];
+    ((e.kapitel && e.kapitel.folien) || []).forEach(function (x) { if (x.typ === 'entscheid') { folge.push(x.name); } });
+    function rang(a) { var i = folge.indexOf(a.begriff); return i === -1 ? folge.length : i; }
+    var entscheide = aufgaben().filter(istEntscheid).sort(function (a, b) {
+      return rang(a) - rang(b) || a.begriff.localeCompare(b.begriff, 'de');
+    });
+
+    var EBENEN = ['Steuerung', 'Führung', 'Ausführung'];
+    function ebeneVon(name) {
+      var r = HT.daten.eintragMitBegriff(name, 'rolle');
+      return r && r.ebene ? r.ebene : '';
+    }
+    var rollen = [];
+    entscheide.forEach(function (a) {
+      rollenVon(a.verantwortlich).forEach(function (r) { if (rollen.indexOf(r) === -1) { rollen.push(r); } });
+    });
+    rollen.sort(function (a, b) { return EBENEN.indexOf(ebeneVon(a)) - EBENEN.indexOf(ebeneVon(b)); });
+
+    var module = HT.daten.eintraegeDerKategorie('modul').map(function (m) { return m.begriff; });
+    function kurz(name) { return ohneTreffen(name).replace(/^Entscheid /, ''); }
+
+    var zellen = [h('div', { class: 'lp-em__ecke' })].concat(rollen.map(function (r) {
+      var n = entscheide.filter(function (a) { return verantwortet(a, r); }).length;
+      return h('div', { class: 'lp-em__rolle' }, [
+        h('span', { class: 'lp-em__rollenname' }, [kreis('rolle', 14), h('span', { text: r })]),
+        h('span', { class: 'lp-em__ebene', text: [ebeneVon(r), anzahl(n, 'Entscheid', 'Entscheide')].filter(Boolean).join(' · ') })
+      ]);
+    }));
+    module.forEach(function (m) {
+      var hier = mitModul(entscheide, m);
+      zellen.push(h('div', { class: 'lp-em__modul' + (hier.length ? '' : ' ist-leer') }, [kreis('modul', 13), h('span', { text: m })]));
+      if (!hier.length) {
+        zellen.push(h('div', { class: 'lp-em__leer', style: 'grid-column: span ' + rollen.length, text: 'kein Entscheid' }));
+        return;
+      }
+      rollen.forEach(function (r) {
+        var liste = hier.filter(function (a) { return verantwortet(a, r); });
+        zellen.push(h('div', { class: 'lp-em__zelle' + (liste.length ? '' : ' ist-leer'), dataset: { rolle: r } },
+          liste.length ? h('ul', { class: 'lp-els' }, liste.map(function (a) {
+            return h('li', { class: 'lp-el lp-el--aufgabe ist-entscheid', title: a.begriff }, h('span', { class: 'lp-el__name', text: kurz(a.begriff) }));
+          })) : null));
+      });
+    });
+
+    return h('div', { class: 'lp-f lp-f--matrix' }, [
+      kopfzeile(e, f.titel),
+      kernSatz(f.kern),
+      h('div', { class: 'lp-em', style: 'grid-template-columns: max-content repeat(' + rollen.length + ', auto)' }, zellen),
+      ctx.fuss
+    ]);
+  }
+
   /* --- Graph-Folie ---------------------------------------------------------
      Ein Ausschnitt des Graphen aus dem Überblick, mit derselben Zeichnung
      (HT.graph.teilgraph, HT.graphZeichnen): links die Fläche, rechts die
@@ -1756,6 +1818,7 @@
     karte: karteUeberblickFolie,
     lebenslauf: lebenslaufFolie,
     ergebnisliste: ergebnislisteFolie,
+    entscheidmatrix: entscheidmatrixFolie,
     rollenweg: rollenwegFolie,
     rollenphase: rollenphaseFolie,
     rolle: rolleFolie,
