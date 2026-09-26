@@ -220,7 +220,9 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
   border-radius: var(--radius-s);
   background: color-mix(in srgb, var(--gk-modul-bg) 38%, #fff);
 }
-.ra-feld.ist-gleich { box-shadow: 0 0 0 2px var(--akzent); }
+.ra-feld.ist-gleich, .ra-feld.ist-gewaehlt { box-shadow: 0 0 0 2px var(--akzent); }
+/* Die freie Fläche eines Feldes wählt das Feld (Bilanz auf der Inhaltsseite). */
+.ra-feld { cursor: pointer; }
 
 /* Der Inhalt steht in Spuren: schmal eine, in einem breiten Feld (nur ein
    Modul gefiltert, Projektgrundlagen) so viele, wie hineinpassen — ab 190 px,
@@ -487,6 +489,8 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 }
 .ra-ort:first-child { border-top: 0; }
 .ra-ort--treffer { grid-template-columns: minmax(0, 1fr); }
+.ra-ort--zahl { grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; }
+.ra-ort__zahl { color: var(--text-leise); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ra-ort__wo {
   align-self: start;
   padding: 2px 0 0;

@@ -472,7 +472,8 @@
   /**
    * Das Raster für einen Ausschnitt (siehe ausschnitt()).
    * aktionen: { modul(name), phase(name) } — Trichter an Modulkopf bzw. Phase;
-   *   waehlen(id) — Klick auf ein Element, einen Modulkopf, eine Phase.
+   *   waehlen(id) — Klick auf ein Element, einen Modulkopf, eine Phase;
+   *   feld(phase, modul) — Klick auf die freie Fläche eines Feldes.
    */
   function aufbauen(m, a, sicht, f, aktionen) {
     var buehne = h('div', { class: 'ra-buehne' });
@@ -666,19 +667,28 @@
     gitter.addEventListener('focusin', function (ev) { markieren(zielAus(ev.target)); });
 
     /* Klick auf den Trichter filtert; auf ein Element, einen Modulkopf oder
-       eine Phase wählt es für die Inhaltsseite. */
+       eine Phase wählt es für die Inhaltsseite; auf die freie Fläche eines
+       Feldes wählt das Feld (seine Bilanz). */
     gitter.addEventListener('click', function (ev) {
       var t = ev.target.closest('.ra-trichter');
       if (t) { aktionen[t.dataset.art](t.dataset.name); return; }
       var ziel = zielAus(ev.target);
-      if (ziel && ziel.dataset.id) { aktionen.waehlen(ziel.dataset.id); }
+      if (ziel && ziel.dataset.id) { aktionen.waehlen(ziel.dataset.id); return; }
+      var feld = ev.target.closest('.ra-feld');
+      if (feld && !ziel) { aktionen.feld(feld.dataset.phase, feld.dataset.modul); }
     });
 
-    /* Die Auswahl bleibt markiert, an jeder ihrer Stellen. */
-    function gewaehlt(id) {
+    /* Die Auswahl bleibt markiert, an jeder ihrer Stellen; ein gewähltes Feld
+       trägt den Ring selbst. */
+    function gewaehlt(id, feld) {
       Array.prototype.forEach.call(gitter.querySelectorAll('.ist-gewaehlt'), function (x) { x.classList.remove('ist-gewaehlt'); });
-      if (!id) { return; }
-      Array.prototype.forEach.call(gitter.querySelectorAll('[data-id="' + id + '"]'), function (x) { x.classList.add('ist-gewaehlt'); });
+      if (id) {
+        Array.prototype.forEach.call(gitter.querySelectorAll('[data-id="' + id + '"]'), function (x) { x.classList.add('ist-gewaehlt'); });
+      }
+      if (feld) {
+        var el = gitter.querySelector('.ra-feld[data-phase="' + feld.phase + '"][data-modul="' + feld.modul + '"]');
+        if (el) { el.classList.add('ist-gewaehlt'); }
+      }
     }
 
     /* Aus der Inhaltsseite: eine Stelle anspringen — das Element im Feld,
@@ -725,7 +735,7 @@
       h('p', { text: 'Das Gerüst steht fest: links die Phasen mit ihren Meilensteinen (die Freigabe, die eine Phase öffnet, oben; die Entscheide, mit denen sie endet, unten an der Grenze zur nächsten Phase; modulspezifische dazwischen), oben die Module. Projektsteuerung und Projektführung haben je eine eigene Spalte, Projektgrundlagen liegt in der Initialisierung über drei.' }),
       h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Felder eines Moduls teilen eine Reihenfolge: dieselbe Aufgabe, dasselbe Ergebnis steht in jeder Phase an derselben Stelle — in einem breiten Feld auch in derselben Spur. Steht ein Ergebnis im Feld unter mehreren Aufgaben, ist nur das erste Vorkommen kräftig, die weiteren sind blass.' }),
       h('p', { text: 'Filter (Icon neben der Suche): Ist etwas gefiltert, nennt es die rote Pille in der Leiste; ein Klick darauf öffnet den Filter, × hebt ihn auf. Phasen und Module blenden Zeilen und Spalten aus — die übrigen werden breiter. Der Trichter neben einem Modulkopf oder einer Phase tut dasselbe; ein zweiter Klick zeigt wieder alle. Eine Rolle (die drei Linien: verantwortlich, beteiligt oder beides) und «Nur Entscheide» (Raute) lassen nur die passenden Aufgaben stehen; Felder ohne Treffer bleiben leer, Meilensteine, die keine dieser Aufgaben erreicht, treten zurück. Der Filter steht in der Adresse und lässt sich so teilen.' }),
-      h('p', { text: 'Inhaltsseite (Icon neben dem Filter, Trennlinie ziehbar): Ein Klick auf ein Element, eine Phase oder einen Modulkopf zeigt seine Seite aus dem Handbuch und darunter «Im Raster» — wo es überall steht; eine Zeile springt ins Feld, ein Name wählt das Element. Ein zweiter Klick oder Esc hebt die Auswahl auf. Ohne Auswahl stehen dort bei gesetztem Filter seine Treffer, Phase für Phase.' })
+      h('p', { text: 'Inhaltsseite (Icon neben dem Filter, Trennlinie ziehbar): Ein Klick auf ein Element, eine Phase oder einen Modulkopf zeigt seine Seite aus dem Handbuch und darunter «Im Raster» — wo es überall steht; eine Zeile springt ins Feld, ein Name wählt das Element. Ein Klick auf die freie Fläche eines Feldes zeigt seine Bilanz: Aufgaben, Entscheide, Meilensteine, Rollen und Ergebnisse. Ein zweiter Klick oder Esc hebt die Auswahl auf. Ohne Auswahl stehen dort bei gesetztem Filter seine Treffer, Phase für Phase.' })
     ];
   }
 
@@ -754,6 +764,12 @@
        (id=…); offen oder zu und die Breite bleiben in localStorage. */
     var seiteZustand = seiteLesen();
     var auswahl = params.id ? HT.daten.eintragMitId(params.id) || null : null;
+    /* Gewähltes Feld { phase, modul } — schliesst die Auswahl eines Elements aus. */
+    var feldWahl = null;
+    if (!auswahl && params.feld) {
+      var feldTeile = String(params.feld).split('|');
+      if (feldTeile.length === 2) { feldWahl = { phase: feldTeile[0], modul: feldTeile[1] }; }
+    }
     var gezeichnet = null;
     var seiteText = h('div', { class: 'ub-inhalt__text ra-inhalt__text' });
     var seite = h('aside', { class: 'ub-inhalt ra-inhalt', 'aria-label': 'Inhaltsseite' }, seiteText);
@@ -829,9 +845,22 @@
       var e = typeof x === 'string' ? HT.daten.eintragMitId(x) : x;
       if (umschalten && e && auswahl && e.id === auswahl.id) { e = null; }
       auswahl = e || null;
-      if (auswahl && !seiteZustand.offen) { seiteOeffnen(true); }
+      feldWahl = null;
+      wahlAnwenden();
+    }
+
+    /** Wählt das Feld Phase × Modul; umschalten: ein zweiter Klick hebt auf. */
+    function feldWaehlen(phase, modul, umschalten) {
+      var gleich = feldWahl && feldWahl.phase === phase && feldWahl.modul === modul;
+      feldWahl = umschalten && gleich ? null : { phase: phase, modul: modul };
+      auswahl = null;
+      wahlAnwenden();
+    }
+
+    function wahlAnwenden() {
+      if ((auswahl || feldWahl) && !seiteZustand.offen) { seiteOeffnen(true); }
       adresseSetzen();
-      if (laufende) { laufende.gewaehlt(auswahl ? auswahl.id : null); }
+      if (laufende) { laufende.gewaehlt(auswahl ? auswahl.id : null, feldWahl); }
       inhaltZeichnen();
     }
     wahlVonAussen = function (e) {
@@ -843,6 +872,7 @@
     function adresseSetzen() {
       var q = (vorgehen === 'agil' ? ['vorgehen=agil'] : []).concat(filterAlsQuery(filter));
       if (auswahl) { q.push('id=' + encodeURIComponent(auswahl.id)); }
+      if (feldWahl) { q.push('feld=' + encodeURIComponent(feldWahl.phase + '|' + feldWahl.modul)); }
       global.history.replaceState(null, '', '#/raster' + (q.length ? '?' + q.join('&') : ''));
     }
 
@@ -939,7 +969,10 @@
           var n = feld.bloecke.length;
           var entscheide = feld.bloecke.filter(function (b) { return istEntscheid(b.aufgabe); }).length;
           zeilen.push(ortZeile(kat === 'phase' ? feld.modul : feld.phase, feld.phase, feld.modul, null, [
-            zahlText(n, 'Aufgabe', 'Aufgaben'),
+            h('button', {
+              type: 'button', class: 'ra-ort__link', text: zahlText(n, 'Aufgabe', 'Aufgaben'), title: 'Bilanz des Feldes zeigen',
+              on: { click: function () { feldWaehlen(feld.phase, feld.modul, false); } }
+            }),
             entscheide ? h('span', { class: 'ra-ort__leise', text: ', davon ' + zahlText(entscheide, 'Entscheid', 'Entscheide') }) : null
           ]));
         });
@@ -951,6 +984,106 @@
         vorspann ? h('p', { class: 'ra-ort-vorspann' }, vorspann) : null,
         h('ul', { class: 'ra-orte' }, zeilen)
       ], 'ub-abschnitt--regel ra-im-raster');
+    }
+
+    function zuKnopf() {
+      return h('button', {
+        type: 'button', class: 'ra-inhalt__zu', 'aria-label': 'Auswahl aufheben', title: 'Auswahl aufheben (Esc)', text: '×',
+        on: { click: function () { waehlen(null); } }
+      });
+    }
+
+    function zahlZeile(name, zahl) {
+      return h('li', { class: 'ra-ort ra-ort--zahl' }, [
+        h('div', { class: 'ra-ort__was' }, name),
+        h('span', { class: 'ra-ort__zahl', text: zahl })
+      ]);
+    }
+
+    /* Bilanz eines Feldes (Phase × Modul) — immer das ganze Feld, auch wenn
+       Rolle oder «Nur Entscheide» darin filtern: Zahlen, Meilensteine, die es
+       erzeugt, Rollen (verantwortlich, beteiligt), Aufgaben und Ergebnisse
+       (wie oft sie darin vorkommen). */
+    function feldSeite(phase, modul) {
+      var feld = null;
+      m.felder.forEach(function (x) { if (x.phase === phase && x.modul === modul) { feld = x; } });
+      if (!feld) { return null; }
+      var bl = feld.bloecke;
+      var entscheide = bl.filter(function (b) { return istEntscheid(b.aufgabe); }).length;
+      var erg = {}, ergReihe = [], ms = {}, msReihe = [], rollen = {}, rollenReihe = [];
+      function rolleVon(name) {
+        var r = rollen[name];
+        if (!r) {
+          var e = HT.daten.eintragMitBegriff(name, 'rolle');
+          r = rollen[name] = { k: e ? { id: e.id, begriff: e.begriff } : null, name: name, verantw: 0, beteiligt: 0 };
+          rollenReihe.push(r);
+        }
+        return r;
+      }
+      bl.forEach(function (b) {
+        if (b.rolle) { rolleVon(b.rolle.begriff).verantw++; }
+        var e = b.aufgabe.eintrag || HT.daten.eintragMitId(b.aufgabe.id);
+        (e && e.beteiligt ? e.beteiligt : []).forEach(function (name) {
+          if (!b.rolle || HT.daten.normalisieren(name) !== HT.daten.normalisieren(b.rolle.begriff)) { rolleVon(name).beteiligt++; }
+        });
+        b.ergebnisse.forEach(function (k) {
+          var ziel = istMeilenstein(k) ? ms : erg, reihe = istMeilenstein(k) ? msReihe : ergReihe;
+          if (!ziel[k.id]) { ziel[k.id] = { k: k, aufgaben: [] }; reihe.push(ziel[k.id]); }
+          ziel[k.id].aufgaben.push(b.aufgabe);
+        });
+      });
+      rollenReihe.sort(function (x, y) { return y.verantw - x.verantw || y.beteiligt - x.beteiligt || x.name.localeCompare(y.name, 'de'); });
+      var ergSortiert = ergReihe.slice().sort(function (x, y) { return y.aufgaben.length - x.aufgaben.length; });
+
+      var zahlen = [zahlText(bl.length, 'Aufgabe', 'Aufgaben') + (entscheide ? ', davon ' + zahlText(entscheide, 'Entscheid', 'Entscheide') : ''),
+        zahlText(ergReihe.length, 'Ergebnis', 'Ergebnisse')];
+      if (msReihe.length) { zahlen.push(zahlText(msReihe.length, 'Meilenstein', 'Meilensteine')); }
+
+      var teile = [h('article', { class: 'ub-kopf' }, [
+        h('div', { class: 'ub-kopf__zeile' }, [
+          HT.inhaltsseite.ikone('modul', 24, 'ub-ikone--kopf'),
+          h('span', { class: 'ub-kopf__kicker', text: 'Feld' }),
+          zuKnopf()
+        ]),
+        h('h2', { class: 'ub-kopf__titel', text: phase + ' · ' + modul }),
+        h('div', { class: 'ub-kopf__lead' }, h('p', { text: zahlen.join(' · ') + '.' }))
+      ])];
+
+      if (msReihe.length) {
+        teile.push(HT.inhaltsseite.abschnitt('Meilensteine', [h('ul', { class: 'ra-orte' }, msReihe.map(function (x) {
+          return h('li', { class: 'ra-ort ra-ort--treffer' }, h('div', { class: 'ra-ort__was' }, [
+            h('span', { class: 'ra-ort__ms' }, ['◆ ', verweis(x.k)]),
+            h('span', { class: 'ra-ort__leise ra-ort__block' }, ['aus '].concat(mitKomma(x.aufgaben.map(verweis))))
+          ]));
+        }))], 'ub-abschnitt--regel'));
+      }
+
+      teile.push(HT.inhaltsseite.abschnitt('Rollen · verantwortlich / beteiligt', [h('ul', { class: 'ra-orte' }, rollenReihe.map(function (r) {
+        return zahlZeile(r.k ? verweis(r.k) : r.name, r.verantw + ' / ' + r.beteiligt);
+      }))], 'ub-abschnitt--regel'));
+
+      teile.push(HT.inhaltsseite.abschnitt('Aufgaben · ' + bl.length, [h('ul', { class: 'ra-orte' }, bl.map(function (b) {
+        var n = b.ergebnisse.filter(function (k) { return !istMeilenstein(k); }).length;
+        return h('li', { class: 'ra-ort ra-ort--treffer' }, h('div', { class: 'ra-ort__was' }, [
+          verweis(b.aufgabe),
+          h('span', { class: 'ra-ort__leise ra-ort__block', text: [b.rolle ? b.rolle.begriff : '', zahlText(n, 'Ergebnis', 'Ergebnisse')].filter(Boolean).join(' · ') })
+        ]));
+      }))], 'ub-abschnitt--regel'));
+
+      if (ergSortiert.length) {
+        teile.push(HT.inhaltsseite.abschnitt('Ergebnisse · ' + ergSortiert.length, [h('ul', { class: 'ra-orte' }, ergSortiert.map(function (x) {
+          return zahlZeile(verweis(x.k), x.aufgaben.length > 1 ? 'bei ' + x.aufgaben.length + ' Aufgaben' : '');
+        }))], 'ub-abschnitt--regel'));
+      }
+
+      var pe = HT.daten.eintragMitBegriff(phase, 'phase'), me = HT.daten.eintragMitBegriff(modul, 'modul');
+      teile.push(h('section', { class: 'ub-verweise' }, [pe, me].filter(Boolean).map(function (e) {
+        return h('button', {
+          type: 'button', class: 'ub-verweis ub-verweis--knopf', text: (e.kategorie === 'phase' ? 'Phase ' : 'Modul ') + e.begriff,
+          on: { click: function () { waehlen(e, false); } }
+        });
+      })));
+      return teile;
     }
 
     /* Ohne Auswahl bei gesetztem Filter: seine Treffer als Liste, Phase für
@@ -1009,16 +1142,13 @@
           beiGeladen: function (id) { if (auswahl && auswahl.id === id && document.body.contains(huelle)) { inhaltZeichnen(); } }
         });
         var zeile = teile[0].querySelector('.ub-kopf__zeile');
-        if (zeile) {
-          zeile.appendChild(h('button', {
-            type: 'button', class: 'ra-inhalt__zu', 'aria-label': 'Auswahl aufheben', title: 'Auswahl aufheben (Esc)', text: '×',
-            on: { click: function () { waehlen(null); } }
-          }));
-        }
+        if (zeile) { zeile.appendChild(zuKnopf()); }
         var ort = imRaster(e);
         if (ort) { teile.splice(1, 0, ort); }
         teile.push(HT.inhaltsseite.verweise(e));
         schluessel = e.id;
+      } else if (feldWahl && (teile = feldSeite(feldWahl.phase, feldWahl.modul))) {
+        schluessel = 'feld:' + feldWahl.phase + '|' + feldWahl.modul;
       } else if (filterAktiv(filter)) {
         teile = trefferSeite();
         schluessel = 'treffer';
@@ -1058,7 +1188,8 @@
     var aktionen = {
       modul: function (name) { listeSchalten('module', name, alleModule()); },
       phase: function (name) { listeSchalten('phasen', name, m.phasen); },
-      waehlen: function (id) { waehlen(id, true); }
+      waehlen: function (id) { waehlen(id, true); },
+      feld: function (phase, modul) { feldWaehlen(phase, modul, true); }
     };
 
     /* --- Popover --- */
@@ -1247,7 +1378,7 @@
     function taste(ev) {
       if (ev.key !== 'Escape' || !document.body.contains(huelle)) { return; }
       if (popOffen) { popOffen = false; popZeichnen(); filterKnopf.focus(); return; }
-      if (auswahl && !(ev.target.closest && ev.target.closest('input, textarea'))) { waehlen(null); }
+      if ((auswahl || feldWahl) && !(ev.target.closest && ev.target.closest('input, textarea'))) { waehlen(null); }
     }
     document.addEventListener('pointerdown', draussen, true);
     document.addEventListener('keydown', taste);
@@ -1334,7 +1465,7 @@
         HT.ui.leeren(huelle);
         [laufende.buehne, trenner, seite, pop].forEach(function (x) { huelle.appendChild(x); });
       }
-      laufende.gewaehlt(auswahl ? auswahl.id : null);
+      laufende.gewaehlt(auswahl ? auswahl.id : null, feldWahl);
       laufende.spurenLegen(breitenSchluessel());
       inhaltZeichnen();
       laufende.buehne.scrollTop = oben;
