@@ -26,10 +26,14 @@
    Aufeinanderfolgende Felder eines Moduls mit gleichem Inhalt stehen als
    ein Feld über mehrere Phasen.
 
-   Pfeile (Knopf in der Leiste): die Pfeile der Abbildung 1 zwischen
-   Ergebnissen (PFEILE), als SVG-Ebene in den Gassen zwischen den Kästen —
-   die Kästen behalten ihre Grösse. Zeigen auf ein Ergebnis hebt seine
-   Pfeile hervor; aus zeigt der Knopf nur diese.
+   Pfeile (Knopf in der Leiste, nur mit Ergebnissen allein): der Fluss der
+   Abbildung 1. Es stehen nur die Ergebnisse mit Kasten in der Abbildung
+   (auch im Sammelkasten «Phasenunabhängig»), die übrigen eines Feldes
+   klappt «+N» auf. Die Pfeile (PFEILE) gehen als SVG-Ebene kurz von Kasten
+   zu Kasten, verzweigen und sammeln sich in den Gassen wie die
+   Sammelschienen der Grafik; die Kästen behalten ihre Grösse. Zeigen auf
+   ein Ergebnis hebt seine Pfeile hervor. Aus: alle Ergebnisse, keine
+   Pfeile.
 
    Filter (Icon in der Kopfzeile neben der Suche, Popover im Stil «Alle
    Filter» des Graphen): Phasen und Module blenden Zeilen und Spalten aus,
@@ -416,6 +420,10 @@
     ]);
   }
 
+  /* Pfeile gibt es nur, wo allein Ergebnisse stehen: Mit Rollen oder
+     Aufgaben stehen Blöcke statt der Kästen der Abbildung. */
+  function flussMoeglich(sicht) { return !!sicht.ergebnis && !sicht.aufgabe && !sicht.rolle; }
+
   function ohneMeilensteine(liste) {
     return liste.filter(function (k) { return !istMeilenstein(k); });
   }
@@ -588,9 +596,15 @@
     if (!a.zeilen.length || !a.spalten.length) {
       buehne.appendChild(h('p', { class: 'ra-leer', text: 'Keine Phase oder kein Modul gewählt — im Filter wieder alle einschalten.' }));
       var nichts = function () { return false; };
-      return { buehne: buehne, spurenLegen: nichts, zeigen: nichts, gewaehlt: nichts, stelleZeigen: nichts, pfeileZeigen: nichts, pfeilZahl: function () { return 0; }, feldPhasen: function (p) { return [p]; } };
+      return { buehne: buehne, spurenLegen: nichts, zeigen: nichts, gewaehlt: nichts, stelleZeigen: nichts, pfeilZahl: function () { return 0; }, feldPhasen: function (p) { return [p]; } };
     }
     var gitter = h('div', { class: 'ra-gitter', dataset: { vorgehen: m.vorgehen } });
+    /* Fluss wie in der Abbildung 1 (Knopf «Pfeile», nur mit Ergebnissen
+       allein): Es stehen die Kästen der Abbildung, die übrigen Ergebnisse
+       eines Feldes sind unter «+N» eingeklappt, und die Pfeile gehen kurz
+       von Kasten zu Kasten. */
+    var fluss = flussMoeglich(sicht) && !!sicht.pfeile;
+    gitter.classList.toggle('ist-fluss', fluss);
     gitter.style.gridTemplateColumns = 'var(--ra-band) ' + a.spalten.map(function (s) {
       return 'minmax(var(--ra-spalte-min), ' + (GEWICHT[s] || 1) + 'fr)';
     }).join(' ');
@@ -666,18 +680,25 @@
        Reihenfolge, auf Spuren verteilt erst, wenn die Breite bekannt ist. */
     var spalten = {}, spaltenReihe = [];
     var yVon = new global.Map();   // Stück-Element → Höhe in der Abbildung 1
+    var xVon = new global.Map();   // … und Lage von links (nur im Fluss)
     gruppen.forEach(function (gr) {
       var x = gr.x, mehr = gr.phasen.length > 1;
       var leer = !x.bloecke.length;
       var stuecke = leer ? [] : inhaltBauen(x.bloecke, sicht);
       var inhalt = leer ? null : h('div', { class: 'ra-feld__inhalt' + (!sicht.aufgabe && !sicht.rolle ? ' ra-feld__inhalt--liste' : '') });
+      var weitere = fluss ? flussMarkieren(stuecke, gr.phasen, x.feld.modul) : 0;
       var el = h('div', {
         class: 'ra-feld' + (x.breite > 1 ? ' ra-feld--breit' : '') + (leer ? ' ra-feld--leer' : '') + (mehr ? ' ra-feld--phasen' : ''),
         dataset: { phase: x.feld.phase, phasen: gr.phasen.join(' '), modul: x.feld.modul }
       }, [
         x.kopfImFeld ? modulKopf(x.feld.modul, 'ra-modulkopf--feld') : null,
         mehr ? h('div', { class: 'ra-feld__phasen', text: gr.phasen[0] + ' bis ' + gr.phasen[gr.phasen.length - 1] }) : null,
-        inhalt
+        inhalt,
+        weitere ? h('button', {
+          type: 'button', class: 'ra-feld__mehr', 'aria-expanded': 'false',
+          title: weitere + (weitere === 1 ? ' weiteres Ergebnis' : ' weitere Ergebnisse') + ' ohne Kasten in Abbildung 1 — aufklappen',
+          text: '+' + weitere
+        }) : null
       ]);
       if (inhalt) {
         var sp = spalten[x.feld.modul];
@@ -691,6 +712,23 @@
       el.style.gridColumn = (x.start + 2) + ' / span ' + x.breite;
       gitter.appendChild(el);
     });
+
+    /* Im Fluss: Ergebnisse ohne Kasten in der Abbildung (in einer der Phasen
+       des Feldes, auch im Sammelkasten «Phasenunabhängig») werden
+       eingeklappt; die übrigen merken sich die Lage ihres Kastens. Gibt die
+       Zahl der eingeklappten zurück. */
+    function flussMarkieren(stuecke, phasen, modul) {
+      var zahl = 0;
+      stuecke.forEach(function (st) {
+        var id = st.key.slice(2), lage = null;
+        for (var i = 0; i < phasen.length && !lage; i++) { lage = HT.graph.abbildungLage(id, phasen[i], modul); }
+        if (lage) { xVon.set(st.el, lage.x); return; }
+        st.weiter = true;
+        st.el.classList.add('ra-k--weiter');
+        zahl++;
+      });
+      return zahl;
+    }
 
     /* Die Höhe eines Stücks in der Abbildung 1: die seines Kastens in diesem
        Feld; ein Ergebnis ohne Kasten übernimmt die eines Ergebnisses derselben
@@ -741,7 +779,7 @@
        zwischen den Phasen — und treten seitlich in den Kasten ein; so bleiben
        die Kästen, wie sie sind, und nichts wird verdeckt. Wo Linien dieselbe
        Fuge nehmen, laufen sie zusammen wie die Sammelschienen der Grafik. */
-    var ebene = svgEl('svg', { class: 'ra-pfeile' + (sicht.pfeile ? ' ist-alle' : ''), 'aria-hidden': 'true' });
+    var ebene = svgEl('svg', { class: 'ra-pfeile', 'aria-hidden': 'true' });
     var defs = ebene.appendChild(svgEl('defs', {}));
     ['ra-spitze', 'ra-spitze-an'].forEach(function (id) {
       var marker = defs.appendChild(svgEl('marker', {
@@ -785,67 +823,103 @@
       return sp.l > inn.l + 2 ? sp.l - halb : f.l - 2;
     }
 
+    /* Wie in der Abbildung: Die Pfeile gehen von der Unterkante der Quelle
+       senkrecht hinunter, in der Gasse über dem Ziel quer und von oben
+       hinein; stehen Quelle und Ziel übereinander, ist es ein kurzer
+       gerader Strich. Pfeile aus derselben Quelle oder in dasselbe Ziel
+       teilen sich die Strecke, so entstehen die Sammelschienen der Grafik.
+       Stehen Quelle und Ziel nebeneinander, geht der Pfeil waagrecht von
+       Kasten zu Kasten. Nur wenn unter der Quelle ein Kasten im Weg steht,
+       verlässt der Pfeil sie seitlich und läuft in der Fuge daneben. */
     function pfeileLegen() {
       pfeile.forEach(function (p) { ebene.removeChild(p.el); });
       pfeile = [];
-      if (!sicht.ergebnis) { return; }
+      if (!fluss) { return; }
       var g = gitter.getBoundingClientRect();
       ebene.setAttribute('width', String(Math.ceil(g.width)));
       ebene.setAttribute('height', String(Math.ceil(g.height)));
-      var bahnen = {};
-      Array.prototype.forEach.call(gitter.querySelectorAll('.ra-bahn'), function (b) { bahnen[b.dataset.phase] = rahmen(b, g); });
-      var zeileVon = {};
-      a.zeilen.forEach(function (z, i) { zeileVon[z.phase] = i; });
+      var hindernisse = Array.prototype.filter.call(gitter.querySelectorAll('.ra-k, .ra-feld__mehr'), function (el) {
+        return el.offsetParent !== null;
+      }).map(function (el) { return { el: el, r: rahmen(el, g) }; });
+      /* Ist die Senkrechte bei x von y1 bis y2 frei (ausser Quelle und Ziel)? */
+      function frei(x, y1, y2, s, t) {
+        return !hindernisse.some(function (o) {
+          return o.el !== s && o.el !== t && x > o.r.l - 3 && x < o.r.r + 3 && o.r.b > y1 + 1 && o.r.t < y2 - 1;
+        });
+      }
+      var paare = [], aus = new global.Map();
       PFEILE.forEach(function (pf) {
         var von = endeFinden(pf.von), nach = endeFinden(pf.nach);
         if (!von || !nach || von.el === nach.el) { return; }
         var s = von.el, t = nach.el;
-        if (pfeile.some(function (p) { return p.s === s && p.t === t; })) { return; }
+        if (s.offsetParent === null || t.offsetParent === null) { return; }
+        if (paare.some(function (p) { return p.s === s && p.t === t; })) { return; }
+        paare.push({ s: s, t: t });
+        aus.set(s, (aus.get(s) || 0) + 1);
+      });
+      paare.forEach(function (paar) {
+        var s = paar.s, t = paar.t;
         var S = rahmen(s, g), T = rahmen(t, g);
-        var sy = (S.t + S.b) / 2, ty = (T.t + T.b) / 2;
-        var sFeld = s.closest('.ra-feld'), tFeld = t.closest('.ra-feld');
-        var d, gasse = gasseVon.get(t);
-        if (gasse) { gasse = { y: rahmen(gasse.inhalt, g).t + gasse.dy, erstes: gasse.erstes }; }
-        var tx = (T.l + T.r) / 2;
-        var gleicheSpur = sFeld === tFeld && Math.abs(S.l - T.l) < 3;
-        if (gasse && gasse.y > S.b && !gasse.erstes) {
-          /* Ziel unter einem anderen Kasten seiner Stufe: durch die Gasse in
-             die Fuge neben dem Ziel, hinunter und seitlich hinein. */
-          var rein = tx >= (S.l + S.r) / 2 && !gleicheSpur;
-          var ax = fuge(s, rein || gleicheSpur ? 'r' : 'l', g), ex = fuge(t, gleicheSpur ? 'r' : rein ? 'l' : 'r', g);
-          d = 'M' + (rein || gleicheSpur ? S.r : S.l) + ' ' + sy + 'H' + ax + 'V' + gasse.y + 'H' + ex + 'V' + ty
-            + 'H' + (gleicheSpur || !rein ? T.r : T.l);
-        } else if (gasse && gasse.y > S.b) {
-          /* Von oben in den Kasten, wie in der Abbildung: steht die Quelle
-             in der Spur gleich darüber, senkrecht hinunter; sonst seitlich
-             in die Fuge, hinunter bis in die Gasse über dem Ziel, quer und
-             hinein. */
-          if (gleicheSpur && s.nextElementSibling === t) {
+        var sx = Math.round((S.l + S.r) / 2), tx = Math.round((T.l + T.r) / 2);
+        var d;
+        if (T.t < S.b - 1 && T.b > S.t + 1) {
+          /* Nebeneinander: waagrecht in der Mitte der gemeinsamen Höhe. */
+          var y = Math.round((Math.max(S.t, T.t) + Math.min(S.b, T.b)) / 2);
+          if (T.l >= S.r) { d = 'M' + S.r + ' ' + y + 'H' + T.l; }
+          else if (T.r <= S.l) { d = 'M' + S.l + ' ' + y + 'H' + T.r; }
+          else { return; }
+        } else {
+          /* Wie die Sammelschienen der Abbildung: Verzweigt die Quelle, quer
+             in der Gasse gleich unter ihr, sonst in der Gasse über dem Ziel —
+             so laufen mehrere Pfeile in ein Ziel auf einer Schiene zusammen. */
+          var stufen = [];
+          var gasse = gasseVon.get(t);
+          var unter = gassenVon.get(s.closest('.ra-feld__inhalt'));
+          if (unter) {
+            var oben0 = rahmen(s.closest('.ra-feld__inhalt'), g).t;
+            var y0 = null;
+            unter.forEach(function (dy) { var y = Math.round(oben0 + dy); if (y > S.b + 2 && y < T.t && (y0 === null || y < y0)) { y0 = y; } });
+            if (y0 !== null) { stufen.push(y0); }
+          }
+          if (gasse) {
+            var y1 = Math.round(rahmen(gasse.inhalt, g).t + gasse.dy);
+            if (y1 > S.b + 2 && y1 < T.t && stufen.indexOf(y1) === -1) {
+              if (aus.get(s) > 1) { stufen.push(y1); } else { stufen.unshift(y1); }
+            }
+          }
+          if (!stufen.length) { stufen.push(Math.round(T.t > S.b ? (S.b + T.t) / 2 : T.t - GASSE / 2)); }
+          /* Von oben ins Ziel; steht darüber noch ein Kasten, seitlich. */
+          function ende(gy) {
+            if (frei(tx, gy, T.t, s, t)) { return 'H' + tx + 'V' + T.t; }
+            /* Im breiten Feld von aussen, sonst von der Seite der Quelle:
+               die Fugen zwischen den Spuren tragen schon die waagrechten
+               Pfeile der Nachbarn. */
+            var inn = rahmen(t.closest('.ra-feld__inhalt'), g);
+            var aussenL = T.l <= inn.l + 2, aussenR = T.r >= inn.r - 2;
+            var vonLinks = aussenL !== aussenR ? aussenL : sx <= tx;
+            return 'H' + fuge(t, vonLinks ? 'l' : 'r', g) + 'V' + Math.round((T.t + T.b) / 2) + 'H' + (vonLinks ? T.l : T.r);
+          }
+          if (T.t > S.b && Math.abs(sx - tx) < 2 && frei(sx, S.b, T.t, s, t)) {
             d = 'M' + tx + ' ' + S.b + 'V' + T.t;
           } else {
-            var nachRechts = gleicheSpur || tx >= (S.l + S.r) / 2;
-            var fx = fuge(s, nachRechts ? 'r' : 'l', g);
-            d = 'M' + (nachRechts ? S.r : S.l) + ' ' + sy + 'H' + fx + 'V' + gasse.y + 'H' + tx + 'V' + T.t;
-          }
-        } else if (sFeld.dataset.modul === tFeld.dataset.modul && Math.abs(S.r - T.r) < 3) {
-          /* Untereinander: rechts in der Fuge herum, wie eine Klammer. */
-          var x = fuge(s, 'r', g);
-          d = 'M' + S.r + ' ' + sy + 'H' + x + 'V' + ty + 'H' + T.r;
-        } else {
-          var rechts = (T.l + T.r) / 2 > (S.l + S.r) / 2;
-          var xs = fuge(s, rechts ? 'r' : 'l', g), xt = fuge(t, rechts ? 'l' : 'r', g);
-          var aus = rechts ? S.r : S.l, ein = rechts ? T.l : T.r;
-          if (Math.abs(xs - xt) < 1.5) {
-            d = 'M' + aus + ' ' + sy + 'H' + xs + 'V' + ty + 'H' + ein;
-          } else {
-            /* Waagrecht an der Phasengrenze: über der Zeile des Ziels, in
-               derselben Zeile oben oder unten, je nachdem, was kürzer ist. */
-            var bahn = bahnen[nach.phase];
-            var oben = bahn.t + 3, unten = bahn.b - 3, yc;
-            var zs = zeileVon[von.phase], zt = zeileVon[nach.phase];
-            if (zs === zt) { yc = (sy - oben) + (ty - oben) <= (unten - sy) + (unten - ty) ? oben : unten; }
-            else { yc = zt > zs ? oben : unten; }
-            d = 'M' + aus + ' ' + sy + 'H' + xs + 'V' + yc + 'H' + xt + 'V' + ty + 'H' + ein;
+            /* Die erste Gasse, in die die Quelle frei hinunterkommt und aus
+               der das Ziel von oben erreichbar ist; sonst die erste, in die
+               sie kommt; sonst seitlich aus der Quelle. */
+            var gut = null, erreichbar = null;
+            stufen.forEach(function (gy) {
+              if (T.t <= S.b || !frei(sx, S.b, gy, s, t)) { return; }
+              if (erreichbar === null) { erreichbar = gy; }
+              if (gut === null && frei(tx, gy, T.t, s, t)) { gut = gy; }
+            });
+            var wahl = gut !== null ? gut : erreichbar;
+            if (wahl !== null) {
+              d = 'M' + sx + ' ' + S.b + 'V' + wahl + ende(wahl);
+            } else {
+              var gy = stufen[stufen.length - 1];
+              var rechts = tx >= sx;
+              var fx = fuge(s, rechts ? 'r' : 'l', g);
+              d = 'M' + (rechts ? S.r : S.l) + ' ' + Math.round((S.t + S.b) / 2) + 'H' + fx + 'V' + gy + ende(gy);
+            }
           }
         }
         var el = svgEl('path', { class: 'ra-pfeil', d: d, 'data-von': s.dataset.id, 'data-nach': t.dataset.id });
@@ -899,6 +973,35 @@
       });
     }
 
+    /* Im Fluss stehen die Kästen einer Stufe (gleiche Höhe in der
+       Abbildung) nebeneinander wie dort: die Spur folgt der Lage von links,
+       über die Breite der Kästen im Feld verteilt; ist sie in der Stufe schon
+       besetzt, die nächste freie. Eingeklappte der Reihe nach. */
+    function flussSpuren(f, anzahl) {
+      var spurVon = {}, kaesten = [], i = 0;
+      f.stuecke.forEach(function (st) {
+        if (st.weiter) { spurVon[st.key] = i++ % anzahl; return; }
+        kaesten.push({ key: st.key, x: xVon.get(st.el) || 0, y: yVon.get(st.el) });
+      });
+      if (!kaesten.length) { return spurVon; }
+      var xs = kaesten.map(function (k) { return k.x; });
+      var xmin = Math.min.apply(null, xs), xmax = Math.max.apply(null, xs);
+      var stufe = [], anfang = null;
+      kaesten.forEach(function (k, j) {
+        var y = k.y === null || k.y === undefined ? Infinity : k.y;
+        if (anfang === null || y - anfang > STUFE_TOLERANZ) { stufe = []; anfang = y; }
+        var soll = xmax > xmin ? Math.round((k.x - xmin) / (xmax - xmin) * (anzahl - 1)) : 0;
+        var wahl = soll;
+        for (var d = 1; stufe.indexOf(wahl) !== -1 && d < anzahl * 2; d++) {
+          var c = soll + (d % 2 ? (d + 1) / 2 : -d / 2);
+          if (c >= 0 && c < anzahl && stufe.indexOf(c) === -1) { wahl = c; }
+        }
+        stufe.push(wahl);
+        spurVon[k.key] = wahl;
+      });
+      return spurVon;
+    }
+
     function spurenFuellen(f, anzahl, spurVon) {
       HT.ui.leeren(f.inhalt);
       var spuren = [];
@@ -932,6 +1035,12 @@
         sp.felder.forEach(function (f) { spurenFuellen(f, sp.anzahl, null); });
       });
       var mehr = neu.filter(function (sp) { return sp.anzahl > 1; });
+      if (fluss) {
+        mehr.forEach(function (sp) {
+          sp.felder.forEach(function (f) { spurenFuellen(f, sp.anzahl, flussSpuren(f, sp.anzahl)); });
+        });
+        mehr = [];
+      }
       mehr.forEach(function (sp) {
         sp.luecke = sp.felder[0].inhalt.classList.contains('ra-feld__inhalt--liste') ? 4 : 6;
         sp.hoehen = sp.felder.map(function (f) {
@@ -958,21 +1067,28 @@
        lesen, dann alle Abstände schreiben. */
     var STUFE_TOLERANZ = 6;     // Koordinaten der Grafik
     var GASSE = 16;             // px frei über jeder Stufe
+    var LUECKE_FLUSS = 14;      // im Fluss zwischen Kästen untereinander: Platz für den Pfeil
     /* Stück einer Stufe → { inhalt, dy: Gasse darüber, von oben im Inhalt
        des Feldes, erstes }. Relativ, weil die Zeilen darüber beim Ausrichten
        noch wachsen. */
     var gasseVon = new global.Map();
+    /* Inhalt eines Feldes → alle Gassen seiner Zeile, von oben im Inhalt. */
+    var gassenVon = new global.Map();
     function ausrichten() {
       gasseVon = new global.Map();
+      gassenVon = new global.Map();
       var oben0 = gitter.getBoundingClientRect().top;
       var zeilen = {};
       spaltenReihe.forEach(function (sp) {
         sp.felder.forEach(function (f) {
           if (f.mehr) { return; }
-          var luecke = f.inhalt.classList.contains('ra-feld__inhalt--liste') ? 4 : 6;
+          var luecke = fluss ? LUECKE_FLUSS : f.inhalt.classList.contains('ra-feld__inhalt--liste') ? 4 : 6;
           var basis = f.inhalt.getBoundingClientRect().top - oben0;
           Array.prototype.forEach.call(f.inhalt.children, function (spur) {
-            var stuecke = Array.prototype.map.call(spur.children, function (el) {
+            /* Eingeklappte zählen nicht. */
+            var stuecke = Array.prototype.filter.call(spur.children, function (el) {
+              return el.offsetParent !== null;
+            }).map(function (el) {
               var y = yVon.get(el);
               return { el: el, y: y === undefined ? null : y, h: el.offsetHeight };
             });
@@ -1008,7 +1124,7 @@
          Stufe nimmt deren Gasse vom Rand der Quelle bis über das Ziel. Stücke
          ohne Kasten beginnen in einer Säule erst unter der tiefsten Stufe,
          deren Gasse sie kreuzt — sonst gleich oben. */
-      if (sicht.ergebnis) {
+      if (fluss) {
         PFEILE.forEach(function (pf) {
           var von = endeFinden(pf.von), nach = endeFinden(pf.nach);
           if (!von || !nach || von.el === nach.el) { return; }
@@ -1044,6 +1160,9 @@
             }
           });
         }
+        saeulen.forEach(function (c) {
+          gassenVon.set(c.inhalt, beginn.map(function (b) { return b - GASSE / 2 - c.basis; }));
+        });
         saeulen.forEach(function (c) {
           var unten = c.kreuz >= 0 ? beginn[c.kreuz] : -Infinity;
           while (c.stuecke[c.i]) {
@@ -1094,6 +1213,8 @@
        eine Phase wählt es für die Inhaltsseite; auf die freie Fläche eines
        Feldes wählt das Feld (seine Bilanz). */
     gitter.addEventListener('click', function (ev) {
+      var mehrKnopf = ev.target.closest('.ra-feld__mehr');
+      if (mehrKnopf) { weitereZeigen(mehrKnopf.closest('.ra-feld'), !mehrKnopf.closest('.ra-feld').classList.contains('ist-offen')); return; }
       var t = ev.target.closest('.ra-trichter');
       if (t) { aktionen[t.dataset.art](t.dataset.name); return; }
       var ziel = zielAus(ev.target);
@@ -1101,6 +1222,20 @@
       var feld = ev.target.closest('.ra-feld');
       if (feld && !ziel) { aktionen.feld(feld.dataset.phase, feld.dataset.modul); }
     });
+
+    /* «+N» klappt die Ergebnisse eines Feldes ohne Kasten in der Abbildung
+       auf: Sie stehen unter den Kästen, die Pfeile weichen ihnen aus. */
+    function weitereZeigen(feld, auf) {
+      var knopf = feld.querySelector('.ra-feld__mehr');
+      if (!knopf || feld.classList.contains('ist-offen') === auf) { return; }
+      var n = feld.querySelectorAll('.ra-k--weiter').length;
+      feld.classList.toggle('ist-offen', auf);
+      knopf.setAttribute('aria-expanded', auf ? 'true' : 'false');
+      knopf.textContent = (auf ? '−' : '+') + n;
+      knopf.title = n + (n === 1 ? ' weiteres Ergebnis' : ' weitere Ergebnisse') + ' ohne Kasten in Abbildung 1 — ' + (auf ? 'einklappen' : 'aufklappen');
+      ausrichten();
+      pfeileLegen();
+    }
 
     /* Die Auswahl bleibt markiert, an jeder ihrer Stellen; ein gewähltes Feld
        trägt den Ring selbst. */
@@ -1124,6 +1259,7 @@
       if (modul) {
         var feld = gitter.querySelector('.ra-feld[data-phasen~="' + phase + '"][data-modul="' + modul + '"]');
         el = (feld && id && feld.querySelector('[data-id="' + id + '"]')) || feld;
+        if (el && el.classList.contains('ra-k--weiter')) { weitereZeigen(feld, true); }
       } else {
         var band = gitter.querySelector('.ra-phase[data-phase="' + phase + '"]');
         el = band ? band.querySelector('.ra-phase__name') : null;
@@ -1140,8 +1276,6 @@
       spurenLegen: spurenLegen,
       gewaehlt: gewaehlt,
       stelleZeigen: stelleZeigen,
-      /* Alle Pfeile zeigen oder nur die des gezeigten bzw. gewählten Ergebnisses. */
-      pfeileZeigen: function (an) { ebene.classList.toggle('ist-alle', an); },
       pfeilZahl: function () { return pfeile.length; },
       /* Die Phasen, über die das Feld dieser Phase und dieses Moduls reicht. */
       feldPhasen: function (phase, modul) {
@@ -1151,6 +1285,7 @@
       zeigen: function (id) {
         var el = gitter.querySelector('[data-id="' + id + '"]');
         if (!el) { return false; }
+        if (el.classList.contains('ra-k--weiter')) { weitereZeigen(el.closest('.ra-feld'), true); }
         el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
         el.focus({ preventScroll: true });
         return true;
@@ -1169,7 +1304,7 @@
       h('p', { text: 'Entwurf: das Gesamtbild der Methode wie Abbildung 1 des Referenzhandbuchs — Phasen als Zeilen, Module als Spalten — in der Bildsprache des Graphen.' }),
       h('p', { text: 'Das Gerüst steht fest: links die Phasen mit ihren Meilensteinen (die Freigabe, die eine Phase öffnet, oben; die Entscheide, mit denen sie endet, unten an der Grenze zur nächsten Phase; modulspezifische dazwischen), oben die Module. Projektsteuerung und Projektführung haben je eine eigene Spalte, Projektgrundlagen liegt in der Initialisierung über drei.' }),
       h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Ergebnisse stehen wie in Abbildung 1: Was dort in einer Phase auf gleicher Höhe liegt, beginnt quer über alle Spalten auf gleicher Höhe, und was später entsteht, steht weiter unten. Ergebnisse ohne Kasten in der Abbildung folgen darunter, in jeder Phase in derselben Reihenfolge. Haben aufeinanderfolgende Phasen eines Moduls genau dieselben Aufgaben und Ergebnisse (Projektführung von Konzept bis Einführung), stehen sie nur einmal, in einem Feld über diese Phasen. Steht ein Ergebnis im Feld unter mehreren Aufgaben, ist nur das erste Vorkommen kräftig, die weiteren sind blass.' }),
-      h('p', { text: 'Pfeile: die Abhängigkeiten zwischen Ergebnissen aus Abbildung 1. Sie laufen nur in den freien Gassen — senkrecht neben den Spalten, waagrecht über jeder Stufe — und zeigen meist von oben auf das Ergebnis, das daraus entsteht; wo mehrere dieselbe Gasse nehmen, laufen sie zusammen wie die Sammelschienen der Grafik. Zeigen auf ein Ergebnis hebt seine Pfeile hervor. Ist «Pfeile» in der Leiste aus, erscheinen nur diese.' }),
+      h('p', { text: 'Pfeile: der Fluss der Abbildung 1. Ist «Pfeile» in der Leiste an, stehen nur die Ergebnisse, die in der Abbildung einen Kasten haben, und die Pfeile führen von Kasten zu Kasten — was daraus entsteht, steht darunter. Die übrigen Ergebnisse eines Feldes (Checklisten, Listen, Protokolle …) klappt «+N» unten im Feld auf; sie sind gestrichelt. Zeigen auf ein Ergebnis hebt seine Pfeile hervor. Ist «Pfeile» aus, stehen alle Ergebnisse ohne Pfeile. Pfeile gibt es nur, wenn allein Ergebnisse eingeblendet sind.' }),
       h('p', { text: 'Filter (Icon neben der Suche): Ist etwas gefiltert, nennt es die rote Pille in der Leiste; ein Klick darauf öffnet den Filter, × hebt ihn auf. Phasen und Module blenden Zeilen und Spalten aus — die übrigen werden breiter. Der Trichter neben einem Modulkopf oder einer Phase tut dasselbe; ein zweiter Klick zeigt wieder alle. Eine Rolle (die drei Linien: verantwortlich, beteiligt oder beides) und «Nur Entscheide» (Raute) lassen nur die passenden Aufgaben stehen; Felder ohne Treffer bleiben leer, Meilensteine, die keine dieser Aufgaben erreicht, treten zurück. Der Filter steht in der Adresse und lässt sich so teilen.' }),
       h('p', { text: 'Inhaltsseite (Icon neben dem Filter, Trennlinie ziehbar): Ein Klick auf ein Element, eine Phase oder einen Modulkopf zeigt seine Seite aus dem Handbuch und darunter «Im Raster» — wo es überall steht; eine Zeile springt ins Feld, ein Name wählt das Element. Ein Klick auf die freie Fläche eines Feldes zeigt seine Bilanz: Aufgaben, Entscheide, Meilensteine, Rollen und Ergebnisse. Ein zweiter Klick oder Esc hebt die Auswahl auf. Ohne Auswahl stehen dort bei gesetztem Filter seine Treffer, Phase für Phase.' })
     ];
@@ -1894,20 +2029,20 @@
       });
     }
 
-    /* Pfeile der Abbildung 1: an zeigt alle, aus nur die des Ergebnisses,
-       auf das man zeigt oder das gewählt ist. Ohne Ergebnisse keine Pfeile. */
+    /* Pfeile der Abbildung 1: an stehen die Kästen der Abbildung im Fluss,
+       die übrigen Ergebnisse eingeklappt; aus alle Ergebnisse ohne Pfeile.
+       Nur mit Ergebnissen allein. */
     function pfeilKnopf() {
       var an = !!sicht.pfeile;
-      var moeglich = !!sicht.ergebnis;
+      var moeglich = flussMoeglich(sicht);
       return h('div', { class: 'gauswahl' }, h('button', {
         type: 'button', class: 'grail__knopf ra-pfeilknopf', 'aria-pressed': an && moeglich ? 'true' : 'false', disabled: !moeglich,
-        title: !moeglich ? 'Pfeile verbinden Ergebnisse — erst Ergebnisse einblenden'
-          : an ? 'Pfeile der Abbildung 1 zwischen Ergebnissen — nur beim Zeigen' : 'Pfeile der Abbildung 1 zwischen Ergebnissen — alle zeigen',
+        title: !moeglich ? 'Pfeile verbinden die Ergebnisse der Abbildung 1 — nur mit Ergebnissen allein (Rollen und Aufgaben ausblenden)'
+          : an ? 'Pfeile ausblenden und alle Ergebnisse zeigen' : 'Pfeile der Abbildung 1 zeigen, übrige Ergebnisse einklappen',
         on: { click: function () {
           sicht.pfeile = !sicht.pfeile;
           sichtSpeichern(sicht);
-          if (laufende) { laufende.pfeileZeigen(sicht.pfeile); }
-          leisteSetzen();
+          zeichnen();
         } }
       }, [
         HT.ui.symbol(IKONE_PFEIL, 18),

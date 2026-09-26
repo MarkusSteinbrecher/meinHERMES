@@ -95,7 +95,7 @@
   function abbStelle(id, phase, modul) {
     var l = abbLagen ? abbLagen[id] : null;
     if (!l || !l.length) { return null; }
-    var wahl = l.filter(function (p) { return p.phasen.indexOf(phase) !== -1 && p.module.indexOf(modul) !== -1; });
+    var wahl = l.filter(function (p) { return !p.sammel && p.phasen.indexOf(phase) !== -1 && p.module.indexOf(modul) !== -1; });
     if (!wahl.length) { return null; }
     return wahl.reduce(function (min, p) { return Math.min(min, Math.round(p.y / 4) * 10000 + Math.round(p.x)); }, Infinity);
   }
@@ -103,13 +103,22 @@
   /** Höhe des Kastens in Abbildung 1 (Koordinaten der Grafik) für ein
       Ergebnis in Phase und Modul; null, wenn es dort keinen Kasten hat. */
   function abbildungY(id, phase, modul) {
+    var l = abbildungLage(id, phase, modul);
+    return l && !l.sammel ? l.y : null;
+  }
+
+  /** Kasten in Abbildung 1 für ein Ergebnis in Phase und Modul: { x, y }
+      des obersten, sonst der im Sammelkasten «Phasenunabhängig» (mit
+      sammel: true); null, wenn es dort keinen hat. */
+  function abbildungLage(id, phase, modul) {
     var l = abbLagen ? abbLagen[id] : null;
     if (!l) { return null; }
-    var y = null;
+    var wahl = null;
     l.forEach(function (p) {
-      if (p.phasen.indexOf(phase) !== -1 && p.module.indexOf(modul) !== -1 && (y === null || p.y < y)) { y = p.y; }
+      if (p.phasen.indexOf(phase) === -1 || p.module.indexOf(modul) === -1) { return; }
+      if (!wahl || (wahl.sammel && !p.sammel) || (!!wahl.sammel === !!p.sammel && p.y < wahl.y)) { wahl = p; }
     });
-    return y;
+    return wahl;
   }
 
   /** Stelle einer Aufgabe: beim ersten ihrer Ergebnisse im Feld. Ein
@@ -859,6 +868,7 @@
     bloecke: bloecke,
     abbildungLagenSetzen: abbildungLagenSetzen,
     abbildungY: abbildungY,
+    abbildungLage: abbildungLage,
     einstieg: einstieg,
     suchen: suchen
   };

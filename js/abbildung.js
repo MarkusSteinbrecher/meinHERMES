@@ -299,7 +299,9 @@
    * nebeneinander), module die des nächsten Modulkopfs darüber, der die
    * Kastenmitte überdeckt (ein Kopf steht für Projektsteuerung und
    * Projektführung). Kästen in der Sammelfläche «Phasenunabhängig» (der
-   * einzige Kasten ohne Eintrag) zählen nicht: sie haben keine Stelle im Ablauf.
+   * einzige Kasten ohne Eintrag) tragen sammel: true und gelten für alle
+   * Phasen, über die die Sammelfläche reicht; eine Stelle im Ablauf haben sie
+   * nicht.
    */
   function lagen(alle) {
     function mitEintrag(k) { return k.eintraege && k.eintraege.length; }
@@ -310,16 +312,27 @@
     alle.forEach(function (k) {
       if (k.art !== 'ergebnis' || !mitEintrag(k)) { return; }
       var mx = k.x + k.w / 2, my = k.y + k.h / 2;
-      if (sammel.some(function (s) { return mx >= s.x && mx <= s.x + s.w && my >= s.y && my <= s.y + s.h; })) { return; }
-      var phasen = balken.filter(function (b) { return my >= b.y && my <= b.y + b.h; })
-        .map(function (b) { return b.eintraege[0].begriff; });
+      /* Im Sammelkasten «Phasenunabhängig» gilt der Kasten für alle Phasen,
+         über die der Sammelkasten reicht, und die Spalte des Sammelkastens;
+         er trägt sammel: true, zählt also nicht für die Stelle im Feld. */
+      var huelle = sammel.filter(function (s) { return mx >= s.x && mx <= s.x + s.w && my >= s.y && my <= s.y + s.h; })[0];
+      var ox = huelle ? huelle.x + huelle.w / 2 : mx, oy = huelle ? huelle.y : k.y;
+      var phasen = balken.filter(function (b) {
+        if (!huelle) { return my >= b.y && my <= b.y + b.h; }
+        /* Die Sammelfläche ragt ein Stück in den Abschluss hinein; es zählt
+           nur, wo sie den grössten Teil des Balkens deckt. */
+        var deckt = Math.min(b.y + b.h, huelle.y + huelle.h) - Math.max(b.y, huelle.y);
+        return deckt >= b.h * 0.6;
+      }).map(function (b) { return b.eintraege[0].begriff; });
       var kopf = null;
       koepfe.forEach(function (q) {
-        if (mx >= q.x && mx <= q.x + q.w && q.y <= k.y && (!kopf || q.y > kopf.y)) { kopf = q; }
+        if (ox >= q.x && ox <= q.x + q.w && q.y <= oy && (!kopf || q.y > kopf.y)) { kopf = q; }
       });
       var module = kopf ? kopf.eintraege.map(function (e) { return e.begriff; }) : [];
       k.eintraege.forEach(function (e) {
-        (aus[e.id] = aus[e.id] || []).push({ y: k.y, x: k.x, phasen: phasen, module: module });
+        var lage = { y: k.y, x: k.x, phasen: phasen, module: module };
+        if (huelle) { lage.sammel = true; }
+        (aus[e.id] = aus[e.id] || []).push(lage);
       });
     });
     return aus;
