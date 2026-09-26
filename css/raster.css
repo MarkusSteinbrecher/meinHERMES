@@ -322,6 +322,25 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
    eines Feldes klappt «+N» unten rechts auf. Aufgeklappt sind sie
    gestrichelt: in der Abbildung stehen sie nicht. */
 .ra-gitter.ist-fluss .ra-feld:not(.ist-offen) .ra-k--weiter { display: none; }
+/* Kästen fester Grösse wie in der Abbildung: schmal, der Name mittig in
+   meist zwei Zeilen, ohne Zeichen der Kategorie (es sind alles Ergebnisse).
+   Die Breite steht auch als KASTEN in js/raster.js. */
+.ra-gitter.ist-fluss .ra-k--ergebnis {
+  width: 82px;
+  min-height: 34px;
+  margin-right: auto;
+  margin-left: auto;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.ra-gitter.ist-fluss .ra-k--ergebnis .gswatch { display: none; }
+.ra-gitter.ist-fluss .ra-k--ergebnis .ra-k__name { padding-top: 0; }
+/* Die schmalen Spalten brauchen etwas kleinere Modulköpfe, sonst bricht
+   «Beschaffung» oder «Einführungsorganisation» mitten im Wort. */
+.ra-gitter.ist-fluss .ra-modulkopf--kopf { padding-left: 3px; padding-right: 3px; }
+.ra-gitter.ist-fluss .ra-modulkopf--kopf .ra-modul { gap: 3px; font-size: 10.5px; }
+.ra-gitter.ist-fluss .ra-modulkopf--kopf .ra-modul .gswatch { width: 13px; height: 13px; }
 .ra-k--weiter { border-style: dashed; }
 .ra-feld__mehr {
   display: block;

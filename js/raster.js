@@ -67,6 +67,15 @@
   var KAT_REIHE = ['rolle', 'aufgabe', 'ergebnis'];
   var KAT_LABEL = { rolle: 'Rollen', aufgabe: 'Aufgaben', ergebnis: 'Ergebnisse' };
 
+  /* Im Fluss haben die Kästen eine feste Breite wie in der Abbildung: die
+     Namen stehen meist in zwei Zeilen, und wo die Abbildung Kästen
+     nebeneinander stellt, passen sie auch hier nebeneinander. 82 px lassen
+     76 px Text — der längste Wortteil («initialisierungs-») braucht 74. */
+  var KASTEN = 82;
+  var KASTEN_LUECKE = 8;
+  var FELD_RAND = 12;          // Rand, Innenabstand und Linie des Feldes
+  var UNTERSPALTE_TOLERANZ = 25;   // Koordinaten der Grafik
+
   var SPEICHER = 'raster-sicht';
   var STANDARD = { rolle: false, aufgabe: false, ergebnis: true, pfeile: true };
 
@@ -686,6 +695,24 @@
     var spalten = {}, spaltenReihe = [];
     var yVon = new global.Map();   // Stück-Element → Höhe in der Abbildung 1
     var xVon = new global.Map();   // … und Lage von links (nur im Fluss)
+    var xJeModul = {};             // Modul → Lagen seiner Kästen von links
+
+    /* Unterspalten eines Moduls in der Abbildung: die Lagen seiner Kästen
+       von links, zu Gruppen zusammengefasst (Organisation, IT-System und
+       IT-Betrieb haben zwei, Projektgrundlagen vier, die übrigen eine). */
+    var unterspaltenCache = {};
+    function unterspalten(modul) {
+      if (unterspaltenCache[modul]) { return unterspaltenCache[modul]; }
+      var xs = (xJeModul[modul] || []).slice().sort(function (u, v) { return u - v; });
+      var gruppen = [];
+      xs.forEach(function (x) {
+        var g = gruppen[gruppen.length - 1];
+        if (g && x - g.von <= UNTERSPALTE_TOLERANZ) { g.summe += x; g.zahl++; }
+        else { gruppen.push({ von: x, summe: x, zahl: 1 }); }
+      });
+      var mitten = gruppen.map(function (g) { return g.summe / g.zahl; });
+      return (unterspaltenCache[modul] = { n: Math.max(1, mitten.length), mitten: mitten });
+    }
     gruppen.forEach(function (gr) {
       var x = gr.x, mehr = gr.phasen.length > 1;
       var leer = !x.bloecke.length;
@@ -727,7 +754,11 @@
       stuecke.forEach(function (st) {
         var id = st.key.slice(2), lage = null;
         for (var i = 0; i < phasen.length && !lage; i++) { lage = HT.graph.abbildungLage(id, phasen[i], modul); }
-        if (lage) { xVon.set(st.el, lage.x); return; }
+        if (lage) {
+          xVon.set(st.el, lage.x);
+          (xJeModul[modul] = xJeModul[modul] || []).push(lage.x);
+          return;
+        }
         st.weiter = true;
         st.el.classList.add('ra-k--weiter');
         zahl++;
@@ -775,6 +806,14 @@
       });
       sp.anzahl = 1;
     });
+
+    /* Im Fluss ist jede Spalte so breit wie ihre Unterspalten fester Kästen. */
+    if (fluss) {
+      gitter.style.gridTemplateColumns = 'var(--ra-band) ' + a.spalten.map(function (s) {
+        var n = unterspalten(s).n;
+        return 'minmax(' + (n * KASTEN + (n - 1) * KASTEN_LUECKE + FELD_RAND) + 'px, ' + n + 'fr)';
+      }).join(' ');
+    }
 
     buehne.appendChild(gitter);
 
@@ -978,31 +1017,16 @@
       });
     }
 
-    /* Im Fluss stehen die Kästen einer Stufe (gleiche Höhe in der
-       Abbildung) nebeneinander wie dort: die Spur folgt der Lage von links,
-       über die Breite der Kästen im Feld verteilt; ist sie in der Stufe schon
-       besetzt, die nächste freie. Eingeklappte der Reihe nach. */
-    function flussSpuren(f, anzahl) {
-      var spurVon = {}, kaesten = [], i = 0;
+    /* Im Fluss steht jeder Kasten in der Unterspalte, in der er in der
+       Abbildung steht — in allen Phasen des Moduls dieselbe, so gehen die
+       Pfeile gerade hinunter. Eingeklappte der Reihe nach. */
+    function flussSpuren(f, anzahl, modul) {
+      var spurVon = {}, i = 0, u = unterspalten(modul);
       f.stuecke.forEach(function (st) {
         if (st.weiter) { spurVon[st.key] = i++ % anzahl; return; }
-        kaesten.push({ key: st.key, x: xVon.get(st.el) || 0, y: yVon.get(st.el) });
-      });
-      if (!kaesten.length) { return spurVon; }
-      var xs = kaesten.map(function (k) { return k.x; });
-      var xmin = Math.min.apply(null, xs), xmax = Math.max.apply(null, xs);
-      var stufe = [], anfang = null;
-      kaesten.forEach(function (k, j) {
-        var y = k.y === null || k.y === undefined ? Infinity : k.y;
-        if (anfang === null || y - anfang > STUFE_TOLERANZ) { stufe = []; anfang = y; }
-        var soll = xmax > xmin ? Math.round((k.x - xmin) / (xmax - xmin) * (anzahl - 1)) : 0;
-        var wahl = soll;
-        for (var d = 1; stufe.indexOf(wahl) !== -1 && d < anzahl * 2; d++) {
-          var c = soll + (d % 2 ? (d + 1) / 2 : -d / 2);
-          if (c >= 0 && c < anzahl && stufe.indexOf(c) === -1) { wahl = c; }
-        }
-        stufe.push(wahl);
-        spurVon[k.key] = wahl;
+        var x = xVon.get(st.el) || 0, beste = 0;
+        u.mitten.forEach(function (m, j) { if (Math.abs(m - x) < Math.abs(u.mitten[beste] - x)) { beste = j; } });
+        spurVon[st.key] = u.n === anzahl || u.n < 2 ? Math.min(beste, anzahl - 1) : Math.round(beste / (u.n - 1) * (anzahl - 1));
       });
       return spurVon;
     }
@@ -1030,6 +1054,7 @@
       if (!breiten || breiten.schluessel !== schluessel) { breiten = { schluessel: schluessel, werte: {} }; }
       var neu = spaltenReihe.filter(function (sp) {
         var min = sp.breit ? 100 : 190, abstand = sp.breit ? 6 : 8;
+        if (fluss) { sp.soll = unterspalten(sp.modul).n; return sp.soll !== sp.anzahl; }
         var w = breiten.werte[sp.modul];
         if (w === undefined) { w = breiten.werte[sp.modul] = sp.felder[0].inhalt.clientWidth; }
         sp.soll = Math.max(1, Math.floor((w + abstand) / (min + abstand)));
@@ -1042,7 +1067,7 @@
       var mehr = neu.filter(function (sp) { return sp.anzahl > 1; });
       if (fluss) {
         mehr.forEach(function (sp) {
-          sp.felder.forEach(function (f) { spurenFuellen(f, sp.anzahl, flussSpuren(f, sp.anzahl)); });
+          sp.felder.forEach(function (f) { spurenFuellen(f, sp.anzahl, flussSpuren(f, sp.anzahl, sp.modul)); });
         });
         mehr = [];
       }
