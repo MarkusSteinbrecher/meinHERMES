@@ -291,7 +291,8 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 
 /* Aufgaben und Ergebnisse ohne Zeichen, immer mindestens zwei Zeilen hoch:
    ein kurzer Name steht mittig in einem gleich hohen Kasten. */
-.ra-k--aufgabe, .ra-k--ergebnis { align-items: center; min-height: calc(2.5em + 8px); }
+/* Links etwas Luft, damit der Text nicht an der Kante klebt. */
+.ra-k--aufgabe, .ra-k--ergebnis { align-items: center; min-height: calc(2.5em + 8px); padding-left: 7px; padding-right: 4px; }
 .ra-k--aufgabe .ra-k__name, .ra-k--ergebnis .ra-k__name { padding-top: 0; }
 .ra-k--aufgabe { background: var(--gk-aufgabe-bg); border-color: var(--gk-aufgabe); color: var(--gk-aufgabe-fg); }
 .ra-k--ergebnis { background: var(--gk-ergebnis-bg); border-color: color-mix(in srgb, var(--gk-ergebnis) 55%, #fff); color: var(--gk-ergebnis-fg); }
@@ -345,6 +346,8 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
    Die Breite steht auch als KASTEN in js/raster.js. */
 .ra-gitter.ist-fluss .ra-k--ergebnis {
   width: 82px;
+  padding-left: 3px;
+  padding-right: 3px;
   margin-right: auto;
   margin-left: auto;
   justify-content: center;
