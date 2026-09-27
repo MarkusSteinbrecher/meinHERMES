@@ -146,7 +146,8 @@
      aria-current) und/oder eigener Inhalt (die Auswahl des Überblicks, die
      Wahl des Zuordnens), beides zusammen in der Mitte; rechts das Info-Icon.
      opt: { label, links: [{ href, text, nr, pfade, aktiv }], inhalt,
-     inhaltLabel, info: { titel, inhalt(), bereit } }. Passt die Mitte nicht
+     inhaltLabel, info: { titel, inhalt(), bereit }, rechts: Knopf ganz
+     rechts, hinter dem Info-Icon (36 px breit) }. Passt die Mitte nicht
      (schmal), rollt sie, und der aktive Link steht in ihrer Mitte. */
   function unterleisteSetzen(opt) {
     if (!opt) { kopfPlatz('unterleiste', null); return; }
@@ -172,7 +173,8 @@
     }
     var kinder = [h('div', { class: 'unterleiste__mitte' }, mitte)];
     if (opt.info) { kinder.push(infoBauen(opt.info)); }
-    var leiste = h('div', { class: 'unterleiste__inner' + (opt.info ? ' unterleiste__inner--info' : '') }, kinder);
+    if (opt.rechts) { kinder.push(opt.rechts); }
+    var leiste = h('div', { class: 'unterleiste__inner' + (opt.info ? ' unterleiste__inner--info' : '') + (opt.rechts ? ' unterleiste__inner--rechts' : '') }, kinder);
     kopfPlatz('unterleiste', leiste);
 
     var rolle = leiste.querySelector('.unterleiste__mitte');

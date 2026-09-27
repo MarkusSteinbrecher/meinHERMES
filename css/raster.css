@@ -537,7 +537,7 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 
 /* Filter und Inhaltsseite teilen sich den Platz neben der Suche. */
 .ra-werkzeuge { display: flex; align-items: center; gap: 2px; }
-.kopf-werkzeug .ra-seiteknopf[aria-pressed="true"] { color: var(--akzent-text); }
+.ra-seiteknopf[aria-pressed="true"] { color: var(--akzent-text); }
 
 .ra-trenner { flex: 0 0 9px; }
 .ra-inhalt { position: relative; flex: 0 0 var(--ra-seite, 400px); width: var(--ra-seite, 400px); min-width: 0; min-height: 0; }

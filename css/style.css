@@ -384,6 +384,8 @@ main:focus { outline: none; }
   padding: 0 16px;
 }
 .unterleiste__inner--info::before { content: ""; flex: 0 0 36px; }
+/* Ein Knopf hinter dem Info-Icon: links gleich viel Platz, damit die Mitte mittig bleibt. */
+.unterleiste__inner--info.unterleiste__inner--rechts::before { flex-basis: 80px; }
 /* Auto-Ränder zentrieren, solange alles passt; läuft die Zeile über, fallen
    sie auf 0, und sie rollt vom Anfang an (justify-content: center schnitte
    den Anfang ab). */

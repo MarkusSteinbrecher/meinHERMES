@@ -45,7 +45,7 @@
    trifft der Projektleiter in welchen Phasen und Modulen? Der Filter steht in
    der Adresse (#/raster?rolle=…&entscheide=1).
 
-   Inhaltsseite rechts (Icon neben dem Filter): Ein Klick auf ein Element,
+   Inhaltsseite rechts (Icon ganz rechts in der Leiste): Ein Klick auf ein Element,
    eine Phase oder einen Modulkopf zeigt dessen Seite (js/inhaltsseite.js,
    dieselbe wie im Überblick) und darunter «Im Raster»; ohne Auswahl die
    Treffer des Filters. */
@@ -1450,7 +1450,7 @@
       h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Ergebnisse stehen wie in Abbildung 1: Was später entsteht, steht weiter unten; mit Pfeilen beginnt zudem, was dort in einer Phase auf gleicher Höhe liegt, quer über alle Spalten auf gleicher Höhe. Ergebnisse ohne Kasten in der Abbildung folgen darunter, in jeder Phase in derselben Reihenfolge. Haben aufeinanderfolgende Phasen eines Moduls genau dieselben Aufgaben und Ergebnisse (Projektführung von Konzept bis Einführung), stehen sie nur einmal, in einem Feld über diese Phasen. Steht ein Ergebnis im Feld unter mehreren Aufgaben, ist nur das erste Vorkommen kräftig, die weiteren sind blass.' }),
       h('p', { text: 'Pfeile: der Fluss der Abbildung 1. Ist «Pfeile» in der Leiste an, stehen nur die Ergebnisse, die in der Abbildung einen Kasten haben, und die Pfeile führen von Kasten zu Kasten — was daraus entsteht, steht darunter. Die übrigen Ergebnisse eines Feldes (Checklisten, Listen, Protokolle …) klappt «+N» unten im Feld auf; sie sind gestrichelt. Zeigen auf ein Ergebnis hebt seine Pfeile hervor. Ist «Pfeile» aus, stehen alle Ergebnisse ohne Pfeile. Pfeile gibt es nur, wenn allein Ergebnisse eingeblendet sind.' }),
       h('p', { text: 'Filter (Icon neben der Suche): Ist etwas gefiltert, nennt es die rote Pille in der Leiste; ein Klick darauf öffnet den Filter, × hebt ihn auf. Phasen und Module blenden Zeilen und Spalten aus — die übrigen werden breiter. Der Trichter neben einem Modulkopf oder einer Phase tut dasselbe; ein zweiter Klick zeigt wieder alle. Eine Rolle (die drei Linien: verantwortlich, beteiligt oder beides) und «Nur Entscheide» (Raute) lassen nur die passenden Aufgaben stehen; Felder ohne Treffer bleiben leer, Meilensteine, die keine dieser Aufgaben erreicht, treten zurück. Der Filter steht in der Adresse und lässt sich so teilen.' }),
-      h('p', { text: 'Inhaltsseite (Icon neben dem Filter, Trennlinie ziehbar): Ein Klick auf ein Element, eine Phase oder einen Modulkopf zeigt seine Seite aus dem Handbuch und darunter «Im Raster» — wo es überall steht; eine Zeile springt ins Feld, ein Name wählt das Element. Ein Klick auf die freie Fläche eines Feldes zeigt seine Bilanz: Aufgaben, Entscheide, Meilensteine, Rollen und Ergebnisse. Ein zweiter Klick oder Esc hebt die Auswahl auf. Ohne Auswahl stehen dort bei gesetztem Filter seine Treffer, Phase für Phase.' }),
+      h('p', { text: 'Inhaltsseite (Icon ganz rechts in der Leiste, Trennlinie ziehbar): Ein Klick auf ein Element, eine Phase oder einen Modulkopf zeigt seine Seite aus dem Handbuch und darunter «Im Raster» — wo es überall steht; eine Zeile springt ins Feld, ein Name wählt das Element. Ein Klick auf die freie Fläche eines Feldes zeigt seine Bilanz: Aufgaben, Entscheide, Meilensteine, Rollen und Ergebnisse. Ein zweiter Klick oder Esc hebt die Auswahl auf. Ohne Auswahl stehen dort bei gesetztem Filter seine Treffer, Phase für Phase.' }),
       h('p', { text: 'Rundgang (zweiter Reiter der Inhaltsseite): drei Wege Schritt für Schritt durch die Methode — entlang der Ergebnisse, Phase für Phase mit allen Aufgaben, Rolle für Rolle mit ihren Verantwortungen. Links zeigt das Raster, worum es im Schritt geht, und hebt es hervor; rechts steht, was es bedeutet. Weiter und zurück mit den Knöpfen oder den Pfeiltasten. Solange der Rundgang läuft, bestimmt der Schritt, was das Raster zeigt; der eigene Filter und die eigene Sicht kommen zurück, wenn man ihn beendet (× in der Leiste oder oben im Rundgang). Ein Klick auf ein Element zeigt seine Seite im Reiter «Handbuch»; Esc führt zurück zum Schritt.' })
     ];
   }
@@ -1510,10 +1510,10 @@
       title: 'Ziehen ändert die Breite · Doppelklick setzt zurück'
     }, h('span', { class: 'ub-trenner__strich', 'aria-hidden': 'true' }));
     var seiteKnopf = h('button', {
-      type: 'button', class: 'graph-werkzeug ra-seiteknopf',
+      type: 'button', class: 'unterleiste__info ra-seiteknopf',
       on: { click: function () { seiteOeffnen(!seiteZustand.offen); } }
     }, HT.ui.symbol(IKONE_SEITE, 18));
-    HT.app.kopfWerkzeug(h('span', { class: 'ra-werkzeuge' }, [filterKnopf, seiteKnopf]));
+    HT.app.kopfWerkzeug(h('span', { class: 'ra-werkzeuge' }, [filterKnopf]));
 
     function breitenSchluessel() {
       return global.innerWidth + '|' + (seiteZustand.offen ? seiteZustand.breite : 0);
@@ -2552,7 +2552,9 @@
             })
           ])
         ] : []),
-        info: { titel: 'Gesamtbild', inhalt: infoInhalt }
+        info: { titel: 'Gesamtbild', inhalt: infoInhalt },
+        /* Ganz rechts: die Inhaltsseite ein- und ausblenden. */
+        rechts: seiteKnopf
       });
     }
 
