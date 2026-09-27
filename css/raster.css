@@ -608,6 +608,174 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 .ra-ort__block { display: block; }
 .ra-ort__ms { display: block; color: var(--gk-ergebnis-fg); }
 
+/* --- Rundgang (js/rundgang.js) ------------------------------------------------ */
+
+/* Reiter der Inhaltsseite: Handbuch | Rundgang. */
+.ra-reiter {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 20px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--ub-linie);
+  background: var(--ub-grund);
+}
+.ra-reiter__knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: -1px;
+  padding: 12px 0 9px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-leise);
+  font: 700 11.5px/1.2 var(--schrift);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ra-reiter__knopf:hover { color: var(--text); }
+.ra-reiter__knopf[aria-selected="true"] { color: var(--text); border-bottom-color: var(--akzent); }
+.ra-reiter__zahl {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--akzent-schwach);
+  color: var(--akzent-text);
+  font-size: 10.5px;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Die Wahl der drei Wege. */
+.ra-tourwahl { padding-bottom: 18px; }
+.ra-tourwahl__laden { margin: 0; padding: 0 32px; color: var(--text-leise); font-size: 14px; }
+.ra-tourwahl__liste { display: grid; gap: 10px; padding: 0 32px 32px; }
+.ra-tourwahl__weg {
+  display: grid;
+  gap: 5px;
+  padding: 14px 16px 13px;
+  border: 1px solid var(--rand);
+  border-radius: var(--radius-s);
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ra-tourwahl__weg:hover, .ra-tourwahl__weg:focus-visible { border-color: var(--akzent); }
+.ra-tourwahl__weg:disabled { opacity: .5; cursor: default; }
+.ra-tourwahl__titel { font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
+.ra-tourwahl__kurz { font-size: 13.5px; line-height: 1.45; color: var(--text-weich); }
+.ra-tourwahl__zahl { font-size: 12px; color: var(--text-leise); }
+
+/* Ein Schritt: Kopf mit Weg und Stand, Text, Listen, unten fest Zurück/Weiter. */
+.ra-tour__kopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px 32px 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-leise);
+}
+.ra-tour__weg { flex: 0 0 auto; color: var(--text); }
+.ra-tour__kapitel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ra-tour__kapitel::before { content: '·'; margin-right: 8px; }
+.ra-tour__kopf .ra-inhalt__zu { margin-left: auto; }
+.ra-tour__fortschritt { height: 3px; margin: 10px 32px 0; border-radius: 2px; background: var(--rand-fein); overflow: hidden; }
+.ra-tour__fortschritt span { display: block; height: 100%; background: var(--akzent); transition: width .25s; }
+.ra-tour__text.ub-kopf { padding-top: 20px; }
+.ra-tour__zahlen { margin: 10px 0 0; font-size: 14px; line-height: 1.5; color: var(--text-weich); }
+.ra-tour__punkte { margin: 14px 0 0; padding-left: 1.1em; font-size: 14.5px; line-height: 1.5; text-wrap: pretty; }
+.ra-tour__punkte li + li { margin-top: 6px; }
+.ra-tour__spalten { display: grid; gap: 16px; }
+.ra-tour__spalte .ra-tour__punkte { margin-top: 4px; font-size: 14px; }
+.ra-tour__folge { color: var(--text-weich); }
+.ra-ort__wo--text { cursor: default; }
+.ra-tour__titel { hyphens: manual; -webkit-hyphens: manual; }
+.ra-tour__verweis { margin: 22px 32px 0; font-size: 14px; color: var(--text-leise); }
+.ra-tour__alle { margin: 26px 32px 24px; padding-top: 16px; border-top: 1px solid var(--ub-linie); }
+.ra-tour__alle > summary {
+  cursor: pointer;
+  font: 700 11px/1.4 var(--schrift);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ub-leise);
+}
+.ra-tour__alle > summary:hover { color: var(--text); }
+.ra-tour__gruppe { margin-top: 14px; }
+.ra-tour__schritte { list-style: none; margin: 0; padding: 0; }
+.ra-tour__schritt {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  padding: 3px 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: 13.5px/1.4 var(--schrift);
+  text-align: left;
+  cursor: pointer;
+}
+.ra-tour__schritt:hover { color: var(--akzent-text); }
+.ra-tour__schritt[aria-current="step"] { color: var(--akzent-text); font-weight: 700; }
+.ra-tour__nr { flex: 0 0 2em; color: var(--text-leise); font-variant-numeric: tabular-nums; text-align: right; }
+.ra-tour__fuss {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 32px;
+  border-top: 1px solid var(--ub-linie);
+  background: var(--ub-grund);
+}
+.ra-tour__knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--rand);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text);
+  font: 600 13.5px/1 var(--schrift);
+  cursor: pointer;
+}
+.ra-tour__knopf:first-child { padding-left: 9px; }
+.ra-tour__knopf--weiter { padding: 0 9px 0 14px; border-color: var(--akzent); background: var(--akzent); color: #fff; }
+.ra-tour__knopf--weiter:hover { filter: brightness(.94); }
+.ra-tour__knopf:disabled { opacity: .4; cursor: default; }
+.ra-tour__stand { color: var(--text-leise); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* Im Raster: Solange der Rundgang läuft, filtert der Schritt — die
+   Trichter sind aus. Die Stellen des Schritts bleiben kräftig, der Rest tritt
+   zurück; hervorgehobene Elemente und Felder tragen den Ring. */
+.ra.ist-rundgang .ra-trichter { display: none; }
+.ra-gitter.hat-tour .ra-k:not(.ist-tour), .ra-gitter.hat-tour .ra-ms:not(.ist-tour), .ra-gitter.hat-tour .ra-feld__mehr { opacity: .2; }
+.ra-gitter.hat-tour .ra-feld.ist-tour .ra-k:not(.ra-k--wieder),
+.ra-gitter.hat-tour .ra-feld.ist-tour-bereich .ra-k:not(.ra-k--wieder),
+.ra-gitter.hat-tour .ra-feld.ist-tour .ra-feld__mehr,
+.ra-gitter.hat-tour .ra-feld.ist-tour-bereich .ra-feld__mehr,
+.ra-gitter.hat-tour .ra-phase.ist-tour-bereich .ra-ms:not(.ist-blass),
+.ra-gitter.hat-tour .ra-k.ist-tour-nachbar,
+.ra-gitter.hat-tour .ra-k.ist-gleich { opacity: 1; }
+.ra-gitter.hat-tour .ra-feld.ist-tour .ra-k--wieder,
+.ra-gitter.hat-tour .ra-feld.ist-tour-bereich .ra-k--wieder { opacity: .45; }
+.ra-k.ist-tour, .ra-ms.ist-tour, .ra-feld.ist-tour { box-shadow: 0 0 0 2px var(--akzent); }
+.ra-phase.ist-tour-bereich .ra-phase__name { background: var(--gk-phase); color: var(--gk-phase-glyph-auf); }
+.ra-modul.ist-tour .ra-modul__name { color: var(--akzent-text); }
+.ra-pfeile.hat-tour .ra-pfeil { opacity: .12; }
+.ra-pfeile.hat-tour .ra-pfeil.ist-tour-bereich, .ra-pfeile.hat-tour .ra-pfeil.ist-tour { opacity: 1; }
+.ra-pfeil.ist-tour { stroke: var(--akzent); stroke-width: 1.7; marker-end: url(#ra-spitze-an); }
+
 /* Schmal ist für eine zweite Spalte kein Platz. */
 @media (max-width: 699.98px) {
   .ra-trenner, .ra-inhalt, .ra-seiteknopf { display: none; }
