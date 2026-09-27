@@ -1,5 +1,4 @@
-/* meinHERMES — Inhaltsseite eines Elements, gemeinsam für den Überblick
-   (js/ueberblick.js) und das Raster (js/raster.js).
+/* meinHERMES — Inhaltsseite eines Elements im Überblick (js/raster.js).
 
    Zu jedem Element dieselben Teile in derselben Reihenfolge: Kopf mit
    Zeichen der Kategorie, Kicker (Ergebnistyp oder Kategorie), Siegel

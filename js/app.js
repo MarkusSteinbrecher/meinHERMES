@@ -7,9 +7,10 @@
   var HT = global.HT = global.HT || {};
   var h = HT.ui.h;
 
-  /* Der Graph ist seit 2026-09-11 eine Sicht des Überblicks (#/graph leitet
-     dorthin weiter); Lernkarten und Quiz sind seit 2026-09-11 Teile des
-     Trainers (#/trainer?teil=lernkarten, #/trainer?teil=quiz). */
+  /* Der Überblick ist seit 2026-09-27 das Raster (js/raster.js); #/raster
+     und der frühere Graph (#/graph) leiten dorthin. Lernkarten und Quiz sind
+     seit 2026-09-11 Teile des Trainers (#/trainer?teil=lernkarten,
+     #/trainer?teil=quiz). */
   var ROUTEN = [
     { name: 'ueberblick', label: 'Überblick',  kurz: 'Überblick', pfade: ['M3.5 4.5h17v15h-17Z', 'M3.5 9h17', 'M9 9v10.5', 'M14.5 9v10.5'] },
     { name: 'trainer',    label: 'Trainer',    kurz: 'Trainer',  pfade: ['M4 5h7v6H4Z', 'M13 13h7v6h-7Z', 'M13 5h7v6h-7Z', 'M4 13h7v6H4Z', 'M6 16l1.6 1.6L10 14.8'] },
@@ -23,9 +24,11 @@
      `params` bringt seine Parameter mit (bestehende wie ?kat= bleiben). */
   var ALIASE = {
     uebersicht: 'handbuch', methode: 'handbuch', lexikon: 'handbuch',
-    /* Die Feldseite (#/feld?phase=…&modul=…) ist seit 2026-09-17 ein Schritt
-       des Überblicks: dieselben Parameter setzen dort den Umfang. */
-    feld: { name: 'ueberblick', params: { ansicht: 'phasen' } },
+    /* Die Feldseite (#/feld?phase=…&modul=…): im Überblick ist dieses Feld
+       gewählt (seine Bilanz rechts). */
+    feld: 'ueberblick',
+    raster: 'ueberblick',
+    graph: 'ueberblick',
     lernkarten: { name: 'trainer', params: { teil: 'lernkarten' } },
     quiz: { name: 'trainer', params: { teil: 'quiz' } }
   };

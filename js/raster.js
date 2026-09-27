@@ -1,5 +1,7 @@
-/* meinHERMES — Raster: Gesamtbild und Graph in einer Ansicht.
-   Entwurf, vorerst nur unter #/raster (nicht in der Navigation).
+/* meinHERMES — Überblick (#/ueberblick): das Raster, Gesamtbild und Graph
+   in einer Ansicht. Seit 2026-09-27 die Überblickseite; der frühere
+   Überblick (Abbildung und Graph nebeneinander, js/ueberblick.js) ist
+   entfernt. #/raster, #/graph und #/feld leiten hierher (js/app.js).
 
    Das Gerüst steht fest und folgt Abbildung 1 des Referenzhandbuchs: Phasen
    als Zeilen, Module als Spalten, Projektgrundlagen in der Initialisierung
@@ -43,7 +45,7 @@
    lassen nur die passenden Aufgaben stehen; das Gerüst bleibt, Felder ohne
    Treffer bleiben leer. So beantwortet das Raster etwa: welche Entscheide
    trifft der Projektleiter in welchen Phasen und Modulen? Der Filter steht in
-   der Adresse (#/raster?rolle=…&entscheide=1).
+   der Adresse (#/ueberblick?rolle=…&entscheide=1).
 
    Inhaltsseite rechts (Icon ganz rechts in der Leiste): Ein Klick auf ein Element,
    eine Phase oder einen Modulkopf zeigt dessen Seite (js/inhaltsseite.js,
@@ -1445,7 +1447,7 @@
 
   function infoInhalt() {
     return [
-      h('p', { text: 'Entwurf: das Gesamtbild der Methode wie Abbildung 1 des Referenzhandbuchs — Phasen als Zeilen, Module als Spalten — in der Bildsprache des Graphen.' }),
+      h('p', { text: 'Das Gesamtbild der Methode wie Abbildung 1 des Referenzhandbuchs — Phasen als Zeilen, Module als Spalten — in der Bildsprache des Graphen.' }),
       h('p', { text: 'Das Gerüst steht fest: links die Phasen mit ihren Meilensteinen (die Freigabe, die eine Phase öffnet, oben; die Entscheide, mit denen sie endet, unten an der Grenze zur nächsten Phase; modulspezifische dazwischen), oben die Module. Projektsteuerung und Projektführung haben je eine eigene Spalte, Projektgrundlagen liegt in der Initialisierung über drei.' }),
       h('p', { text: 'Rollen, Aufgaben und Ergebnisse lassen sich in der Leiste einzeln einblenden. Mit Aufgaben steht je Aufgabe die verantwortliche Rolle darüber und die Ergebnisse, die sie in diesem Feld erzeugt, darunter. Zeigen auf ein Element hebt jede seiner Stellen hervor. Die Ergebnisse stehen wie in Abbildung 1: Was später entsteht, steht weiter unten; mit Pfeilen beginnt zudem, was dort in einer Phase auf gleicher Höhe liegt, quer über alle Spalten auf gleicher Höhe. Ergebnisse ohne Kasten in der Abbildung folgen darunter, in jeder Phase in derselben Reihenfolge. Haben aufeinanderfolgende Phasen eines Moduls genau dieselben Aufgaben und Ergebnisse (Projektführung von Konzept bis Einführung), stehen sie nur einmal, in einem Feld über diese Phasen. Steht ein Ergebnis im Feld unter mehreren Aufgaben, ist nur das erste Vorkommen kräftig, die weiteren sind blass.' }),
       h('p', { text: 'Pfeile: der Fluss der Abbildung 1. Ist «Pfeile» in der Leiste an, stehen nur die Ergebnisse, die in der Abbildung einen Kasten haben, und die Pfeile führen von Kasten zu Kasten — was daraus entsteht, steht darunter. Die übrigen Ergebnisse eines Feldes (Checklisten, Listen, Protokolle …) klappt «+N» unten im Feld auf; sie sind gestrichelt. Zeigen auf ein Ergebnis hebt seine Pfeile hervor. Ist «Pfeile» aus, stehen alle Ergebnisse ohne Pfeile. Pfeile gibt es nur, wenn allein Ergebnisse eingeblendet sind.' }),
@@ -1486,6 +1488,8 @@
       var feldTeile = String(params.feld).split('|');
       if (feldTeile.length === 2) { feldWahl = { phase: feldTeile[0], modul: feldTeile[1] }; }
     }
+    /* Alte Adressen der Feldseite (#/feld?phase=…&modul=…): dieses Feld wählen. */
+    if (!auswahl && !feldWahl && params.phase && params.modul) { feldWahl = { phase: String(params.phase), modul: String(params.modul) }; }
     var gezeichnet = null;
 
     /* Rundgang (js/rundgang.js): der Reiter der Inhaltsseite und der
@@ -1609,7 +1613,7 @@
       if (auswahl) { q.push('id=' + encodeURIComponent(auswahl.id)); }
       if (feldWahl) { q.push('feld=' + encodeURIComponent(feldWahl.phase + '|' + feldWahl.modul)); }
       if (reise) { q.push('tour=' + reise.id, 'schritt=' + (reise.i + 1)); }
-      global.history.replaceState(null, '', '#/raster' + (q.length ? '?' + q.join('&') : ''));
+      global.history.replaceState(null, '', '#/ueberblick' + (q.length ? '?' + q.join('&') : ''));
     }
 
     /* --- Rundgang --- */
@@ -2484,10 +2488,7 @@
         label: 'Gesamtbild',
         inhaltLabel: 'Darstellung',
         inhalt: [
-          h('span', { class: 'lk-leiste__titel' }, [
-            h('span', { text: 'Gesamtbild' }),
-            h('span', { class: 'lk-leiste__entwurf', text: 'Entwurf' })
-          ]),
+          h('span', { class: 'lk-leiste__titel' }, h('span', { text: 'Gesamtbild' })),
           h('span', { class: 'unterleiste__trenner', 'aria-hidden': 'true' }),
           h('div', { class: 'segment', role: 'group', 'aria-label': 'Vorgehensweise' },
             [['klassisch', 'Klassisch'], ['agil', 'Agil']].map(function (o) {
@@ -2622,14 +2623,16 @@
       modelle = {};
       zeichnen();
       if (params.id) { laufende.zeigen(params.id); }
+      /* Alte Adressen (#/raster, #/graph, #/feld) stehen danach als #/ueberblick da. */
+      if (!reiseWunsch) { adresseSetzen(); }
       if (reiseWunsch) {
         if (lp) { wunschErfuellen(); } else { lpHolen(); }
       } else if (reiter === 'rundgang') { lpHolen(); }
     });
   }
 
-  HT.views.raster = {
-    titel: 'Gesamtbild (Entwurf)',
+  HT.views.ueberblick = {
+    titel: 'Überblick',
     nav: 'ueberblick',
     render: render,
     suchtreffer: function (e) {

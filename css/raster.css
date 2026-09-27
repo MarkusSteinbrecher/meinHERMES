@@ -4,21 +4,21 @@
    Elemente in den Kategoriefarben des Graphen (css/graph.css, --gk-*).
    ========================================================================== */
 
-body[data-route="raster"] .view { max-width: none; margin: 0; padding: 0; }
-body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
+body[data-route="ueberblick"] .view { max-width: none; margin: 0; padding: 0; }
+body[data-route="ueberblick"] .unterleiste__inner { padding-inline: 12px; }
 
 @media (min-width: 700px) {
-  body[data-route="raster"] {
+  body[data-route="ueberblick"] {
     height: 100vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     padding-bottom: 0;
   }
-  body[data-route="raster"] .topbar { position: static; flex: 0 0 auto; }
-  body[data-route="raster"] main { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
-  body[data-route="raster"] .view { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
-  body[data-route="raster"] .fusszeile { display: none; }
+  body[data-route="ueberblick"] .topbar { position: static; flex: 0 0 auto; }
+  body[data-route="ueberblick"] main { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
+  body[data-route="ueberblick"] .view { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
+  body[data-route="ueberblick"] .fusszeile { display: none; }
 }
 
 .ra { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
