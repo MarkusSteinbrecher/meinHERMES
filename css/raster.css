@@ -50,7 +50,7 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
   position: sticky;
   top: 0;
   left: 0;
-  z-index: 5;
+  z-index: 12;
   grid-row: 1;
   grid-column: 1;
   display: flex;
@@ -95,7 +95,7 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 .ra-modulkopf--kopf {
   position: sticky;
   top: 0;
-  z-index: 3;
+  z-index: 10;
   align-items: flex-end;
   padding: 14px 4px 9px 5px;
   background: #fff;
@@ -103,6 +103,11 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 }
 
 .ra-modulkopf--kopf .ra-trichter { position: absolute; top: 1px; right: 1px; width: 18px; height: 18px; }
+/* An den Modulköpfen erscheint der Trichter erst beim Zeigen auf den Kopf
+   — sonst stünde über jeder Spalte ein grauer Trichter. Filtert er,
+   bleibt er sichtbar. */
+.ra-modulkopf .ra-trichter:not(.ist-aktiv) { opacity: 0; }
+.ra-modulkopf:hover .ra-trichter, .ra-modulkopf .ra-trichter:focus-visible { opacity: 1; }
 
 /* Projektgrundlagen: kein Platz in der Kopfzeile, der Kopf steht im Feld. */
 .ra-modulkopf--feld { margin-bottom: 8px; }
@@ -176,6 +181,15 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 .ra-ms-gruppe { display: grid; gap: 5px; }
 .ra-ms-gruppe:empty { display: none; }
 .ra-ms-gruppe[data-lage="mitte"] { margin-block: auto; }
+/* Ende: auf der Linie zur nächsten Phase (Lage setzt meilensteineLegen()),
+   die Raute mittig zum Namen. */
+.ra-ms-gruppe[data-lage="ende"] { position: absolute; right: 8px; bottom: 0; left: 35px; }
+.ra-ms-gruppe[data-lage="ende"] .ra-ms { align-items: center; }
+/* Die Linie läuft durch die Raute, nicht durch den Namen. */
+.ra-ms-gruppe[data-lage="ende"] .ra-ms__name { background: #fff; }
+.ra-ms-gruppe[data-lage="ende"] .ra-ms:hover .ra-ms__name,
+.ra-ms-gruppe[data-lage="ende"] .ra-ms.ist-gleich .ra-ms__name { background: none; }
+.ra-ms-gruppe[data-lage="ende"] .ra-ms__raute { margin-top: 0; }
 
 .ra-ms {
   display: flex;
@@ -275,6 +289,10 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 .ra-k--rolle { padding-left: 0; }
 .ra-k:focus-visible { outline: 2px solid var(--fokus); outline-offset: 1px; }
 
+/* Aufgaben und Ergebnisse ohne Zeichen, immer mindestens zwei Zeilen hoch:
+   ein kurzer Name steht mittig in einem gleich hohen Kasten. */
+.ra-k--aufgabe, .ra-k--ergebnis { align-items: center; min-height: calc(2.5em + 8px); }
+.ra-k--aufgabe .ra-k__name, .ra-k--ergebnis .ra-k__name { padding-top: 0; }
 .ra-k--aufgabe { background: var(--gk-aufgabe-bg); border-color: var(--gk-aufgabe); color: var(--gk-aufgabe-fg); }
 .ra-k--ergebnis { background: var(--gk-ergebnis-bg); border-color: color-mix(in srgb, var(--gk-ergebnis) 55%, #fff); color: var(--gk-ergebnis-fg); }
 .ra-k--zustand { background: #fff; }
@@ -323,19 +341,15 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
    gestrichelt: in der Abbildung stehen sie nicht. */
 .ra-gitter.ist-fluss .ra-feld:not(.ist-offen) .ra-k--weiter { display: none; }
 /* Kästen fester Grösse wie in der Abbildung: schmal, der Name mittig in
-   meist zwei Zeilen, ohne Zeichen der Kategorie (es sind alles Ergebnisse).
+   meist zwei Zeilen.
    Die Breite steht auch als KASTEN in js/raster.js. */
 .ra-gitter.ist-fluss .ra-k--ergebnis {
   width: 82px;
-  min-height: 34px;
   margin-right: auto;
   margin-left: auto;
-  align-items: center;
   justify-content: center;
   text-align: center;
 }
-.ra-gitter.ist-fluss .ra-k--ergebnis .gswatch { display: none; }
-.ra-gitter.ist-fluss .ra-k--ergebnis .ra-k__name { padding-top: 0; }
 /* Die schmalen Spalten brauchen etwas kleinere Modulköpfe, sonst bricht
    «Beschaffung» oder «Einführungsorganisation» mitten im Wort. */
 .ra-gitter.ist-fluss .ra-modulkopf--kopf { padding-left: 3px; padding-right: 3px; }

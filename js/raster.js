@@ -416,9 +416,9 @@
     return el;
   }
 
-  /* Ein Element in der Bildsprache des Graphen: farbiger Kreis mit dem
-     Zeichen der Kategorie, daneben der Name; Aufgabe und Ergebnis im Kasten
-     ihrer Farbe, die Rolle ohne Kasten. */
+  /* Ein Element in der Bildsprache des Graphen: Aufgabe und Ergebnis als
+     Kasten ihrer Farbe (ohne Zeichen — die Farbe sagt die Kategorie, und
+     der Name hat mehr Platz), die Rolle ohne Kasten mit ihrem Zeichen. */
   function knoten(k) {
     var e = k.eintrag || HT.daten.eintragMitId(k.id);
     var kat = k.kategorie;
@@ -429,7 +429,7 @@
       dataset: { id: k.id },
       title: k.begriff
     }, [
-      h('span', { class: 'gswatch gswatch--' + kat, 'aria-hidden': 'true' }, HT.ui.katSymbol(kat, 12)),
+      kat === 'rolle' ? h('span', { class: 'gswatch gswatch--' + kat, 'aria-hidden': 'true' }, HT.ui.katSymbol(kat, 12)) : null,
       h('span', { class: 'ra-k__name', text: HT.gesamtbild.trennen(k.begriff) })
     ]);
   }
@@ -592,7 +592,13 @@
         trichter('phase', z.phase)
       ]),
       h('div', { class: 'ra-phase__ms' }, LAGEN.map(function (lage) {
-        return h('div', { class: 'ra-ms-gruppe', dataset: { lage: lage } }, z.meilensteine[lage].map(meilensteinBauen));
+        var liste = z.meilensteine[lage].slice();
+        /* Am Ende steht die Freigabe der nächsten Phase auf der Phasenlinie,
+           der Projektabschluss (Abbruch) als Alternative darüber. */
+        if (lage === 'ende' && liste.length > 1) {
+          liste.sort(function (u, v) { return (v.begriff === 'Meilenstein Projektabschluss') - (u.begriff === 'Meilenstein Projektabschluss'); });
+        }
+        return h('div', { class: 'ra-ms-gruppe', dataset: { lage: lage } }, liste.map(meilensteinBauen));
       }))
     ]);
     el.style.gridRow = String(gitterZeile);
@@ -657,6 +663,9 @@
       bahn.style.gridColumn = '1 / -1';
       gitter.appendChild(bahn);
       var band = phaseBauen(z, zeile);
+      /* Die Meilensteine am Ende ragen in die nächste Phase: jedes Band liegt
+         über dem folgenden. */
+      band.style.zIndex = String(2 + a.zeilen.length - i);
       trichterSetzen(band.querySelector('.ra-trichter'), f.phasen, z.phase, 'phase');
       /* Meilensteine, die der Filter nicht erreicht, treten zurück: bei Rolle
          oder Entscheiden die, die keine gefilterte Aufgabe erzeugt; bei
@@ -1044,7 +1053,26 @@
        Zahl ändert; die Höhen misst eine Spur in der Zielbreite. Erst alles
        lesen, dann alles schreiben — sonst rechnet der Browser das Layout für
        jede Spalte neu. */
+    /* Die grossen Meilensteine am Ende einer Phase stehen auf der Linie zur
+       nächsten, wie die Rauten der Abbildung: die Mitte des letzten auf der
+       Linie. Das Band hält darüber Platz frei, das nächste darunter. */
+    function meilensteineLegen() {
+      var ueberhang = 0;
+      Array.prototype.forEach.call(gitter.querySelectorAll('.ra-phase'), function (band) {
+        var ms = band.querySelector('.ra-phase__ms');
+        var ende = ms.querySelector('.ra-ms-gruppe[data-lage="ende"]');
+        ms.style.paddingTop = (ueberhang ? ueberhang + 8 : 8) + 'px';
+        ueberhang = 0;
+        if (!ende || !ende.lastElementChild) { return; }
+        var halb = ende.lastElementChild.offsetHeight / 2;
+        ende.style.transform = 'translateY(' + halb + 'px)';
+        ms.style.paddingBottom = (ende.offsetHeight - halb + 10) + 'px';
+        ueberhang = halb;
+      });
+    }
+
     function spurenLegen(zusatz) {
+      meilensteineLegen();
       /* Die Breiten hängen nur an den gezeigten Spalten, der Fensterbreite
          und der Breite der Inhaltsseite (zusatz) — die Spuren haben eine feste
          Mindestbreite, der Inhalt zählt nicht: beim Umschalten von Rollen,
