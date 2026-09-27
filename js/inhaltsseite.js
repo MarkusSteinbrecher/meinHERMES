@@ -163,6 +163,24 @@
   }
 
   /**
+   * Wörtlich aus der Elementseite: ohne abschnitt der Anfang (wie der Lead
+   * dieser Seite), sonst die Blöcke des Abschnitts mit diesem Titel.
+   * undefined, solange der Text lädt (beiGeladen(id) folgt); null ohne Text
+   * oder ohne diesen Abschnitt.
+   */
+  function zitat(e, abschnitt, beiGeladen) {
+    var t = text(e, beiGeladen);
+    if (!t) { return hbTexte[e.id] === undefined ? undefined : null; }
+    if (!abschnitt) {
+      var l = leadQuelle(t);
+      return l.bloecke.length ? l.bloecke : null;
+    }
+    var a = hbAbschnitt(t, abschnitt);
+    var bs = a ? (a.bloecke || []).filter(function (b) { return b.t !== 'download'; }) : [];
+    return bs.length ? bs : null;
+  }
+
+  /**
    * Kopf und Abschnitte der Seite zu e, als Liste von Elementen.
    * optionen.beiGeladen(id): der Handbuchtext ist nachgekommen — neu zeichnen.
    */
@@ -253,6 +271,7 @@
     ikoneFuer: ikoneFuer,
     abschnitt: abschnitt,
     seite: seite,
+    zitat: zitat,
     verweise: verweise
   };
 }(window));

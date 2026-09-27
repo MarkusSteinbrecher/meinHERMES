@@ -694,9 +694,67 @@ body[data-route="raster"] .unterleiste__inner { padding-inline: 12px; }
 .ra-tour__spalten { display: grid; gap: 16px; }
 .ra-tour__spalte .ra-tour__punkte { margin-top: 4px; font-size: 14px; }
 .ra-tour__folge { color: var(--text-weich); }
+/* Rolle → Aufgabe → Ergebnis: dieselben Kästen wie im Raster. */
+.ra-ketten { list-style: none; margin: 0; padding: 0; }
+.ra-kette { padding: 10px 0 12px; border-top: 1px solid var(--rand-fein); }
+.ra-kette:first-child { padding-top: 2px; border-top: 0; }
+.ra-kette__wo { display: block; margin-bottom: 7px; }
+.ra-kette__reihe {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) auto minmax(0, 1.1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+.ra-kette__reihe .ra-k { width: 100%; font-size: 11.5px; }
+.ra-kette__reihe .ra-k__name { overflow-wrap: break-word; hyphens: manual; }
+.ra-kette__pfeil { color: var(--text-leise); font-size: 13px; }
+.ra-kette__leer { color: var(--text-leise); font-size: 12px; font-style: italic; }
+.ra-kette__beteiligt { margin: 7px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--text-leise); }
 .ra-ort__wo--text { cursor: default; }
 .ra-tour__titel { hyphens: manual; -webkit-hyphens: manual; }
-.ra-tour__verweis { margin: 22px 32px 0; font-size: 14px; color: var(--text-leise); }
+/* Wörtlich aus dem Handbuch: Quelle darüber, Text mit Linie links. */
+.ra-zitat { margin: 18px 0 0; }
+.ra-zitat__quelle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--akzent-text);
+  font: 700 11px/1.4 var(--schrift);
+  letter-spacing: .08em;
+  text-align: left;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ra-zitat__quelle:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ra-zitat__text {
+  margin: 6px 0 0;
+  padding: 0 0 0 14px;
+  border-left: 3px solid var(--akzent-schwach);
+  font-size: 15px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.ra-zitat__text p { margin: 0; }
+.ra-zitat__text p + p, .ra-zitat__text ul, .ra-zitat__text ol { margin-top: 8px; }
+.ra-zitat__text ul, .ra-zitat__text ol { padding-left: 1.1em; }
+.ra-zitat__mehr {
+  display: inline-block;
+  margin: 6px 0 0 17px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-leise);
+  font: 600 13px/1.4 var(--schrift);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.ra-zitat__mehr:hover { color: var(--akzent-text); }
+.ra-zitat__laden { margin: 16px 0 0; color: var(--text-leise); font-size: 14px; }
+/* Eigene Sätze: nur was das Raster zeigt oder was die Daten zählen. */
+.ra-tour__hinweis { margin: 14px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--text-weich); }
+.ra-kette__ergebnisse { display: grid; gap: 4px; min-width: 0; }
 .ra-tour__alle { margin: 26px 32px 24px; padding-top: 16px; border-top: 1px solid var(--ub-linie); }
 .ra-tour__alle > summary {
   cursor: pointer;

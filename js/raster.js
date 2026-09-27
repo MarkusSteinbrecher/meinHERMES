@@ -2025,9 +2025,79 @@
       return h('li', { class: 'ra-ort ra-ort--treffer' }, h('div', { class: 'ra-ort__was' }, inhalt));
     }
 
-    /* Ein Schritt: oben der Weg, Stand und ×; dann Kicker, Titel, Text und
-       Punkte aus dem Lernpfad, die Listen aus unseren Daten, alle Schritte
-       zum Springen; unten fest Zurück und Weiter. */
+    /* --- Zitate im Rundgang ---
+       Wörtlich aus dem Handbuch: die Elementseite (HT.inhaltsseite.zitat)
+       oder ein Abschnitt des Referenzhandbuchs. Lange Texte enden sichtbar
+       mit «Weiterlesen»; der Rest steht eine Stelle weiter. */
+    var rhbTexte = {};
+    function rhbAbschnitt(kapitel, nummer) {
+      var k = rhbTexte[kapitel];
+      if (k === undefined) {
+        rhbTexte[kapitel] = 'laedt';
+        HT.daten.rhbKapitel(kapitel).then(function (x) { rhbTexte[kapitel] = x || null; })
+          .catch(function () { rhbTexte[kapitel] = null; })
+          .then(zitatNachgeladen);
+        return undefined;
+      }
+      if (k === 'laedt') { return undefined; }
+      if (!k) { return null; }
+      return (k.abschnitte || []).filter(function (a) { return a.nummer === nummer; })[0] || null;
+    }
+
+    function zitatNachgeladen() {
+      if (reise && reiter === 'rundgang' && document.body.contains(huelle)) { inhaltZeichnen(); }
+    }
+
+    var ZITAT_LAENGE = 1400;
+    function kuerzen(bs) {
+      var aus = [], n = 0;
+      for (var j = 0; j < bs.length; j++) {
+        var l = JSON.stringify(bs[j]).length;
+        if (aus.length && n + l > ZITAT_LAENGE) { return { bloecke: aus, mehr: true }; }
+        aus.push(bs[j]);
+        n += l;
+      }
+      return { bloecke: aus, mehr: false };
+    }
+
+    function imFenster(ev) {
+      if (!HT.handbuch || !HT.handbuch.imFenster) { return; }
+      ev.preventDefault();
+      HT.handbuch.imFenster(ev.currentTarget.getAttribute('href'));
+    }
+
+    function zitatBlock(q) {
+      var bs, quelle, mehr;
+      var laden = h('p', { class: 'ra-zitat__laden', text: 'Handbuchtext wird geladen …' });
+      if (q.rhb) {
+        var ab = rhbAbschnitt(q.rhb, q.nummer);
+        if (ab === undefined) { return laden; }
+        if (!ab) { return null; }
+        bs = ab.bloecke || [];
+        var adresse = HT.handbuch.adresse(q.rhb, q.nummer);
+        quelle = h('a', { class: 'ra-zitat__quelle', href: adresse, text: 'Referenzhandbuch ' + q.nummer + ' · ' + ab.titel, on: { click: imFenster } });
+        mehr = h('a', { class: 'ra-zitat__mehr', href: adresse, text: 'Weiterlesen im Handbuch', on: { click: imFenster } });
+      } else {
+        var e = HT.daten.eintragMitId(q.element);
+        if (!e) { return null; }
+        bs = HT.inhaltsseite.zitat(e, q.abschnitt, zitatNachgeladen);
+        if (bs === undefined) { return laden; }
+        if (!bs) { return null; }
+        var wahl = function () { waehlen(e.id, false); };
+        quelle = h('button', { type: 'button', class: 'ra-zitat__quelle', text: 'Handbuch · ' + e.begriff + (q.abschnitt ? ' · ' + q.abschnitt : ''), on: { click: wahl } });
+        mehr = h('button', { type: 'button', class: 'ra-zitat__mehr', text: 'Weiterlesen im Handbuch', on: { click: wahl } });
+      }
+      var k = kuerzen(bs);
+      return h('figure', { class: 'ra-zitat' }, [
+        h('figcaption', {}, quelle),
+        h('blockquote', { class: 'ra-zitat__text' }, HT.ui.bloecke(k.bloecke, { verlinken: false, ebene: 4 })),
+        k.mehr ? mehr : null
+      ]);
+    }
+
+    /* Ein Schritt: oben der Weg, Stand und ×; dann Kicker, Titel, die
+       Zitate aus dem Handbuch und Hinweise, die Ketten und Listen aus unseren
+       Daten, alle Schritte zum Springen; unten fest Zurück und Weiter. */
     function schrittSeite() {
       var s = schritt(), n = reise.schritte.length, i = reise.i;
       var weg = HT.rundgang.REISEN.filter(function (r) { return r.id === reise.id; })[0];
@@ -2043,38 +2113,48 @@
       teile.push(h('div', { class: 'ra-tour__fortschritt', 'aria-hidden': 'true' },
         h('span', { style: 'width: ' + ((i + 1) / n * 100).toFixed(1) + '%' })));
 
-      var kopf = [
+      teile.push(h('article', { class: 'ub-kopf ra-tour__text' }, [
         h('div', { class: 'ub-kopf__zeile' }, h('span', { class: 'ub-kopf__kicker', text: s.kicker || '' })),
-        h('h2', { class: 'ub-kopf__titel ra-tour__titel', text: HT.gesamtbild.trennen(s.titel) }),
-        s.kern ? h('div', { class: 'ub-kopf__lead' }, h('p', { text: s.kern })) : null,
-        s.zahlen ? h('p', { class: 'ra-tour__zahlen', text: s.zahlen }) : null,
-        s.punkte && s.punkte.length ? h('ul', { class: 'ra-tour__punkte' }, s.punkte.map(function (p) { return h('li', { text: p }); })) : null
-      ];
-      teile.push(h('article', { class: 'ub-kopf ra-tour__text' }, kopf));
+        h('h2', { class: 'ub-kopf__titel ra-tour__titel', text: HT.gesamtbild.trennen(s.titel) })
+      ].concat((s.zitate || []).map(zitatBlock)).concat((s.hinweis || []).map(function (t) {
+        return h('p', { class: 'ra-tour__hinweis', text: t });
+      }))));
 
-      if (s.spalten && s.spalten.length) {
-        teile.push(h('section', { class: 'ub-abschnitt ub-abschnitt--regel ra-tour__spalten' }, s.spalten.map(function (sp) {
-          return h('div', { class: 'ra-tour__spalte' }, [
-            h('h3', { class: 'ub-mikro', text: sp.titel }),
-            h('ul', { class: 'ra-tour__punkte' }, (sp.punkte || []).map(function (p) { return h('li', { text: p }); }))
+      /* Je Aufgabe eine Kette Rolle → Aufgabe → Ergebnisse in den Kästen des
+         Rasters; darüber wo (springt ins Feld), darunter die beteiligten
+         Rollen. Ein Kasten zeigt seine Seite. */
+      if (s.ketten && s.ketten.length) {
+        teile.push(HT.inhaltsseite.abschnitt(s.kettenTitel || 'Rolle → Aufgabe → Ergebnis', [h('ul', { class: 'ra-ketten' }, s.ketten.map(function (z) {
+          function kasten(k) {
+            if (!k) { return h('span', { class: 'ra-kette__leer', text: 'ohne Rolle' }); }
+            var el = knoten(k);
+            el.addEventListener('click', function () { waehlen(k.id, false); });
+            el.title = k.begriff + ' — Seite zeigen';
+            return el;
+          }
+          var pfeil = function () { return h('span', { class: 'ra-kette__pfeil', 'aria-hidden': 'true', text: '→' }); };
+          return h('li', { class: 'ra-kette' }, [
+            z.wo ? h('button', {
+              type: 'button', class: 'ra-ort__wo ra-kette__wo', text: z.wo, title: 'Im Raster zeigen',
+              on: { click: function () { if (laufende) { laufende.stelleZeigen(z.phase, z.modul, z.zeigeId || null); } } }
+            }) : null,
+            h('div', { class: 'ra-kette__reihe' }, [
+              kasten(z.rolle), pfeil(), kasten(z.aufgabe), pfeil(),
+              z.ergebnisse.length ? h('div', { class: 'ra-kette__ergebnisse' }, z.ergebnisse.map(kasten))
+                : h('span', { class: 'ra-kette__leer', text: 'kein Ergebnis' })
+            ]),
+            z.beteiligt.length ? h('p', { class: 'ra-kette__beteiligt' }, ['Beteiligt: '].concat(mitKomma(z.beteiligt.map(function (name) {
+              var r = HT.daten.eintragMitBegriff(name, 'rolle');
+              return r ? verweis(r) : name;
+            })))) : null
           ]);
-        })));
+        }))], 'ub-abschnitt--regel'));
       }
 
       (s.fakten || []).forEach(function (fk) {
         if (!fk.zeilen || !fk.zeilen.length) { return; }
         teile.push(HT.inhaltsseite.abschnitt(fk.titel, [h('ul', { class: 'ra-orte' }, fk.zeilen.map(faktZeile))], 'ub-abschnitt--regel'));
       });
-
-      if (s.element) {
-        teile.push(h('p', { class: 'ra-tour__verweis' }, [
-          'Mehr dazu: ',
-          h('button', {
-            type: 'button', class: 'ra-ort__link', text: s.element.begriff + ' im Handbuch',
-            on: { click: function () { waehlen(s.element.id, false); } }
-          })
-        ]));
-      }
 
       /* Alle Schritte, nach Kapiteln — zum Springen. */
       var gruppen = [], letzte = null;
