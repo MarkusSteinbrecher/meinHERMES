@@ -1972,6 +1972,11 @@ html:has(.hb-fenster[open]) { overflow: hidden; }
 .hb-teil + .hb-teil { margin-top: 26px; padding-top: 12px; border-top: 1px solid var(--linie-stark); }
 .hb-teil__titel { margin: 0 0 4px; font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
 .hb-titel--2 { margin-top: 26px; font-size: 16px; font-weight: 800; letter-spacing: -.01em; text-transform: none; color: var(--text); padding-top: 12px; border-top: 1px solid var(--rand); }
+/* Die Unterlinie des Inhaltsverzeichnisses trennt schon: der erste Abschnitt
+   des Kapitels bekommt keine zweite Linie darunter. Davor steht oft der leere
+   Abschnitt der Ebene 1 (sein Titel steht im Kapitelkopf). */
+.hb-inhalt + .hb-teil > .hb-abschnitt:first-child > .hb-titel--2:first-child,
+.hb-inhalt + .hb-teil > .hb-abschnitt:first-child:empty + .hb-abschnitt > .hb-titel--2:first-child { border-top: 0; padding-top: 0; }
 .hb-titel--3 { margin-top: 18px; font-size: 14.5px; text-transform: none; letter-spacing: 0; color: var(--text); }
 .hb-titel--4, .hb-titel--5, .hb-titel--6 { text-transform: none; letter-spacing: 0; font-size: 13.5px; color: var(--text); }
 .hb-karten { margin: 6px 0 10px; }
