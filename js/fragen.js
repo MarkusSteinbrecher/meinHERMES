@@ -167,7 +167,7 @@
       leser.onload = function () {
         var d = null;
         try { d = JSON.parse(String(leser.result)); } catch (e) { d = null; }
-        if (!gueltig(d)) { fertig('Das ist keine Fragendatei von meinHERMES (fragen.json aus internal/BKI Fragen).'); return; }
+        if (!gueltig(d)) { fertig('Das ist keine Fragendatei von meinHERMES (fragen.json).'); return; }
         if (!schreiben(SPEICHER, { daten: d, name: datei.name, stand: new Date().toISOString() })) {
           fertig('Der Browser konnte die Datei nicht speichern.');
           return;
@@ -204,14 +204,14 @@
     function infoInhalt(stand) {
       var teile = [
         h('p', { text: 'Prüfungsfragen mit Lösung, Begründung und dem Tipp aus dem Dokument; je Frage die Stellen im Gesamtbild und im Handbuch.' }),
-        h('p', { text: 'Die Fragen sind urheberrechtlich geschützt und nicht Teil der Website: Lokal (127.0.0.1) liest die Seite internal/BKI Fragen/fragen.json. '
+        h('p', { text: 'Die Fragen sind urheberrechtlich geschützt und nicht Teil der Website: Lokal (127.0.0.1) liest die Seite die Fragendatei direkt. '
           + 'Anderswo lädt man diese Datei hier; sie bleibt nur in diesem Browser.' })
       ];
       if (stand && stand.quelle === 'datei') {
         teile.push(h('p', { class: 'trefferzahl', text: 'Geladen aus ' + (stand.name || 'Datei')
           + (stand.stand ? ' am ' + new Date(stand.stand).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'short' }) : '') + '.' }));
       } else if (stand) {
-        teile.push(h('p', { class: 'trefferzahl', text: 'Geladen vom lokalen Server (internal/BKI Fragen/fragen.json).' }));
+        teile.push(h('p', { class: 'trefferzahl', text: 'Geladen vom lokalen Server.' }));
       }
       teile.push(h('div', { class: 'btn-reihe' }, [
         h('button', { type: 'button', class: 'btn btn--klein', text: 'Fragendatei laden …', on: { click: function () { eingabe.click(); } } }),
@@ -231,7 +231,7 @@
         HT.app.unterleiste({ info: { titel: 'Fragen', inhalt: function () { return infoInhalt(null); } } });
         huelle.appendChild(h('div', { class: 'leer fr-leer' }, [
           h('strong', { text: 'Keine Fragen geladen' }),
-          h('p', { text: 'Die Fragen sind nicht Teil der Website. Lade die Datei fragen.json aus internal/BKI Fragen — sie bleibt nur in diesem Browser.' }),
+          h('p', { text: 'Die Fragen sind nicht Teil der Website. Lade die Fragendatei (fragen.json) — sie bleibt nur in diesem Browser.' }),
           meldung ? h('p', { class: 'import__meldung import__meldung--fehler', text: meldung }) : null,
           h('div', { class: 'btn-reihe' }, [
             h('button', { type: 'button', class: 'btn btn--primaer', text: 'Fragendatei laden …', on: { click: function () { eingabe.click(); } } })
