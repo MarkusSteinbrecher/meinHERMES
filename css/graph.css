@@ -778,7 +778,7 @@
 .gpop .chips--klein { display: flex; flex-wrap: wrap; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .graph-schliessen { width: 28px; padding: 0; display: grid; place-items: center; font-size: 14px; }
 
-.btn--graph { gap: 6px; }
+.btn--ueberblick { gap: 6px; }
 
 @media (max-width: 699px) {
   .graph-buehne { min-height: 60vh; }

@@ -1267,7 +1267,7 @@
         + 'Welche Arten leer bleiben — Rollen, Aufgaben, Ergebnisse —, sagt die Leiste in der Übung; die übrigen stehen ausgefüllt da. '
         + 'Am Ende zeigt die Prüfung, was richtig, falsch oder offen geblieben ist.' }),
       h('p', {}, [
-        'Grundlage: der Graph im ',
+        'Grundlage: das Raster im ',
         h('a', { href: '#/ueberblick', text: 'Überblick' }),
         ' — Rollen, Aufgaben und Ergebnisse mit den Querverweisen der offiziellen Dokumentation (verantwortliche Rolle je Aufgabe, Ergebnisse je Aufgabe).'
       ])

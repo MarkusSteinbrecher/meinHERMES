@@ -836,8 +836,8 @@ main:focus { outline: none; }
 }
 .quelle-link:hover { color: var(--akzent); border-bottom-color: var(--akzent); }
 .quelle-link__pfeil { font-size: .85em; }
-.btn--graph { border-bottom: 2px solid var(--rand); padding: 0; }
-.btn--graph:hover { border-bottom-color: var(--akzent); }
+.btn--ueberblick { border-bottom: 2px solid var(--rand); padding: 0; }
+.btn--ueberblick:hover { border-bottom-color: var(--akzent); }
 
 .detail {
   padding: 0;

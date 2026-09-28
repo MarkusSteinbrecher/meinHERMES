@@ -1714,7 +1714,7 @@
     })).concat([
       h('p', { class: 'lp-fakten__links' }, [
         h('a', { class: 'lp-fakten__link', href: '#/handbuch?id=' + encodeURIComponent(e.id), text: 'Im Handbuch nachlesen' }),
-        h('a', { class: 'lp-fakten__link', href: '#/ueberblick?sicht=graph&id=' + encodeURIComponent(e.id), text: 'Im Überblick öffnen' })
+        h('a', { class: 'lp-fakten__link', href: '#/ueberblick?id=' + encodeURIComponent(e.id), text: 'Im Überblick öffnen' })
       ])
     ]);
   }

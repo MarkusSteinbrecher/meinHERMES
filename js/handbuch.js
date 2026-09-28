@@ -138,14 +138,15 @@
 
   /* --- Karten -------------------------------------------------------------- */
 
-  function graphLink(e) {
+  /* Wo das Element im Raster des Überblicks steht — dort mit seiner Seite. */
+  function ueberblickLink(e) {
     return h('a', {
-      class: 'btn btn--klein btn--graph',
-      href: '#/ueberblick?sicht=graph&id=' + encodeURIComponent(e.id),
+      class: 'btn btn--klein btn--ueberblick',
+      href: '#/ueberblick?id=' + encodeURIComponent(e.id),
       title: e.kategorie === 'phase' || e.kategorie === 'modul' || e.kategorie === 'szenario'
-        ? 'Aufgaben, Ergebnisse und Rollen dazu im Graph zeigen'
-        : 'Zusammenhänge dieses Elements im Graph anzeigen'
-    }, [h('span', { 'aria-hidden': 'true', text: '◎ ' }), 'Im Graph']);
+        ? 'Aufgaben, Ergebnisse und Rollen dazu im Überblick zeigen'
+        : 'Dieses Element im Überblick zeigen'
+    }, 'Im Überblick');
   }
 
   /* Karte eines Elements mit dem Text seines Abschnitts im PDF. Rechts in der
@@ -158,7 +159,7 @@
       nurHandbuch: true,
       lernstand: true,
       bloecke: a.bloecke || [],
-      zusatz: graphLink(e),
+      zusatz: ueberblickLink(e),
       titelEbene: a.ebene <= 3 ? 'h3' : 'h4',
       nummer: a.nummer || null,
       seite: a.seite || null,
