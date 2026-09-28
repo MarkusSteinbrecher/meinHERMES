@@ -14,7 +14,7 @@
    Format der Datei (geprüft und ergänzt von internal/BKI Fragen/pruefen.py):
      { format: 'meinHERMES-fragen', version: 1,
        dokumente: [{ id, titel, datei }],
-       fragen: [{ id, stufe, dokument, frage,
+       fragen: [{ id, stufe, dokument, situation?, frage,
          antworten: [{ text, richtig, warum }],
          tipp: { text, verweise: [{ nummer, kapitel?, titel? }] },
          lesart: [text], merksaetze: [text],
@@ -152,6 +152,7 @@
           'aria-expanded': offen ? 'true' : 'false', on: { click: function () { offen = !offen; zeichnen(); } }
         })
       ]));
+      if (f.situation) { karte.appendChild(h('p', { class: 'fr-frage__situation', text: f.situation })); }
       karte.appendChild(h('p', { class: 'fr-frage__text', text: f.frage }));
       karte.appendChild(h('ol', { class: 'fr-antworten' }, f.antworten.map(function (a, i) {
         var marke = String.fromCharCode(97 + i);

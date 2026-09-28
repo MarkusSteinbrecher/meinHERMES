@@ -2307,6 +2307,7 @@
       teile.push(h('article', { class: 'ub-kopf ra-tour__text' }, [
         h('div', { class: 'ub-kopf__zeile' }, h('span', { class: 'ub-kopf__kicker',
           text: [f.id, f.stufe, s.vorgehen === 'agil' ? 'agil' : null].filter(Boolean).join(' · ') })),
+        f.situation ? h('p', { class: 'ra-frage__situation', text: f.situation }) : null,
         h('p', { class: 'ra-frage__text', text: f.frage })
       ].concat((f.lesart || []).map(function (t) { return h('p', { class: 'ra-tour__hinweis', text: t }); }))));
 

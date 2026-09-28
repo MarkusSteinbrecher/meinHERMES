@@ -34,6 +34,9 @@ body[data-route="fragen"] .view { max-width: 980px; }
 }
 .fr-frage__knopf { margin-left: auto; }
 .fr-frage__text { margin: 12px 0 14px; font-size: 16px; font-weight: 700; line-height: 1.5; text-wrap: pretty; }
+/* Rolle und Praxissituation vor der Frage; Absätze und Aufzählungen als Zeilenumbrüche im Text. */
+.fr-frage__situation,
+.ra-frage__situation { margin: 12px 0 0; font-size: 14.5px; line-height: 1.55; color: var(--text-weich); white-space: pre-line; text-wrap: pretty; }
 
 .fr-antworten { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .fr-antwort {
