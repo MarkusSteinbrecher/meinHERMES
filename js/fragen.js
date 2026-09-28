@@ -1,4 +1,4 @@
-/* meinHERMES — BKI-Fragen (#/bki), nicht öffentlich.
+/* meinHERMES — Fragen (#/fragen), nicht öffentlich.
 
    Prüfungsfragen Frage für Frage verstehen: die Frage, die Antworten mit
    Lösung und Begründung, der Tipp aus dem Dokument und je Frage die Wege ins
@@ -12,7 +12,7 @@
    (localStorage, eigener Schlüssel, nicht im Export von «Über»).
 
    Format der Datei (geprüft und ergänzt von internal/BKI Fragen/pruefen.py):
-     { format: 'meinHERMES-bki', version: 1,
+     { format: 'meinHERMES-fragen', version: 1,
        dokumente: [{ id, titel, datei }],
        fragen: [{ id, stufe, dokument, frage,
          antworten: [{ text, richtig, warum }],
@@ -27,8 +27,8 @@
   var h = HT.ui.h;
 
   var LOKAL = 'internal/BKI%20Fragen/fragen.json';
-  var SPEICHER = 'meinHERMES:bki-fragen';
-  var LOESUNG = 'meinHERMES:bki-loesungen';
+  var SPEICHER = 'meinHERMES:fragen';
+  var LOESUNG = 'meinHERMES:fragen-loesungen';
   var MAX_DATEI = 5 * 1024 * 1024;
 
   function lesen(schluessel) {
@@ -42,7 +42,7 @@
   }
 
   function gueltig(d) {
-    return !!d && d.format === 'meinHERMES-bki' && Array.isArray(d.dokumente) && Array.isArray(d.fragen);
+    return !!d && d.format === 'meinHERMES-fragen' && Array.isArray(d.dokumente) && Array.isArray(d.fragen);
   }
 
   /* Zuerst die Datei auf dem lokalen Server, sonst die in diesem Browser
@@ -77,52 +77,52 @@
   /* --- Bausteine einer Frage ---------------------------------------------- */
 
   function abschnitt(titel, kinder) {
-    return h('section', { class: 'bki-abschnitt' }, [h('h3', { class: 'bki-abschnitt__titel', text: titel })].concat(kinder));
+    return h('section', { class: 'fr-abschnitt' }, [h('h3', { class: 'fr-abschnitt__titel', text: titel })].concat(kinder));
   }
 
   function gesamtbildLink(g) {
     var e = g.id ? HT.daten.eintragMitId(g.id) : null;
     var text = g.text || (e ? e.begriff : g.id || g.feld);
     return h('a', {
-      class: 'bki-link' + (e ? ' bki-link--' + e.kategorie : ' bki-link--feld'), href: ueberblickAdresse(g),
+      class: 'fr-link' + (e ? ' fr-link--' + e.kategorie : ' fr-link--feld'), href: ueberblickAdresse(g),
       title: 'Im Überblick zeigen' + (g.vorgehen === 'agil' ? ' (agil)' : '')
-    }, [h('span', { text: text }), g.vorgehen === 'agil' && !g.text ? h('span', { class: 'bki-link__zusatz', text: 'agil' }) : null]);
+    }, [h('span', { text: text }), g.vorgehen === 'agil' && !g.text ? h('span', { class: 'fr-link__zusatz', text: 'agil' }) : null]);
   }
 
   function handbuchKnopf(z) {
     if (!z.kapitel && !z.id) {
-      return h('span', { class: 'bki-link bki-link--alt', title: 'Diese Nummer gibt es im heutigen Handbuch nicht' }, [
-        h('span', { class: 'bki-link__nr', text: z.nummer }), h('span', { text: 'nicht im heutigen Handbuch' })
+      return h('span', { class: 'fr-link fr-link--alt', title: 'Diese Nummer gibt es im heutigen Handbuch nicht' }, [
+        h('span', { class: 'fr-link__nr', text: z.nummer }), h('span', { text: 'nicht im heutigen Handbuch' })
       ]);
     }
     return h('button', {
-      type: 'button', class: 'bki-link bki-link--handbuch', title: 'Im Handbuch nachlesen',
+      type: 'button', class: 'fr-link fr-link--handbuch', title: 'Im Handbuch nachlesen',
       on: { click: function () { imFenster(z); } }
-    }, [z.nummer ? h('span', { class: 'bki-link__nr', text: z.nummer }) : null, h('span', { text: z.titel || z.id })]);
+    }, [z.nummer ? h('span', { class: 'fr-link__nr', text: z.nummer }) : null, h('span', { text: z.titel || z.id })]);
   }
 
   function frageBauen(f, loesungen) {
     var offen = loesungen;
-    var karte = h('article', { class: 'bki-frage', id: 'frage-' + f.id });
+    var karte = h('article', { class: 'fr-frage', id: 'frage-' + f.id });
 
     function zeichnen() {
       HT.ui.leeren(karte);
-      karte.appendChild(h('div', { class: 'bki-frage__kopf' }, [
-        h('span', { class: 'bki-frage__id', text: f.id }),
-        f.stufe ? h('span', { class: 'bki-frage__stufe', text: f.stufe }) : null,
+      karte.appendChild(h('div', { class: 'fr-frage__kopf' }, [
+        h('span', { class: 'fr-frage__id', text: f.id }),
+        f.stufe ? h('span', { class: 'fr-frage__stufe', text: f.stufe }) : null,
         h('button', {
-          type: 'button', class: 'btn btn--klein bki-frage__knopf', text: offen ? 'Lösung verbergen' : 'Lösung zeigen',
+          type: 'button', class: 'btn btn--klein fr-frage__knopf', text: offen ? 'Lösung verbergen' : 'Lösung zeigen',
           'aria-expanded': offen ? 'true' : 'false', on: { click: function () { offen = !offen; zeichnen(); } }
         })
       ]));
-      karte.appendChild(h('p', { class: 'bki-frage__text', text: f.frage }));
-      karte.appendChild(h('ol', { class: 'bki-antworten' }, f.antworten.map(function (a, i) {
+      karte.appendChild(h('p', { class: 'fr-frage__text', text: f.frage }));
+      karte.appendChild(h('ol', { class: 'fr-antworten' }, f.antworten.map(function (a, i) {
         var marke = String.fromCharCode(97 + i);
-        return h('li', { class: 'bki-antwort' + (offen ? (a.richtig ? ' ist-richtig' : ' ist-falsch') : '') }, [
-          h('span', { class: 'bki-antwort__marke', 'aria-hidden': 'true', text: offen ? (a.richtig ? '✓' : '✗') : marke }),
-          h('div', { class: 'bki-antwort__inhalt' }, [
-            h('p', { class: 'bki-antwort__text' }, [h('span', { class: 'bki-antwort__buchstabe', text: marke + ' ' }), a.text]),
-            offen && a.warum ? h('p', { class: 'bki-antwort__warum', text: a.warum }) : null,
+        return h('li', { class: 'fr-antwort' + (offen ? (a.richtig ? ' ist-richtig' : ' ist-falsch') : '') }, [
+          h('span', { class: 'fr-antwort__marke', 'aria-hidden': 'true', text: offen ? (a.richtig ? '✓' : '✗') : marke }),
+          h('div', { class: 'fr-antwort__inhalt' }, [
+            h('p', { class: 'fr-antwort__text' }, [h('span', { class: 'fr-antwort__buchstabe', text: marke + ' ' }), a.text]),
+            offen && a.warum ? h('p', { class: 'fr-antwort__warum', text: a.warum }) : null,
             offen ? h('span', { class: 'nur-sr', text: a.richtig ? 'richtig' : 'falsch' }) : null
           ])
         ]);
@@ -135,20 +135,20 @@
       if (offen && f.tipp && f.tipp.text) {
         var verweise = f.tipp.verweise || [];
         teile.push(abschnitt('Tipp aus dem Dokument', [
-          h('p', { class: 'bki-tipp', text: f.tipp.text }),
-          verweise.length ? h('div', { class: 'bki-links' }, verweise.map(handbuchKnopf)) : null
+          h('p', { class: 'fr-tipp', text: f.tipp.text }),
+          verweise.length ? h('div', { class: 'fr-links' }, verweise.map(handbuchKnopf)) : null
         ]));
       }
       if (f.gesamtbild && f.gesamtbild.length) {
-        teile.push(abschnitt('Im Gesamtbild', [h('div', { class: 'bki-links' }, f.gesamtbild.map(gesamtbildLink))]));
+        teile.push(abschnitt('Im Gesamtbild', [h('div', { class: 'fr-links' }, f.gesamtbild.map(gesamtbildLink))]));
       }
       if (f.handbuch && f.handbuch.length) {
-        teile.push(abschnitt('Im Handbuch', [h('div', { class: 'bki-links' }, f.handbuch.map(handbuchKnopf))]));
+        teile.push(abschnitt('Im Handbuch', [h('div', { class: 'fr-links' }, f.handbuch.map(handbuchKnopf))]));
       }
       if (offen && f.merksaetze && f.merksaetze.length) {
-        teile.push(abschnitt('Merksätze', [h('ul', { class: 'bki-merksaetze' }, f.merksaetze.map(function (t) { return h('li', { text: t }); }))]));
+        teile.push(abschnitt('Merksätze', [h('ul', { class: 'fr-merksaetze' }, f.merksaetze.map(function (t) { return h('li', { text: t }); }))]));
       }
-      karte.appendChild(h('div', { class: 'bki-frage__teile' }, teile));
+      karte.appendChild(h('div', { class: 'fr-frage__teile' }, teile));
     }
     zeichnen();
     return karte;
@@ -183,7 +183,7 @@
   /* --- Seite -------------------------------------------------------------- */
 
   function render(behaelter, params) {
-    var huelle = h('div', { class: 'bki', 'aria-busy': 'true' }, h('p', { class: 'trefferzahl', text: 'Fragen werden geladen …' }));
+    var huelle = h('div', { class: 'fr', 'aria-busy': 'true' }, h('p', { class: 'trefferzahl', text: 'Fragen werden geladen …' }));
     behaelter.appendChild(huelle);
     var meldung = null;
     var aktuell = null;
@@ -228,10 +228,10 @@
       huelle.setAttribute('aria-busy', 'false');
       huelle.appendChild(eingabe);
       if (!stand) {
-        HT.app.unterleiste({ info: { titel: 'BKI-Fragen', inhalt: function () { return infoInhalt(null); } } });
-        huelle.appendChild(h('div', { class: 'leer bki-leer' }, [
+        HT.app.unterleiste({ info: { titel: 'Fragen', inhalt: function () { return infoInhalt(null); } } });
+        huelle.appendChild(h('div', { class: 'leer fr-leer' }, [
           h('strong', { text: 'Keine Fragen geladen' }),
-          h('p', { text: 'Die BKI-Fragen sind nicht Teil der Website. Lade die Datei fragen.json aus internal/BKI Fragen — sie bleibt nur in diesem Browser.' }),
+          h('p', { text: 'Die Fragen sind nicht Teil der Website. Lade die Datei fragen.json aus internal/BKI Fragen — sie bleibt nur in diesem Browser.' }),
           meldung ? h('p', { class: 'import__meldung import__meldung--fehler', text: meldung }) : null,
           h('div', { class: 'btn-reihe' }, [
             h('button', { type: 'button', class: 'btn btn--primaer', text: 'Fragendatei laden …', on: { click: function () { eingabe.click(); } } })
@@ -248,14 +248,14 @@
 
       HT.app.unterleiste({
         label: 'Dokumente',
-        links: dokumente.map(function (x) { return { href: '#/bki?dok=' + encodeURIComponent(x.id), text: x.titel, aktiv: x === dok }; }),
+        links: dokumente.map(function (x) { return { href: '#/fragen?dok=' + encodeURIComponent(x.id), text: x.titel, aktiv: x === dok }; }),
         inhalt: [h('button', {
           type: 'button', class: 'btn btn--klein', text: loesungen ? 'Lösungen verbergen' : 'Lösungen zeigen',
           title: loesungen ? 'Zum Üben: Lösungen erst auf Knopfdruck je Frage' : 'Alle Lösungen zeigen',
           on: { click: function () { schreiben(LOESUNG, !loesungen); zeigen(stand); } }
         })],
         inhaltLabel: 'Lösungen',
-        info: { titel: 'BKI-Fragen', inhalt: function () { return infoInhalt(stand); } }
+        info: { titel: 'Fragen', inhalt: function () { return infoInhalt(stand); } }
       });
 
       if (!dok) {
@@ -263,17 +263,17 @@
         return;
       }
       var fragen = d.fragen.filter(function (f) { return f.dokument === dok.id; });
-      huelle.appendChild(h('header', { class: 'bki-kopf' }, [
-        h('span', { class: 'bki-kopf__kicker', text: 'BKI-Fragen · nicht öffentlich' }),
-        h('h1', { class: 'bki-kopf__titel', text: dok.titel }),
+      huelle.appendChild(h('header', { class: 'fr-kopf' }, [
+        h('span', { class: 'fr-kopf__kicker', text: 'Fragen · nicht öffentlich' }),
+        h('h1', { class: 'fr-kopf__titel', text: dok.titel }),
         h('p', { class: 'trefferzahl', text: zahl(fragen.length, 'Frage', 'Fragen') + (dok.datei ? ' · ' + dok.datei : '') }),
         meldung ? h('p', { class: 'import__meldung import__meldung--fehler', text: meldung }) : null,
-        h('nav', { class: 'bki-index', 'aria-label': 'Fragen' }, fragen.map(function (f) {
+        h('nav', { class: 'fr-index', 'aria-label': 'Fragen' }, fragen.map(function (f) {
           return h('a', {
-            class: 'bki-index__link', href: '#/bki?frage=' + encodeURIComponent(f.id), text: f.id,
+            class: 'fr-index__link', href: '#/fragen?frage=' + encodeURIComponent(f.id), text: f.id,
             on: { click: function (ev) {
               ev.preventDefault();
-              global.history.replaceState(null, '', '#/bki?frage=' + encodeURIComponent(f.id));
+              global.history.replaceState(null, '', '#/fragen?frage=' + encodeURIComponent(f.id));
               var ziel = document.getElementById('frage-' + f.id);
               if (ziel) { ziel.scrollIntoView({ block: 'start', behavior: 'instant' }); }
             } }
@@ -290,5 +290,5 @@
     neuLaden();
   }
 
-  HT.views.bki = { titel: 'BKI-Fragen', render: render };
+  HT.views.fragen = { titel: 'Fragen', render: render };
 }(window));

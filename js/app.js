@@ -29,6 +29,8 @@
     feld: 'ueberblick',
     raster: 'ueberblick',
     graph: 'ueberblick',
+    /* Die Fragenseite hiess anfangs #/bki. */
+    bki: 'fragen',
     lernkarten: { name: 'trainer', params: { teil: 'lernkarten' } },
     quiz: { name: 'trainer', params: { teil: 'quiz' } }
   };
