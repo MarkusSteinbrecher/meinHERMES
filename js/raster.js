@@ -1505,6 +1505,16 @@
     var gebaut = null;
     var alleOffen = false;
 
+    /* Fragen (js/fragen.js): dritter Reiter, nur wenn in diesem Browser
+       Prüfungsfragen geladen sind. Eine Frage läuft wie ein Schritt des
+       Rundgangs (reise.id 'fragen'); die angeklickte Antwort (reise.antwort)
+       hebt ihre eigenen Stellen hervor, aufgedeckte stehen in reise.offen.
+       In der Adresse: frage=… */
+    var fragenStand = null;
+    var frageWunsch = params.frage && !params.id ? String(params.frage) : null;
+    var rasterBereit = false;
+    if (frageWunsch) { reiter = 'fragen'; }
+
     var seiteText = h('div', { class: 'ub-inhalt__text ra-inhalt__text' });
     var reiterLeiste = h('div', { class: 'ra-reiter', role: 'tablist', 'aria-label': 'Inhaltsseite' });
     var seite = h('aside', { class: 'ub-inhalt ra-inhalt', 'aria-label': 'Inhaltsseite' }, [reiterLeiste, seiteText]);
@@ -1596,7 +1606,7 @@
       /* Eine Auswahl zeigt ihre Seite im Reiter «Handbuch»; wird sie im
          Rundgang aufgehoben, geht es zurück zum Schritt. */
       if (auswahl || feldWahl) { reiter = 'handbuch'; }
-      else if (reise) { reiter = 'rundgang'; }
+      else if (reise) { reiter = reiseReiter(); }
       if ((auswahl || feldWahl) && !seiteZustand.offen) { seiteOeffnen(true); }
       adresseSetzen();
       if (laufende) { laufende.gewaehlt(auswahl ? auswahl.id : null, feldWahl); }
@@ -1612,13 +1622,25 @@
       var q = (vorgehen === 'agil' ? ['vorgehen=agil'] : []).concat(filterAlsQuery(filter));
       if (auswahl) { q.push('id=' + encodeURIComponent(auswahl.id)); }
       if (feldWahl) { q.push('feld=' + encodeURIComponent(feldWahl.phase + '|' + feldWahl.modul)); }
-      if (reise) { q.push('tour=' + reise.id, 'schritt=' + (reise.i + 1)); }
+      if (reise && reise.id === 'fragen') { q.push('frage=' + encodeURIComponent(schritt().id)); }
+      else if (reise) { q.push('tour=' + reise.id, 'schritt=' + (reise.i + 1)); }
       global.history.replaceState(null, '', '#/ueberblick' + (q.length ? '?' + q.join('&') : ''));
     }
 
     /* --- Rundgang --- */
 
     function schritt() { return reise ? reise.schritte[reise.i] : null; }
+
+    /** Der Reiter, in dem der laufende Weg steht: Fragen oder Rundgang. */
+    function reiseReiter() { return reise && reise.id === 'fragen' ? 'fragen' : 'rundgang'; }
+
+    /** Was das Raster hervorhebt: das Ziel der gewählten Antwort, sonst des Schritts. */
+    function zielJetzt() {
+      var s = schritt();
+      if (!s) { return null; }
+      var an = s.antworten && reise.antwort !== null ? s.antworten[reise.antwort] : null;
+      return an && an.ziel ? an.ziel : s.ziel;
+    }
 
     /** Die Sicht, die das Raster zeigt: im Rundgang die des Schritts. */
     function sichtJetzt() {
@@ -1662,14 +1684,14 @@
 
     function reiterZeichnen() {
       HT.ui.leeren(reiterLeiste);
-      [['handbuch', 'Handbuch'], ['rundgang', 'Rundgang']].forEach(function (r) {
+      [['handbuch', 'Handbuch'], ['rundgang', 'Rundgang']].concat(fragenStand ? [['fragen', 'Fragen']] : []).forEach(function (r) {
         var an = reiter === r[0];
         reiterLeiste.appendChild(h('button', {
           type: 'button', class: 'ra-reiter__knopf', role: 'tab', 'aria-selected': an ? 'true' : 'false',
           on: { click: function () { if (!an) { reiterWaehlen(r[0]); } } }
         }, [
           h('span', { text: r[1] }),
-          r[0] === 'rundgang' && reise ? h('span', { class: 'ra-reiter__zahl', text: (reise.i + 1) + '/' + reise.schritte.length }) : null
+          r[0] === reiseReiter() && reise ? h('span', { class: 'ra-reiter__zahl', text: (reise.i + 1) + '/' + reise.schritte.length }) : null
         ]));
       });
     }
@@ -1687,6 +1709,8 @@
 
     function schrittZeigen() {
       tourSicht = null;
+      var s = schritt();
+      if (s && s.vorgehen && s.vorgehen !== vorgehen) { vorgehen = s.vorgehen; filter.phasen = null; }
       adresseSetzen();
       zeichnen({ zumZiel: true, wennNoetig: true });
     }
@@ -1694,7 +1718,8 @@
     function schrittGehen(j) {
       if (!reise || j < 0 || j >= reise.schritte.length) { return; }
       reise.i = j;
-      reiter = 'rundgang';
+      if (reise.id === 'fragen') { reise.antwort = null; reise.offen = {}; }
+      reiter = reiseReiter();
       auswahl = null;
       feldWahl = null;
       schrittZeigen();
@@ -1710,7 +1735,7 @@
     /* Die Vorgehensweise wechselt: derselbe Schritt, wenn es ihn dort gibt,
        sonst der an derselben Stelle. */
     function reiseUmbauen() {
-      if (!reise) { return; }
+      if (!reise || reise.id === 'fragen') { return; }
       var key = schritt().key;
       var neu = HT.rundgang.schritte(reise.id, lp, modell(vorgehen));
       if (!neu.length) { reise = null; return; }
@@ -2049,7 +2074,7 @@
     }
 
     function zitatNachgeladen() {
-      if (reise && reiter === 'rundgang' && document.body.contains(huelle)) { inhaltZeichnen(); }
+      if (reise && reiter === reiseReiter() && document.body.contains(huelle)) { inhaltZeichnen(); }
     }
 
     var ZITAT_LAENGE = 1400;
@@ -2160,13 +2185,19 @@
         teile.push(HT.inhaltsseite.abschnitt(fk.titel, [h('ul', { class: 'ra-orte' }, fk.zeilen.map(faktZeile))], 'ub-abschnitt--regel'));
       });
 
-      /* Alle Schritte, nach Kapiteln — zum Springen. */
-      var gruppen = [], letzte = null;
+      teile.push(alleSchritte('Alle ' + n + ' Schritte'));
+      teile.push(fussLeiste());
+      return teile;
+    }
+
+    /* Alle Schritte des laufenden Wegs, nach Kapiteln — zum Springen. */
+    function alleSchritte(titel) {
+      var i = reise.i, gruppen = [], letzte = null;
       reise.schritte.forEach(function (x, j) {
         if (!letzte || letzte.kapitel !== x.kapitel) { letzte = { kapitel: x.kapitel, schritte: [] }; gruppen.push(letzte); }
         letzte.schritte.push({ s: x, j: j });
       });
-      var alle = h('details', { class: 'ra-tour__alle' }, [h('summary', { text: 'Alle ' + n + ' Schritte' })].concat(gruppen.map(function (g) {
+      var alle = h('details', { class: 'ra-tour__alle' }, [h('summary', { text: titel })].concat(gruppen.map(function (g) {
         return h('div', { class: 'ra-tour__gruppe' }, [
           h('h3', { class: 'ub-mikro', text: g.kapitel }),
           h('ol', { class: 'ra-tour__schritte' }, g.schritte.map(function (y) {
@@ -2179,24 +2210,155 @@
       })));
       alle.open = alleOffen;
       alle.addEventListener('toggle', function () { alleOffen = alle.open; });
-      teile.push(alle);
+      return alle;
+    }
 
-      teile.push(h('div', { class: 'ra-tour__fuss' }, [
+    /* Unten fest: Zurück, Stand, Weiter bzw. Beenden. */
+    function fussLeiste() {
+      var n = reise.schritte.length, i = reise.i;
+      return h('div', { class: 'ra-tour__fuss' }, [
         h('button', {
-          type: 'button', class: 'ra-tour__knopf', disabled: i === 0, title: 'Vorheriger Schritt (Pfeil links)',
+          type: 'button', class: 'ra-tour__knopf', disabled: i === 0, title: 'Zurück (Pfeil links)',
           on: { click: function () { schrittGehen(i - 1); } }
         }, [HT.ui.symbol(IKONE_ZURUECK, 16), h('span', { text: 'Zurück' })]),
         h('span', { class: 'ra-tour__stand', text: (i + 1) + ' / ' + n }),
         i < n - 1 ? h('button', {
-          type: 'button', class: 'ra-tour__knopf ra-tour__knopf--weiter', title: 'Nächster Schritt (Pfeil rechts)',
+          type: 'button', class: 'ra-tour__knopf ra-tour__knopf--weiter', title: 'Weiter (Pfeil rechts)',
           on: { click: function () { schrittGehen(i + 1); } }
         }, [h('span', { text: 'Weiter' }), HT.ui.symbol(IKONE_WEITER, 16)])
           : h('button', {
             type: 'button', class: 'ra-tour__knopf ra-tour__knopf--weiter', text: 'Beenden',
             on: { click: reiseBeenden }
           })
-      ]));
+      ]);
+    }
+
+    /* --- Fragen --- */
+
+    /** Startet die Fragen bei der Frage mit dieser id (sonst bei der ersten). */
+    function fragenStarten(id) {
+      if (!fragenStand || !HT.fragen) { return; }
+      var schritte = HT.fragen.schritte(fragenStand.daten);
+      if (!schritte.length) { return; }
+      var i = 0;
+      schritte.forEach(function (x, k) { if (x.id === id) { i = k; } });
+      reise = { id: 'fragen', schritte: schritte, i: i, antwort: null, offen: {} };
+      reiter = 'fragen';
+      auswahl = null;
+      feldWahl = null;
+      popOffen = false;
+      if (!seiteZustand.offen) { seiteOeffnen(true); }
+      schrittZeigen();
+    }
+
+    /* Klick auf eine Antwort: aufdecken und ihre Stellen hervorheben; ein
+       zweiter Klick hebt die Hervorhebung auf (aufgedeckt bleibt sie). */
+    function antwortWaehlen(k) {
+      reise.offen[k] = true;
+      reise.antwort = reise.antwort === k ? null : k;
+      zeichnen({ zumZiel: true, wennNoetig: true });
+    }
+
+    function alleAufdecken() {
+      schritt().frage.antworten.forEach(function (x, k) { reise.offen[k] = true; });
+      inhaltZeichnen();
+    }
+
+    /* Reiter «Fragen» ohne laufende Frage: die Fragen zur Wahl, je Dokument. */
+    function fragenWahlSeite() {
+      var d = fragenStand ? fragenStand.daten : null;
+      var teile = [h('div', { class: 'ub-leerseite ra-tourwahl' }, [
+        h('h2', { class: 'ub-leerseite__titel', text: 'Fragen' }),
+        h('p', { class: 'ub-leerseite__text', text: 'Prüfungsfragen im Gesamtbild: Ein Klick auf eine Antwort deckt sie auf, hebt ihre Stellen im Raster hervor und zeigt den Auszug aus dem Handbuch. Weiter und zurück mit den Knöpfen unten oder den Pfeiltasten.' })
+      ])];
+      if (!d) { return teile; }
+      d.dokumente.forEach(function (dok) {
+        var fragen = d.fragen.filter(function (f) { return f.dokument === dok.id; });
+        if (!fragen.length) { return; }
+        teile.push(h('h3', { class: 'ub-mikro ra-fragenwahl__dok', text: dok.titel }));
+        teile.push(h('div', { class: 'ra-tourwahl__liste' }, fragen.map(function (f) {
+          return h('button', { type: 'button', class: 'ra-tourwahl__weg', on: { click: function () { fragenStarten(f.id); } } }, [
+            h('span', { class: 'ra-tourwahl__titel', text: f.id + (f.stufe ? ' · ' + f.stufe : '') }),
+            h('span', { class: 'ra-tourwahl__kurz ra-fragenwahl__text', text: f.frage })
+          ]);
+        })));
+      });
       return teile;
+    }
+
+    /* Eine Frage: oben Dokument, Stand und ×; die Frage, wie man sie liest,
+       die Antworten zum Aufdecken — die gewählte mit Begründung und Auszügen
+       aus dem Handbuch; sind alle aufgedeckt, Tipp und Merksätze. */
+    function frageSeite() {
+      var s = schritt(), f = s.frage, n = reise.schritte.length, i = reise.i;
+      var alleAuf = f.antworten.every(function (x, k) { return reise.offen[k]; });
+      var teile = [];
+      teile.push(h('div', { class: 'ra-tour__kopf' }, [
+        h('span', { class: 'ra-tour__weg', text: 'Fragen' }),
+        h('span', { class: 'ra-tour__kapitel', text: s.kapitel }),
+        h('button', {
+          type: 'button', class: 'ra-inhalt__zu', 'aria-label': 'Fragen beenden', title: 'Fragen beenden', text: '×',
+          on: { click: reiseBeenden }
+        })
+      ]));
+      teile.push(h('div', { class: 'ra-tour__fortschritt', 'aria-hidden': 'true' },
+        h('span', { style: 'width: ' + ((i + 1) / n * 100).toFixed(1) + '%' })));
+
+      teile.push(h('article', { class: 'ub-kopf ra-tour__text' }, [
+        h('div', { class: 'ub-kopf__zeile' }, h('span', { class: 'ub-kopf__kicker',
+          text: [f.id, f.stufe, s.vorgehen === 'agil' ? 'agil' : null].filter(Boolean).join(' · ') })),
+        h('p', { class: 'ra-frage__text', text: f.frage })
+      ].concat((f.lesart || []).map(function (t) { return h('p', { class: 'ra-tour__hinweis', text: t }); }))));
+
+      teile.push(h('ol', { class: 'ra-antworten' }, f.antworten.map(function (x, k) {
+        var auf = !!reise.offen[k], fokus = reise.antwort === k, marke = String.fromCharCode(97 + k);
+        return h('li', { class: 'ra-antwort' + (auf ? (x.richtig ? ' ist-richtig' : ' ist-falsch') : '') + (fokus ? ' ist-fokus' : '') }, [
+          h('button', {
+            type: 'button', class: 'ra-antwort__knopf', 'aria-expanded': fokus ? 'true' : 'false',
+            title: fokus ? 'Hervorhebung aufheben' : 'Aufdecken und im Raster zeigen',
+            on: { click: function () { antwortWaehlen(k); } }
+          }, [
+            h('span', { class: 'ra-antwort__marke', 'aria-hidden': 'true', text: auf ? (x.richtig ? '✓' : '✗') : marke }),
+            h('span', { class: 'ra-antwort__text' }, [h('b', { text: marke + ' ' }), x.text]),
+            auf ? h('span', { class: 'nur-sr', text: x.richtig ? ' — richtig' : ' — falsch' }) : null
+          ]),
+          auf && x.warum ? h('p', { class: 'ra-antwort__warum', text: x.warum }) : null,
+          fokus ? h('div', { class: 'ra-antwort__zitate' }, (s.antworten[k].zitate || []).map(zitatBlock)) : null
+        ]);
+      })));
+      if (!alleAuf) {
+        teile.push(h('div', { class: 'btn-reihe ra-antworten__knoepfe' }, [
+          h('button', { type: 'button', class: 'btn btn--klein', text: 'Alle aufdecken', on: { click: alleAufdecken } })
+        ]));
+      }
+
+      if (alleAuf && f.tipp && f.tipp.text) {
+        teile.push(HT.inhaltsseite.abschnitt('Tipp aus dem Dokument', [
+          h('p', { class: 'ra-frage__tipp', text: f.tipp.text }),
+          (f.tipp.verweise || []).length ? h('p', { class: 'ra-frage__verweise' }, mitKomma(f.tipp.verweise.map(function (v) {
+            if (!v.kapitel) { return h('span', { class: 'ra-frage__alt', title: 'Diese Nummer gibt es im heutigen Handbuch nicht', text: v.nummer + ' (nicht im heutigen Handbuch)' }); }
+            return h('a', { class: 'ra-ort__link', href: HT.handbuch.adresse(v.kapitel, v.nummer), text: v.nummer + ' ' + (v.titel || ''), on: { click: imFenster } });
+          }))) : null
+        ], 'ub-abschnitt--regel'));
+      }
+      if (alleAuf && f.merksaetze && f.merksaetze.length) {
+        teile.push(HT.inhaltsseite.abschnitt('Merksätze', [h('ul', { class: 'ra-frage__merksaetze' },
+          f.merksaetze.map(function (t) { return h('li', { text: t }); }))], 'ub-abschnitt--regel'));
+      }
+
+      teile.push(alleSchritte('Alle ' + n + ' Fragen'));
+      teile.push(fussLeiste());
+      return teile;
+    }
+
+    if (HT.fragen) {
+      HT.fragen.laden().then(function (st) {
+        fragenStand = st;
+        if (!document.body.contains(huelle)) { return; }
+        if (!st && reiter === 'fragen') { reiter = 'handbuch'; frageWunsch = null; }
+        if (frageWunsch && st && rasterBereit) { var w = frageWunsch; frageWunsch = null; fragenStarten(w); return; }
+        if (rasterBereit) { inhaltZeichnen(); }
+      });
     }
 
     function inhaltZeichnen() {
@@ -2208,10 +2370,15 @@
       /* Ort für Markierungen — derselbe wie die Karte im Handbuch. */
       if (e) { seiteText.dataset.markOrt = '#/handbuch?id=' + encodeURIComponent(e.id); }
       else { delete seiteText.dataset.markOrt; }
-      seiteText.classList.toggle('ist-rundgang', reiter === 'rundgang');
+      seiteText.classList.toggle('ist-rundgang', reiter === 'rundgang' || reiter === 'fragen');
       if (reiter === 'rundgang') {
-        teile = reise ? schrittSeite() : wahlSeite();
-        schluessel = reise ? 'tour:' + reise.id + ':' + reise.i : 'tourwahl';
+        var tour = reise && reise.id !== 'fragen';
+        teile = tour ? schrittSeite() : wahlSeite();
+        schluessel = tour ? 'tour:' + reise.id + ':' + reise.i : 'tourwahl';
+      } else if (reiter === 'fragen') {
+        var frage = reise && reise.id === 'fragen';
+        teile = frage ? frageSeite() : fragenWahlSeite();
+        schluessel = frage ? 'frage:' + reise.i : 'fragenwahl';
       } else if (e) {
         teile = HT.inhaltsseite.seite(e, {
           beiGeladen: function (id) { if (auswahl && auswahl.id === id && document.body.contains(huelle)) { inhaltZeichnen(); } }
@@ -2458,7 +2625,7 @@
       if (!document.body.contains(huelle)) { return; }
       /* Im Rundgang blättern die Pfeiltasten — nicht in Eingaben, nicht auf
          der Trennlinie (sie ändert damit die Breite). */
-      if ((ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') && reise && reiter === 'rundgang' && !popOffen
+      if ((ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') && reise && reiter === reiseReiter() && !popOffen
         && !ev.altKey && !ev.metaKey && !ev.ctrlKey && !ev.shiftKey && ev.target !== trenner
         && !(ev.target.closest && ev.target.closest('input, textarea, select, [contenteditable="true"]'))) {
         ev.preventDefault();
@@ -2531,11 +2698,14 @@
           h('span', { class: 'unterleiste__trenner', 'aria-hidden': 'true' }),
           h('span', { class: 'rf-pille ra-tourpille' }, [
             h('button', {
-              type: 'button', class: 'rf-pille__text', title: 'Rundgang — Schritt zeigen',
-              on: { click: function () { reiterWaehlen('rundgang'); } }
-            }, [HT.ui.symbol(IKONE_RUNDGANG, 14), h('span', { text: 'Rundgang ' + (reise.i + 1) + '/' + reise.schritte.length })]),
+              type: 'button', class: 'rf-pille__text', title: reise.id === 'fragen' ? 'Frage zeigen' : 'Rundgang — Schritt zeigen',
+              on: { click: function () { reiterWaehlen(reiseReiter()); } }
+            }, [HT.ui.symbol(IKONE_RUNDGANG, 14), h('span', { text: reise.id === 'fragen'
+              ? 'Frage ' + schritt().id + ' · ' + (reise.i + 1) + '/' + reise.schritte.length
+              : 'Rundgang ' + (reise.i + 1) + '/' + reise.schritte.length })]),
             h('button', {
-              type: 'button', class: 'rf-pille__x', 'aria-label': 'Rundgang beenden', title: 'Rundgang beenden', text: '×',
+              type: 'button', class: 'rf-pille__x', 'aria-label': reise.id === 'fragen' ? 'Fragen beenden' : 'Rundgang beenden',
+              title: reise.id === 'fragen' ? 'Fragen beenden' : 'Rundgang beenden', text: '×',
               on: { click: reiseBeenden }
             })
           ])
@@ -2611,7 +2781,7 @@
         laufende.gewaehlt(auswahl ? auswahl.id : null, feldWahl);
       }
       huelle.classList.toggle('ist-rundgang', !!reise);
-      laufende.tour(reise ? schritt().ziel : null, !!opt.zumZiel);
+      laufende.tour(reise ? zielJetzt() : null, !!opt.zumZiel);
       inhaltZeichnen();
       leisteSetzen();
       popZeichnen();
@@ -2621,8 +2791,10 @@
     lagenLaden().then(function () {
       if (!document.body.contains(huelle)) { return; }
       modelle = {};
+      rasterBereit = true;
       zeichnen();
       if (params.id) { laufende.zeigen(params.id); }
+      if (frageWunsch && fragenStand) { var fw = frageWunsch; frageWunsch = null; fragenStarten(fw); return; }
       /* Alte Adressen (#/raster, #/graph, #/feld) stehen danach als #/ueberblick da. */
       if (!reiseWunsch) { adresseSetzen(); }
       if (reiseWunsch) {

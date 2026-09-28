@@ -74,3 +74,42 @@ body[data-route="fragen"] .view { max-width: 980px; }
 .fr-link--alt:hover { border-color: var(--rand); color: var(--text-leise); }
 
 .fr-leer .btn-reihe { justify-content: center; margin-top: 12px; }
+
+/* --- Im Überblick: Reiter «Fragen» (js/raster.js) -------------------------
+   Die Frage wie ein Schritt des Rundgangs; die Antworten sind Knöpfe zum
+   Aufdecken, die gewählte trägt Begründung und Auszüge aus dem Handbuch. */
+.ra-frage__text { margin: 6px 0 0; font-size: 16px; font-weight: 700; line-height: 1.5; text-wrap: pretty; }
+.ra-antworten { list-style: none; margin: 18px 0 0; padding: 0 32px; display: grid; gap: 8px; }
+.ra-antwort { border: 1px solid var(--rand); border-radius: var(--radius-s); background: var(--weiss); }
+.ra-antwort__knopf {
+  display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: start; width: 100%;
+  padding: 9px 12px; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.ra-antwort__knopf:hover .ra-antwort__marke { border-color: var(--akzent); color: var(--akzent); }
+.ra-antwort__marke {
+  display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+  border: 1px solid var(--rand); border-radius: var(--radius-xs); font-size: 13px; font-weight: 700; color: var(--text-leise);
+}
+.ra-antwort__text { font-size: 14.5px; line-height: 1.5; padding-top: 2px; }
+.ra-antwort__text b { color: var(--text-leise); }
+.ra-antwort__warum { margin: 0; padding: 0 12px 10px 46px; font-size: 13.5px; line-height: 1.5; color: var(--text-leise); }
+.ra-antwort__zitate { padding: 0 12px 12px 46px; }
+.ra-antwort__zitate .ra-zitat:first-child { margin-top: 4px; }
+.ra-antwort.ist-richtig { border-color: var(--gut); }
+.ra-antwort.ist-richtig .ra-antwort__marke { border-color: var(--gut); background: var(--gut); color: var(--weiss); }
+.ra-antwort.ist-falsch { border-color: var(--schlecht); }
+.ra-antwort.ist-falsch .ra-antwort__marke { border-color: var(--schlecht); color: var(--schlecht); }
+.ra-antwort.ist-fokus { box-shadow: 0 0 0 2px var(--akzent); border-color: var(--akzent); }
+.ra-antworten__knoepfe { margin-top: 10px; padding: 0 32px; }
+.ra-frage__tipp { margin: 0; font-size: 14px; line-height: 1.55; font-style: italic; }
+.ra-frage__verweise { margin: 6px 0 0; font-size: 13.5px; }
+.ra-frage__alt { color: var(--text-leise); }
+.ra-frage__merksaetze { margin: 0; padding-left: 1.1rem; font-size: 14px; line-height: 1.55; }
+.ra-fragenwahl__dok { margin: 0 32px 8px; }
+.ra-fragenwahl__text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.fr-frage__gesamtbild { margin-left: auto; }
+.fr-frage__gesamtbild + .fr-frage__knopf { margin-left: 0; }
+/* Breite Tabellen (Beziehungen) rollen im Zitat, statt die Karte zu dehnen. */
+.ra-antworten > li, .ra-antwort__zitate { min-width: 0; }
+.ra-antwort__zitate .ra-zitat__text { overflow-x: auto; }
+.ra-antwort__zitate table { font-size: 12.5px; }

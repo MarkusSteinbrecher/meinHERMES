@@ -47,9 +47,11 @@
   }
 
   /* Zuerst die Datei auf dem lokalen Server, sonst die in diesem Browser
-     geladene. Promise: { daten, quelle: 'lokal' | 'datei', name, stand } oder null. */
+     geladene. Promise: { daten, quelle: 'lokal' | 'datei', name, stand } oder null.
+     Nach internal/ fragt nur der lokale Server — live gibt es die Datei nicht. */
   function laden() {
-    var ohneCache = global.fetch ? global.fetch(LOKAL, { cache: 'no-store' }) : Promise.reject(new Error('kein fetch'));
+    var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(global.location.hostname);
+    var ohneCache = lokal && global.fetch ? global.fetch(LOKAL, { cache: 'no-store' }) : Promise.reject(new Error('nicht lokal'));
     return ohneCache
       .then(function (r) { if (!r.ok) { throw new Error('keine lokale Datei'); } return r.json(); })
       .then(function (d) { if (!gueltig(d)) { throw new Error('ungültig'); } return { daten: d, quelle: 'lokal' }; })
@@ -60,6 +62,38 @@
   }
 
   function zahl(n, eins, viele) { return n + ' ' + (n === 1 ? eins : viele); }
+
+  /* --- Im Überblick (js/raster.js, Reiter «Fragen») ---------------------- */
+
+  var SICHT = { rolle: true, aufgabe: true, ergebnis: true, pfeile: false };
+
+  function zielVon(z) {
+    return z ? { ids: z.ids || [], felder: z.felder || [], phasen: z.phasen || [], module: z.module || [] } : null;
+  }
+
+  /* Zitat im Format des Rundgangs: Abschnitt einer Elementseite oder des Referenzhandbuchs. */
+  function zitatVon(q) {
+    if (q.id) { return { element: q.id, abschnitt: q.abschnitt || null }; }
+    return q.kapitel ? { rhb: q.kapitel, nummer: q.nummer } : null;
+  }
+
+  /** Die Fragen als Schritte, Dokument für Dokument: { key, id, kapitel, titel,
+      frage, vorgehen, sicht, ziel, antworten: [{ ziel, zitate }] }. */
+  function schritte(d) {
+    var aus = [];
+    d.dokumente.forEach(function (dok) {
+      d.fragen.filter(function (f) { return f.dokument === dok.id; }).forEach(function (f) {
+        aus.push({
+          key: 'frage:' + f.id, id: f.id, kapitel: dok.titel, titel: f.id, frage: f,
+          vorgehen: f.vorgehen || null, sicht: SICHT, ziel: zielVon(f.zeige),
+          antworten: f.antworten.map(function (a) {
+            return { ziel: zielVon(a.zeige), zitate: (a.zitate || []).map(zitatVon).filter(Boolean) };
+          })
+        });
+      });
+    });
+    return aus;
+  }
 
   function ueberblickAdresse(g) {
     var q = g.vorgehen === 'agil' ? ['vorgehen=agil'] : [];
@@ -111,6 +145,8 @@
       karte.appendChild(h('div', { class: 'fr-frage__kopf' }, [
         h('span', { class: 'fr-frage__id', text: f.id }),
         f.stufe ? h('span', { class: 'fr-frage__stufe', text: f.stufe }) : null,
+        h('a', { class: 'btn btn--klein fr-frage__gesamtbild', href: '#/ueberblick?frage=' + encodeURIComponent(f.id),
+          title: 'Links das Gesamtbild, rechts die Frage: jede Antwort hebt ihre Stellen hervor', text: 'Im Gesamtbild durchgehen' }),
         h('button', {
           type: 'button', class: 'btn btn--klein fr-frage__knopf', text: offen ? 'Lösung verbergen' : 'Lösung zeigen',
           'aria-expanded': offen ? 'true' : 'false', on: { click: function () { offen = !offen; zeichnen(); } }
@@ -292,4 +328,5 @@
   }
 
   HT.views.fragen = { titel: 'Fragen', render: render };
+  HT.fragen = { laden: laden, schritte: schritte };
 }(window));
