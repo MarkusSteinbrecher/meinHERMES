@@ -1,6 +1,6 @@
 /* meinHERMES — Rundgang durch das Raster (js/raster.js), Entwurf.
 
-   Drei Wege Schritt für Schritt durch die Methode; links zeigt das Raster,
+   Vier Wege Schritt für Schritt durch die Methode; links zeigt das Raster,
    worum es geht, rechts in der Inhaltsseite steht, was es bedeutet:
    - Entlang der Ergebnisse: der Fluss der Abbildung 1, Phase für Phase,
      ein Schritt je Kasten der Abbildung.
@@ -9,6 +9,8 @@
      Entscheide, mit denen sie schliesst.
    - Rolle für Rolle: was jede Rolle verantwortet, die drei Pflichtrollen
      auch Phase für Phase (Deep Dive «Aus Sicht der Rollen»).
+   - Besonderheiten: spezielle Themen (Abnahmen, Protokolle, Prüfungen) —
+     die Elemente dazu, wo sie stehen und was das Handbuch über sie sagt.
 
    Die Texte sind wörtliche Zitate (zitate): der Anfang der Elementseite
    von hermes.admin.ch — dieselbe Seite wie im Reiter «Handbuch» — oder
@@ -43,7 +45,8 @@
   var REISEN = [
     { id: 'ergebnisse', titel: 'Entlang der Ergebnisse', kurz: 'Der Fluss der Abbildung 1: welches Ergebnis wo entsteht und worauf es aufbaut — von der Initialisierung bis zum Abschluss.' },
     { id: 'phasen', titel: 'Phase für Phase', kurz: 'Jede Phase im Detail: ihr Auftrag, jedes Modul mit seinen Aufgaben, Rollen und Ergebnissen und die Meilensteine, mit denen sie endet.' },
-    { id: 'rollen', titel: 'Rolle für Rolle', kurz: 'Wer was verantwortet: Auftraggeber, Projektleiter und Anwendervertreter Phase für Phase, dann die weiteren Rollen.' }
+    { id: 'rollen', titel: 'Rolle für Rolle', kurz: 'Wer was verantwortet: Auftraggeber, Projektleiter und Anwendervertreter Phase für Phase, dann die weiteren Rollen.' },
+    { id: 'besonderheiten', titel: 'Besonderheiten', kurz: 'Wie HERMES spezielle Themen behandelt: Abnahmen, Protokolle und Prüfungen — wo sie im Ablauf stehen, wer sie verantwortet und was sie festhalten.' }
   ];
 
   /** data/lernpfad.json, einmal geladen (null, wenn es fehlt). */
@@ -436,7 +439,142 @@
     return schritte;
   }
 
-  var BAUER = { ergebnisse: ergebnisseReise, phasen: phasenReise, rollen: rollenReise };
+  /* --- Besonderheiten ------------------------------------------------------ */
+
+  /* Spezielle Themen, je ein Kapitel. Ein Schritt zeigt ein Element:
+     aufgabe — Zitate aus ihrer Seite, ihre Kette(n) mit allen Ergebnissen;
+     ergebnis — Zitate, wer es wo erarbeitet; ueberblick — die Elemente des
+     Themas als Liste, wo sie stehen. zitate: [[id, abschnitt]], ohne
+     abschnitt der Anfang der Seite. */
+  var THEMEN = [
+    { kapitel: 'Abnahmen', schritte: [
+      { art: 'ueberblick', titel: 'Abnahmen im Überblick', zitate: [['ergebnis-abnahmeprotokoll']],
+        elemente: ['aufgabe-entscheid-vorabnahme-treffen', 'aufgabe-entscheid-abnahme-migration-treffen', 'aufgabe-entscheid-abnahme-treffen'],
+        listenTitel: 'Die Abnahme-Entscheide' },
+      { art: 'aufgabe', id: 'aufgabe-entscheid-vorabnahme-treffen', titel: 'Vorabnahme',
+        zitate: [['aufgabe-entscheid-vorabnahme-treffen', 'Zweck'], ['aufgabe-entscheid-vorabnahme-treffen', 'Grundidee'], ['aufgabe-entscheid-vorabnahme-treffen', 'HERMES spezifisch']] },
+      { art: 'aufgabe', id: 'aufgabe-entscheid-abnahme-migration-treffen', titel: 'Abnahme Migration',
+        zitate: [['aufgabe-entscheid-abnahme-migration-treffen', 'Zweck'], ['aufgabe-entscheid-abnahme-migration-treffen', 'Grundidee'], ['aufgabe-entscheid-abnahme-migration-treffen', 'HERMES spezifisch']] },
+      { art: 'aufgabe', id: 'aufgabe-entscheid-abnahme-treffen', titel: 'Abnahme',
+        zitate: [['aufgabe-entscheid-abnahme-treffen', 'Zweck'], ['aufgabe-entscheid-abnahme-treffen', 'Grundidee'], ['aufgabe-entscheid-abnahme-treffen', 'HERMES spezifisch'], ['ergebnis-meilenstein-abnahme']] },
+      { art: 'ergebnis', id: 'ergebnis-abnahmeprotokoll', titel: 'Das Abnahmeprotokoll',
+        zitate: [['ergebnis-abnahmeprotokoll', 'Inhalt']] }
+    ] },
+    { kapitel: 'Protokolle', schritte: [
+      { art: 'ueberblick', titel: 'Protokolle im Überblick', zitate: [],
+        elemente: ['ergebnis-protokoll', 'ergebnis-angebotsprotokoll', 'ergebnis-pruefprotokoll', 'ergebnis-testprotokoll', 'ergebnis-abnahmeprotokoll'],
+        listenTitel: 'Die Protokolle' },
+      { art: 'ergebnis', id: 'ergebnis-protokoll', titel: 'Protokoll',
+        zitate: [['ergebnis-protokoll'], ['ergebnis-protokoll', 'Inhalt']] },
+      { art: 'ergebnis', id: 'ergebnis-angebotsprotokoll', titel: 'Angebotsprotokoll',
+        zitate: [['ergebnis-angebotsprotokoll'], ['ergebnis-angebotsprotokoll', 'Inhalt']] }
+    ] },
+    { kapitel: 'Prüfungen', schritte: [
+      { art: 'aufgabe', id: 'aufgabe-qualitaetssicherung-fuehren', titel: 'Prüfen und Testen',
+        zitate: [['aufgabe-qualitaetssicherung-fuehren', 'Zweck'], ['aufgabe-qualitaetssicherung-fuehren', 'Grundidee']] },
+      { art: 'ergebnis', id: 'ergebnis-pruefprotokoll', titel: 'Prüfprotokoll',
+        zitate: [['ergebnis-pruefprotokoll'], ['ergebnis-pruefprotokoll', 'Inhalt'], ['aufgabe-qualitaetssicherung-fuehren', 'HERMES spezifisch']] },
+      { art: 'ergebnis', id: 'ergebnis-testprotokoll', titel: 'Testprotokoll',
+        zitate: [['ergebnis-testprotokoll'], ['ergebnis-testprotokoll', 'Inhalt']] }
+    ] }
+  ];
+
+  /* Die Stellen einer Aufgabe im Raster, je verantwortliche Rolle eine Kette
+     mit allen Ergebnissen und Meilensteinen; dieselbe Aufgabe in mehreren
+     Phasen steht einmal («Konzept bis Einführung»). */
+  function aufgabeKetten(m, id) {
+    var nachRolle = {}, reihe = [];
+    m.felder.forEach(function (f) {
+      f.bloecke.forEach(function (b) {
+        if (b.aufgabe.id !== id) { return; }
+        var key = b.rolle ? b.rolle.id : '';
+        var z = nachRolle[key];
+        if (!z) {
+          z = nachRolle[key] = kette(b, null, true);
+          z.phasen = []; z.module = []; z.felder = []; z.phase = f.phase; z.modul = f.modul; z.zeigeId = id;
+          reihe.push(z);
+        }
+        b.ergebnisse.forEach(function (k) {
+          if (!z.ergebnisse.some(function (x) { return x.id === k.id; })) { z.ergebnisse.push(refK(k)); }
+        });
+        if (z.phasen.indexOf(f.phase) === -1) { z.phasen.push(f.phase); }
+        if (z.module.indexOf(f.modul) === -1) { z.module.push(f.modul); }
+        z.felder.push([f.phase, f.modul]);
+      });
+    });
+    reihe.forEach(function (z) { z.wo = phasenText(m, z.phasen) + ' · ' + z.module.join(', '); });
+    return reihe;
+  }
+
+  /* Wo ein Element steht: Aufgaben mit ihren Ketten, Ergebnisse mit den
+     Ketten, die sie erarbeiten. */
+  function stellen(m, e) {
+    return e.kategorie === 'aufgabe' ? aufgabeKetten(m, e.id) : ketten(m, e);
+  }
+
+  function besonderheitenReise(lp, m) {
+    var schritte = [];
+    THEMEN.forEach(function (thema) {
+      thema.schritte.forEach(function (d) {
+        var zitate = (d.zitate || []).map(function (q) { return elementZitat(HT.daten.eintragMitId(q[0]), q[1]); }).filter(Boolean);
+        if (d.art === 'ueberblick') {
+          var zeilen = [], ids = [];
+          d.elemente.forEach(function (id) {
+            var e = HT.daten.eintragMitId(id);
+            var reihe = e ? stellen(m, e) : [];
+            if (!reihe.length) { return; }
+            var phasen = einmal([].concat.apply([], reihe.map(function (z) { return z.phasen; })));
+            var module = einmal([].concat.apply([], reihe.map(function (z) { return z.module; })));
+            var ms = e.kategorie === 'aufgabe' ? [].concat.apply([], reihe.map(function (z) {
+              return z.ergebnisse.filter(istMeilenstein);
+            })) : [];
+            ids.push(id);
+            ms.forEach(function (k) { ids.push(k.id); });
+            zeilen.push({
+              wo: phasenText(m, phasen), phase: reihe[0].phase, modul: reihe[0].modul, zeigeId: id,
+              k: ref(e), text: module.join(', '), ms: ms
+            });
+          });
+          if (!zeilen.length) { return; }
+          var wort = zeilen.every(function (z) { return z.k.kategorie === 'aufgabe' && istEntscheid(z.k); }) ? ['Entscheid', 'Entscheide']
+            : zeilen.every(function (z) { return z.k.kategorie === 'ergebnis'; }) ? ['Ergebnis', 'Ergebnisse'] : ['Element', 'Elemente'];
+          schritte.push({
+            key: 'thema:' + thema.kapitel, kapitel: thema.kapitel, kicker: thema.kapitel + ' · Überblick', titel: d.titel,
+            zitate: zitate,
+            hinweis: ['In dieser Vorgehensweise: ' + zahlText(zeilen.length, wort[0], wort[1]) + '. Das Raster hebt sie hervor; ein Ort in der Liste springt ins Feld.'],
+            fakten: [{ titel: d.listenTitel, zeilen: zeilen }],
+            sicht: SICHT_BLOECKE, ziel: ziel(einmal(ids))
+          });
+          return;
+        }
+        var e = HT.daten.eintragMitId(d.id);
+        var reihe = e ? stellen(m, e) : [];
+        if (!reihe.length) { return; }             // das Element kommt in dieser Vorgehensweise nicht vor
+        /* Hervor treten das Element, seine Aufgaben und Meilensteine — bei
+           einer Aufgabe dazu ihre Felder. Ergebnisse wie die Liste
+           Projektentscheide stehen an vielen Stellen und bleiben leise. */
+        var idsZ = [e.id], felder = [];
+        reihe.forEach(function (z) {
+          idsZ.push(z.aufgabe.id);
+          if (d.art === 'aufgabe') {
+            z.ergebnisse.filter(istMeilenstein).forEach(function (k) { idsZ.push(k.id); });
+            felder = felder.concat(z.felder);
+          }
+        });
+        schritte.push({
+          key: 'besonders:' + e.id, kapitel: thema.kapitel,
+          kicker: thema.kapitel + ' · ' + (d.art === 'aufgabe' ? (istEntscheid(e) ? 'Entscheid' : 'Aufgabe') : 'Ergebnis'),
+          titel: d.titel || e.begriff, element: ref(e), zitate: zitate,
+          kettenTitel: d.art === 'aufgabe' ? 'Rolle → Aufgabe → Ergebnis' : 'Wer es wo erarbeitet',
+          ketten: reihe,
+          sicht: SICHT_BLOECKE, ziel: ziel(einmal(idsZ), felder)
+        });
+      });
+    });
+    return schritte;
+  }
+
+  var BAUER = { ergebnisse: ergebnisseReise, phasen: phasenReise, rollen: rollenReise, besonderheiten: besonderheitenReise };
 
   /** Die Schritte eines Weges für das Modell m des Rasters (eine Vorgehensweise). */
   function schritte(id, lp, m) {
