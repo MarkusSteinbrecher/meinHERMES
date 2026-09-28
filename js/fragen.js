@@ -42,7 +42,8 @@
   }
 
   function gueltig(d) {
-    return !!d && d.format === 'meinHERMES-fragen' && Array.isArray(d.dokumente) && Array.isArray(d.fragen);
+    /* meinHERMES-bki: so hiess das Format, bis die Seite «Fragen» hiess. */
+    return !!d && (d.format === 'meinHERMES-fragen' || d.format === 'meinHERMES-bki') && Array.isArray(d.dokumente) && Array.isArray(d.fragen);
   }
 
   /* Zuerst die Datei auf dem lokalen Server, sonst die in diesem Browser
