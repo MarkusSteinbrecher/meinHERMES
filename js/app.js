@@ -176,13 +176,25 @@
       if (mitte.length) { mitte.push(h('span', { class: 'unterleiste__trenner', 'aria-hidden': 'true' })); }
       mitte.push(h('div', { class: 'unterleiste__inhalt', role: 'group', 'aria-label': opt.inhaltLabel || opt.label || null }, opt.inhalt));
     }
-    var kinder = [h('div', { class: 'unterleiste__mitte' }, mitte)];
+    var rolle = h('div', { class: 'unterleiste__mitte' }, mitte);
+    /* Pfeile, sobald die Mitte nicht passt: am Desktop fehlt sonst jeder Weg
+       zu verdeckten Links (kein Rollbalken, das Mausrad rollt senkrecht). */
+    function pfeil(richtung) {
+      var links = richtung < 0;
+      return h('button', {
+        type: 'button', class: 'unterleiste__pfeil', hidden: true,
+        title: links ? 'Nach links rollen' : 'Nach rechts rollen', 'aria-label': links ? 'Nach links rollen' : 'Nach rechts rollen',
+        on: { click: function () { rolle.scrollBy({ left: richtung * Math.max(120, rolle.clientWidth * 0.7), behavior: 'smooth' }); } }
+      }, HT.ui.symbol([links ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'], 16));
+    }
+    var zurueck = pfeil(-1);
+    var vor = pfeil(1);
+    var kinder = [zurueck, rolle, vor];
     if (opt.info) { kinder.push(infoBauen(opt.info)); }
     if (opt.rechts) { kinder.push(opt.rechts); }
     var leiste = h('div', { class: 'unterleiste__inner' + (opt.info ? ' unterleiste__inner--info' : '') + (opt.rechts ? ' unterleiste__inner--rechts' : '') }, kinder);
     kopfPlatz('unterleiste', leiste);
 
-    var rolle = leiste.querySelector('.unterleiste__mitte');
     var aktiv = leiste.querySelector('[aria-current="page"]');
     if (aktiv && rolle.scrollWidth > rolle.clientWidth) {
       rolle.scrollLeft = aktiv.offsetLeft - (rolle.clientWidth - aktiv.offsetWidth) / 2;
@@ -197,6 +209,9 @@
       var links = rolle.scrollLeft > 1;
       var rechts = rolle.scrollLeft + rolle.clientWidth < rolle.scrollWidth - 1;
       rolle.dataset.mehr = links ? (rechts ? 'beide' : 'links') : (rechts ? 'rechts' : '');
+      zurueck.hidden = vor.hidden = !links && !rechts;
+      zurueck.disabled = !links;
+      vor.disabled = !rechts;
     }
     rolle.addEventListener('scroll', randSetzen, { passive: true });
     if (randBeobachter) { randBeobachter.disconnect(); }

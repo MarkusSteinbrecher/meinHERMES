@@ -475,6 +475,21 @@ main:focus { outline: none; }
    Wahl des Zuordnens); gerollt wird die ganze Mitte. */
 .unterleiste__inhalt { display: flex; align-items: stretch; flex: 0 0 auto; }
 .unterleiste__hilfe { position: relative; display: flex; flex: 0 0 auto; }
+/* Pfeile beidseits der Mitte, nur wenn sie nicht passt (HT.app.unterleiste);
+   am Ende der Zeile blass. */
+.unterleiste__pfeil {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-leise);
+  cursor: pointer;
+}
+.unterleiste__pfeil[hidden] { display: none; }
+.unterleiste__pfeil:hover:not(:disabled) { color: var(--text); background: var(--flaeche-2); }
+.unterleiste__pfeil:disabled { opacity: .3; cursor: default; }
 .unterleiste__info {
   display: grid;
   place-items: center;
