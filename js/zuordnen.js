@@ -609,7 +609,7 @@
        Prüfung neu ist (`gezaehlt`): «Prüfen · Weiter · Prüfen» schrieb sonst
        dieselbe Lage jedes Mal wieder gut, und nach drei Klicks galt als
        verstanden, was einmal richtig dalag. Wer einen Kasten neu belegt,
-       meldet ihn wieder; «Nochmals» beginnt von vorn. */
+       meldet ihn wieder; «Von vorne» beginnt von vorn. */
     if (HT.fortschritt) {
       var meldungen = {}, liste = [];
       uebung.ziele.forEach(function (z) {
@@ -641,10 +641,13 @@
     }
   }
 
-  /* Nach einer Prüfung mitten in der Übung weiterarbeiten: die gelegten
-     Elemente bleiben liegen (auch die falschen), nur die Prüfmarken gehen. */
+  /* Nach einer Prüfung weiterarbeiten: die falsch gelegten Elemente gehen
+     zurück in die Auswahl, die richtigen bleiben liegen; die Prüfmarken gehen. */
   function weitermachen() {
-    uebung.ziele.forEach(function (z) { z.status = ''; z.loesung = null; });
+    uebung.ziele.forEach(function (z) {
+      if (z.status === 'falsch' && z.chip) { z.chip.ziel = null; z.chip = null; z.gezaehlt = null; }
+      z.status = ''; z.loesung = null;
+    });
     uebung.gewaehlt = null;
     uebung.geprueft = false;
     zeichnen();
@@ -870,7 +873,7 @@
     refs.knopfPruefen.hidden = !!gepr;
     refs.knopfPruefen.disabled = gelegt === 0;
     refs.knopfReset.hidden = !!gepr;
-    /* Nach der Prüfung «Weiter», solange nicht alles richtig ist; sonst nur «Nochmals». */
+    /* Nach der Prüfung «Weiter», solange nicht alles richtig ist; sonst nur «Von vorne». */
     var offenBleibt = !!gepr && gepr.richtig < gepr.gesamt;
     refs.knopfFortsetzen.hidden = !offenBleibt;
     refs.knopfNochmals.hidden = !gepr;
@@ -1305,8 +1308,8 @@
 
     refs.knopfPruefen = werkzeug('Prüfen', 'btn btn--primaer', pruefen);
     refs.knopfReset = werkzeug('Zurücksetzen', 'btn', function () { zuruecksetzen(); });
-    refs.knopfFortsetzen = werkzeug('Weiter', 'btn btn--primaer', weitermachen, { title: 'Mit den gelegten Elementen weiterarbeiten' });
-    refs.knopfNochmals = werkzeug('Nochmals', 'btn btn--primaer', function () { zuruecksetzen(); }, { title: 'Alle Elemente zurück in die Auswahl' });
+    refs.knopfFortsetzen = werkzeug('Weiter', 'btn btn--primaer', weitermachen, { title: 'Falsch gelegte Elemente zurück in die Auswahl, die richtigen bleiben liegen' });
+    refs.knopfNochmals = werkzeug('Von vorne', 'btn btn--primaer', function () { zuruecksetzen(); }, { title: 'Alle Elemente zurück in die Auswahl' });
     var folgende = naechste(def);
     var knopfNaechste = folgende && folgende !== def ? h('a', { class: 'btn', href: folgende.adresse, text: 'Nächste: ' + folgende.name + ' →' }) : null;
 
