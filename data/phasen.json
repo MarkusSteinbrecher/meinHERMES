@@ -94,16 +94,20 @@
     "module": ["Projektsteuerung", "Projektführung", "Organisation", "Produkt", "IT-System", "Tests", "Einführungsorganisation", "IT-Migration", "IT-Betrieb", "ISDS"],
     "meilensteine": [
       {
+        "name": "Meilenstein Abnahme Migration",
+        "beschreibung": "Der Meilenstein wird erreicht, wenn der Entscheid Abnahme Migration getroffen wird. Die Nutzung des neuen Systems kann für die Anwender freigegeben werden (Entscheid Betriebsaufnahme). Modul IT-Migration."
+      },
+      {
         "name": "Meilenstein Betriebsaufnahme",
         "beschreibung": "Der Meilenstein wird erreicht, wenn der Entscheid Betriebsaufnahme getroffen wird. Die Lösung kann in Betrieb genommen werden. Modul Einführungsorganisation."
       },
       {
-        "name": "Meilenstein Phasenfreigabe Abschluss",
-        "beschreibung": "Der Meilenstein wird erreicht, wenn der Entscheid Phasenfreigabe Abschluss getroffen wird. Die Leistungserbringung im Rahmen der Lösungsentstehung ist beendet. Die Arbeiten in der Phase Abschluss können gestartet werden."
-      },
-      {
         "name": "Meilenstein Abnahme",
         "beschreibung": "Der Meilenstein wird erreicht, wenn der Entscheid Abnahme getroffen wird. Die Lösung wird definitiv in die Anwendungs- und allenfalls auch in die Betriebsorganisation überführt. Danach beginnt die Gewährleistung und damit der reguläre Betrieb."
+      },
+      {
+        "name": "Meilenstein Phasenfreigabe Abschluss",
+        "beschreibung": "Der Meilenstein wird erreicht, wenn der Entscheid Phasenfreigabe Abschluss getroffen wird. Die Leistungserbringung im Rahmen der Lösungsentstehung ist beendet. Die Arbeiten in der Phase Abschluss können gestartet werden."
       }
     ],
     "quelle": {
@@ -124,8 +128,32 @@
         "beschreibung": "Optionaler Meilenstein. Der Meilenstein wird erreicht, wenn der Entscheid Releasefreigabe getroffen wird. Im Rahmen der agilen Vorgehensweise können die Arbeiten am nächsten Release starten. Ob dieser Entscheid erforderlich ist, wird in der Phase Initialisierung im Projektmanagementplan festgelegt."
       },
       {
+        "name": "Meilenstein Lösungsarchitektur",
+        "beschreibung": "Der Meilenstein wird erreicht, wenn der Entscheid Lösungsarchitektur getroffen wird. Dies bildet die Voraussetzung für die Entwicklung oder Adaption von Systemen. Modul IT-System."
+      },
+      {
+        "name": "Meilenstein Produktkonzept",
+        "beschreibung": "Der Meilenstein wird erreicht, wenn der Entscheid Produktkonzept getroffen wird. Das Konzept ist die Voraussetzung für die Entwicklung oder Adaption von Produkten oder Dienstleistungen. Modul Produkt."
+      },
+      {
+        "name": "Meilenstein Ausschreibung",
+        "beschreibung": "Der Meilenstein wird erreicht, wenn der Entscheid Ausschreibung getroffen wird. Die Ausschreibung kann publiziert werden. Modul Beschaffung."
+      },
+      {
+        "name": "Meilenstein Zuschlag",
+        "beschreibung": "Der Meilenstein wird erreicht, wenn der Entscheid Zuschlag getroffen wird. Der Entscheid kann publiziert und die Vertragsarbeiten mit dem Zuschlagsempfänger gestartet werden. Modul Beschaffung."
+      },
+      {
+        "name": "Meilenstein ISDS-Konzept",
+        "beschreibung": "Der Meilenstein wird erreicht, wenn der Entscheid ISDS-Konzept getroffen wird. Die Realisierung der ISDS-Massnahmen kann an die Hand genommen werden. Modul ISDS."
+      },
+      {
         "name": "Meilenstein Vorabnahme",
         "beschreibung": "Wird im iterativ-inkrementellen Verlauf erreicht; bildet die Grundlage für die Durchführung der Einführungsmassnahmen und die Betriebsaufnahme."
+      },
+      {
+        "name": "Meilenstein Abnahme Migration",
+        "beschreibung": "Der Meilenstein wird erreicht, wenn der Entscheid Abnahme Migration getroffen wird. Die Nutzung des neuen Systems kann für die Anwender freigegeben werden (Entscheid Betriebsaufnahme). Modul IT-Migration."
       },
       {
         "name": "Meilenstein Betriebsaufnahme",
