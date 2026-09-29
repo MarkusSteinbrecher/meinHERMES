@@ -1365,14 +1365,15 @@
        eine Zeile versetzt zu stehen. Von oben nach unten: das höchste
        nächste Element der Zeile und alle derselben Art (Rolle, Aufgabe,
        Ergebnis, Meilenstein), die höchstens ANGLEICHEN tiefer stehen, beginnen auf der
-       Höhe des tiefsten davon. Die Abstände darunter bleiben, nur wachsen
+       Höhe des tiefsten davon und werden so hoch wie das höchste — dann ist
+       der Abstand darunter überall gleich. Die Abstände darunter bleiben, nur wachsen
        sie; weiter auseinander Liegendes bleibt, wie es ist. Ein Feld über
        mehrere Phasen gleicht sich mit seiner ersten ab. Erst alle
        Abstände zurücksetzen, dann alle lesen, dann alle schreiben. */
     var ANGLEICHEN = 18;        // px, gut eine Zeile
     var NACHZUEGLER = 14;       // px, knapp eine Zeile
     function angleichen() {
-      var zeilen = {}, alle = [];
+      var zeilen = {}, alle = [], hoeher = [];
       function blaetter(el) {
         if (!el.classList.contains('ra-block')) { return [el]; }
         var liste = [];
@@ -1393,7 +1394,7 @@
               if (teile.length && geteilt(f.zeile, key)) { anfang.set(teile[0], key); }
               liste.push.apply(liste, teile);
             });
-            liste.forEach(function (el) { el.style.marginTop = ''; });
+            liste.forEach(function (el) { el.style.marginTop = ''; el.style.minHeight = ''; });
             (zeilen[f.zeile] = zeilen[f.zeile] || []).push({ spur: spur, liste: liste, anfang: anfang });
           });
         });
@@ -1409,6 +1410,7 @@
               el: el, h: r.height, d: r.top - oben0 - unten,
               rand: parseFloat(global.getComputedStyle(el).marginTop) || 0,
               art: ['rolle', 'aufgabe', 'meilenstein', 'ergebnis'].filter(function (a) { return el.classList.contains('ra-k--' + a); })[0],
+              huelle: el.closest('.ra-block') || el.parentNode,
               key: c.anfang.get(el) || null
             };
             unten = r.bottom - oben0;
@@ -1456,15 +1458,40 @@
               grenze = ziel + NACHZUEGLER;
             }
           }
+          /* Was auf einer Linie beginnt, wird gleich hoch — so hoch wie das
+             höchste: dann ist der Abstand darunter überall derselbe. */
+          /* Rückt ein Kasten ein Stück nach, wächst statt einer Lücke der
+             Kasten darüber im selben Block (oder derselben Liste); steht
+             darüber seine Rolle, rückt sie mit und bleibt über dem Kasten.
+             Eine Rolle neben einer höheren steht unten, über ihrem Kasten. */
+          var hoch = Math.max.apply(null, gruppe.map(function (c) { return c.blaetter[c.i].h; }));
           gruppe.forEach(function (c) {
-            var b = c.blaetter[c.i];
-            if (ziel - c.soll > 0.5) { alle.push({ el: b.el, rand: b.rand + ziel - c.soll }); }
-            c.unten = ziel + b.h;
+            var b = c.blaetter[c.i], vor = c.i ? c.blaetter[c.i - 1] : null, mehr = ziel - c.soll;
+            if (mehr > 0.5) {
+              if (vor && vor.huelle === b.huelle && mehr <= ANGLEICHEN + NACHZUEGLER && (vor.art === 'aufgabe' || vor.art === 'ergebnis')) {
+                vor.hNeu = (vor.hNeu || vor.h) + mehr;
+              } else if (vor && vor.huelle === b.huelle && mehr <= ANGLEICHEN + NACHZUEGLER && vor.art === 'rolle') {
+                vor.plus = (vor.plus || 0) + mehr;
+              } else {
+                b.plus = (b.plus || 0) + mehr;
+              }
+            }
+            if (hoch - b.h > 0.5) {
+              if (b.art === 'rolle') { b.plus = (b.plus || 0) + hoch - b.h; } else { b.hNeu = hoch; }
+            }
+            c.unten = ziel + hoch;
             c.i++;
           });
         }
+        saeulen.forEach(function (c) {
+          c.blaetter.forEach(function (b) {
+            if (b.plus > 0.5) { alle.push({ el: b.el, rand: b.rand + b.plus }); }
+            if (b.hNeu) { hoeher.push({ el: b.el, h: b.hNeu }); }
+          });
+        });
       });
       alle.forEach(function (x) { x.el.style.marginTop = x.rand + 'px'; });
+      hoeher.forEach(function (x) { x.el.style.minHeight = x.h + 'px'; });
     }
 
     /* Stufen wie in der Abbildung 1: In einer Phase beginnen Stücke, deren
