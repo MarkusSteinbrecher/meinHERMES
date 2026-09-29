@@ -1025,10 +1025,15 @@
             if (x.classList.contains('ra-k--weiter')) { weitereZeigen(x.closest('.ra-feld'), true); }
           });
         });
-        /* Schritte einer Reihenfolge: die Nummer am Kasten (nummern: { id: n }). */
+        /* Schritte einer Reihenfolge: die Nummer am Kasten (nummern: { id: n }).
+           Steht die Aufgabe in mehreren Phasen, trägt die früheste die Nummer,
+           die späteren «n↻» — dieselbe Aufgabe, bei Bedarf wiederholt. */
         Object.keys(tourZiel.nummern || {}).forEach(function (id) {
-          Array.prototype.forEach.call(gitter.querySelectorAll('.ra-k[data-id="' + id + '"]'), function (x) {
-            x.setAttribute('data-tour-nr', tourZiel.nummern[id]);
+          var kaesten = Array.prototype.slice.call(gitter.querySelectorAll('.ra-k[data-id="' + id + '"]'));
+          var zeile = function (x) { var fd = x.closest('.ra-feld'); return fd ? zeileVon[fd.dataset.phase] || 0 : 0; };
+          var erste = Math.min.apply(null, kaesten.map(zeile));
+          kaesten.forEach(function (x) {
+            x.setAttribute('data-tour-nr', tourZiel.nummern[id] + (zeile(x) > erste ? '↻' : ''));
           });
         });
         (tourZiel.felder || []).forEach(function (fm) {
@@ -2054,6 +2059,7 @@
         z.text ? h('span', { class: 'ra-ort__leise ra-ort__block', text: z.text }) : null,
         links.length ? h('span', { class: 'ra-ort__block ra-tour__folge' }, ['→ '].concat(links)) : null
       ] : [z.text ? h('span', { class: 'ra-ort__leise', text: z.text }) : null].concat(links);
+      if (z.nachsatz) { inhalt.push(h('span', { class: 'ra-ort__leise ra-ort__block', text: z.nachsatz })); }
       if (z.ms && z.ms.length) { inhalt.push(h('span', { class: 'ra-ort__ms' }, ['◆ '].concat(mitKomma(z.ms.map(verweis))))); }
       if (z.wo && z.phase) { return ortZeile(z.wo, z.phase, z.modul || null, z.zeigeId || null, inhalt); }
       if (z.wo) {

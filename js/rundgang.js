@@ -581,9 +581,14 @@
             /* nummeriert: die Nummer in der Liste und im Raster, dazu wer die Aufgabe verantwortet. */
             var rollen = d.nummeriert ? einmal(reihe.map(function (z) { return z.rolle ? z.rolle.begriff : null; })) : [];
             if (d.nummeriert) { nummern[id] = nr + 1; }
+            /* Nummeriert steht eine Aufgabe in mehreren Phasen (Test durchführen)
+               an ihrer ersten Stelle; die späteren Phasen wiederholen sie («Bei
+               Bedarf wird die Testdurchführung mehrfach wiederholt»). */
+            var spaeter = d.nummeriert ? phasen.filter(function (p) { return m.phasen.indexOf(p) > m.phasen.indexOf(reihe[0].phase); }) : [];
             zeilen.push({
-              wo: phasenText(m, phasen), phase: reihe[0].phase, modul: reihe[0].modul, zeigeId: id,
-              k: ref(e), nr: d.nummeriert ? nr + 1 : null, text: module.concat(rollen).join(' · '), ms: ms
+              wo: spaeter.length ? reihe[0].phase : phasenText(m, phasen), phase: reihe[0].phase, modul: reihe[0].modul, zeigeId: id,
+              k: ref(e), nr: d.nummeriert ? nr + 1 : null, text: module.concat(rollen).join(' · '), ms: ms,
+              nachsatz: spaeter.length ? phasenText(m, spaeter) + ': bei Bedarf wiederholt (' + (nr + 1) + '↻)' : null
             });
           });
           if (!zeilen.length) { return; }
