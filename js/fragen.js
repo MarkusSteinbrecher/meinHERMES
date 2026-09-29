@@ -29,6 +29,10 @@
   var LOKAL = 'internal/BKI%20Fragen/fragen.json';
   var SPEICHER = 'meinHERMES:fragen';
   var LOESUNG = 'meinHERMES:fragen-loesungen';
+  /* Verstandene Fragen (nur IDs) und ob die Seite sie ausblendet; bleiben
+     beim Laden einer neuen Fragendatei erhalten. */
+  var ERLEDIGT = 'meinHERMES:fragen-erledigt';
+  var NUR_OFFENE = 'meinHERMES:fragen-nur-offene';
   var MAX_DATEI = 5 * 1024 * 1024;
 
   function lesen(schluessel) {
@@ -136,35 +140,62 @@
     }, [z.nummer ? h('span', { class: 'fr-link__nr', text: z.nummer }) : null, h('span', { text: z.titel || z.id })]);
   }
 
-  function frageBauen(f, loesungen) {
+  /* merker: { ist(id), setzen(id, an), nurOffene } — der Zustand «erledigt». */
+  function frageBauen(f, loesungen, merker) {
     var offen = loesungen;
+    var gewaehlt = [];   /* Indizes der angeklickten Antworten, nur bis zum Neuladen */
     var karte = h('article', { class: 'fr-frage', id: 'frage-' + f.id });
 
     function zeichnen() {
       HT.ui.leeren(karte);
+      var erledigt = merker.ist(f.id);
+      karte.classList.toggle('ist-erledigt', erledigt);
+      karte.hidden = erledigt && merker.nurOffene;
       karte.appendChild(h('div', { class: 'fr-frage__kopf' }, [
         h('span', { class: 'fr-frage__id', text: f.id }),
         f.stufe ? h('span', { class: 'fr-frage__stufe', text: f.stufe }) : null,
         h('a', { class: 'btn btn--klein fr-frage__gesamtbild', href: '#/ueberblick?frage=' + encodeURIComponent(f.id),
           title: 'Links das Gesamtbild, rechts die Frage: jede Antwort hebt ihre Stellen hervor', text: 'Im Gesamtbild durchgehen' }),
         h('button', {
-          type: 'button', class: 'btn btn--klein fr-frage__knopf', text: offen ? 'Lösung verbergen' : 'Lösung zeigen',
+          type: 'button', class: 'btn btn--klein fr-frage__knopf', text: offen ? 'Lösung verbergen' : (gewaehlt.length ? 'Prüfen' : 'Lösung zeigen'),
           'aria-expanded': offen ? 'true' : 'false', on: { click: function () { offen = !offen; zeichnen(); } }
+        }),
+        h('button', {
+          type: 'button', class: 'btn btn--klein fr-frage__erledigt', text: erledigt ? '✓ Erledigt' : 'Erledigt',
+          'aria-pressed': erledigt ? 'true' : 'false',
+          title: erledigt ? 'Wieder als offen führen' : 'Verstanden: unter «Offene» ausblenden',
+          on: { click: function () { merker.setzen(f.id, !erledigt); zeichnen(); } }
         })
       ]));
       if (f.situation) { karte.appendChild(h('p', { class: 'fr-frage__situation', text: f.situation })); }
       karte.appendChild(h('p', { class: 'fr-frage__text', text: f.frage }));
+      /* Antworten wählen wie in der Prüfung (mehrere möglich); «Prüfen» deckt auf. */
       karte.appendChild(h('ol', { class: 'fr-antworten' }, f.antworten.map(function (a, i) {
         var marke = String.fromCharCode(97 + i);
-        return h('li', { class: 'fr-antwort' + (offen ? (a.richtig ? ' ist-richtig' : ' ist-falsch') : '') }, [
-          h('span', { class: 'fr-antwort__marke', 'aria-hidden': 'true', text: offen ? (a.richtig ? '✓' : '✗') : marke }),
-          h('div', { class: 'fr-antwort__inhalt' }, [
-            h('p', { class: 'fr-antwort__text' }, [h('span', { class: 'fr-antwort__buchstabe', text: marke + ' ' }), a.text]),
-            offen && a.warum ? h('p', { class: 'fr-antwort__warum', text: a.warum }) : null,
+        var gew = gewaehlt.indexOf(i) !== -1;
+        return h('li', { class: 'fr-antwort' + (gew ? ' ist-gewaehlt' : '') + (offen ? (a.richtig ? ' ist-richtig' : ' ist-falsch') : '') }, [
+          h('button', {
+            type: 'button', class: 'fr-antwort__knopf', 'aria-pressed': gew ? 'true' : 'false',
+            on: { click: function () {
+              gewaehlt = gew ? gewaehlt.filter(function (x) { return x !== i; }) : gewaehlt.concat([i]);
+              zeichnen();
+            } }
+          }, [
+            h('span', { class: 'fr-antwort__marke', 'aria-hidden': 'true', text: offen ? (a.richtig ? '✓' : '✗') : marke }),
+            h('span', { class: 'fr-antwort__text' }, [h('span', { class: 'fr-antwort__buchstabe', text: marke + ' ' }), a.text]),
             offen ? h('span', { class: 'nur-sr', text: a.richtig ? 'richtig' : 'falsch' }) : null
-          ])
+          ]),
+          offen && a.warum ? h('p', { class: 'fr-antwort__warum', text: a.warum }) : null
         ]);
       })));
+      if (offen && gewaehlt.length) {
+        var soll = [];
+        f.antworten.forEach(function (a, i) { if (a.richtig) { soll.push(i); } });
+        var treffer = soll.length === gewaehlt.length && soll.every(function (i) { return gewaehlt.indexOf(i) !== -1; });
+        var buchstaben = function (l) { return l.slice().sort().map(function (i) { return String.fromCharCode(97 + i); }).join(', '); };
+        karte.appendChild(h('p', { class: 'fr-auswertung ' + (treffer ? 'ist-richtig' : 'ist-falsch'), role: 'status',
+          text: treffer ? '✓ Richtig beantwortet' : '✗ Deine Wahl: ' + buchstaben(gewaehlt) + ' — richtig ist ' + buchstaben(soll) }));
+      }
 
       var teile = [];
       if (f.lesart && f.lesart.length) {
@@ -283,16 +314,29 @@
       var gesucht = params.frage ? d.fragen.filter(function (f) { return f.id === params.frage; })[0] : null;
       var dok = dokumente.filter(function (x) { return x.id === (gesucht ? gesucht.dokument : params.dok); })[0] || dokumente[0];
       var loesungen = lesen(LOESUNG) !== false;
+      var nurOffene = lesen(NUR_OFFENE) !== false;
+      var erledigt = lesen(ERLEDIGT);
+      if (!Array.isArray(erledigt)) { erledigt = []; }
 
       HT.app.unterleiste({
         label: 'Dokumente',
         links: dokumente.map(function (x) { return { href: '#/fragen?dok=' + encodeURIComponent(x.id), text: x.titel, aktiv: x === dok }; }),
-        inhalt: [h('button', {
-          type: 'button', class: 'btn btn--klein', text: loesungen ? 'Lösungen verbergen' : 'Lösungen zeigen',
-          title: loesungen ? 'Zum Üben: Lösungen erst auf Knopfdruck je Frage' : 'Alle Lösungen zeigen',
-          on: { click: function () { schreiben(LOESUNG, !loesungen); zeigen(stand); } }
-        })],
-        inhaltLabel: 'Lösungen',
+        inhalt: [
+          h('div', { class: 'segment', role: 'group', 'aria-label': 'Welche Fragen' },
+            [[true, 'Offene', 'Erledigte Fragen ausblenden'], [false, 'Alle', 'Auch erledigte Fragen zeigen']].map(function (o) {
+              return h('button', {
+                type: 'button', class: 'segment__knopf', text: o[1], title: o[2], 'aria-pressed': o[0] === nurOffene ? 'true' : 'false',
+                on: { click: function () { if (o[0] !== nurOffene) { schreiben(NUR_OFFENE, o[0]); zeigen(stand); } } }
+              });
+            })),
+          h('span', { class: 'unterleiste__trenner', 'aria-hidden': 'true' }),
+          h('button', {
+            type: 'button', class: 'btn btn--klein', text: loesungen ? 'Lösungen verbergen' : 'Lösungen zeigen',
+            title: loesungen ? 'Zum Üben: Lösungen erst auf Knopfdruck je Frage' : 'Alle Lösungen zeigen',
+            on: { click: function () { schreiben(LOESUNG, !loesungen); zeigen(stand); } }
+          })
+        ],
+        inhaltLabel: 'Anzeige',
         info: { titel: 'Fragen', inhalt: function () { return infoInhalt(stand); } }
       });
 
@@ -301,13 +345,45 @@
         return;
       }
       var fragen = d.fragen.filter(function (f) { return f.dokument === dok.id; });
+      var zaehler = h('p', { class: 'trefferzahl' });
+      var alleErledigt = h('div', { class: 'leer fr-leer' }, [
+        h('strong', { text: 'Alle Fragen erledigt' }),
+        h('p', { text: 'Unter «Alle» in der Leiste siehst du sie wieder.' })
+      ]);
+      var indexLinks = {};
+
+      /* Zähler, Index und Hinweis nach jedem Umschalten einer Frage. */
+      function stimmen() {
+        var n = fragen.filter(function (f) { return erledigt.indexOf(f.id) !== -1; }).length;
+        zaehler.textContent = zahl(fragen.length, 'Frage', 'Fragen')
+          + (n ? ' · ' + n + ' erledigt' + (nurOffene ? ' (ausgeblendet)' : '') : '')
+          + (dok.datei ? ' · ' + dok.datei : '');
+        fragen.forEach(function (f) {
+          var ist = erledigt.indexOf(f.id) !== -1;
+          indexLinks[f.id].classList.toggle('ist-erledigt', ist);
+          indexLinks[f.id].hidden = ist && nurOffene;
+        });
+        alleErledigt.hidden = !(nurOffene && fragen.length && n === fragen.length);
+      }
+
+      var merker = {
+        nurOffene: nurOffene,
+        ist: function (id) { return erledigt.indexOf(id) !== -1; },
+        setzen: function (id, an) {
+          erledigt = erledigt.filter(function (x) { return x !== id; });
+          if (an) { erledigt.push(id); }
+          schreiben(ERLEDIGT, erledigt);
+          stimmen();
+        }
+      };
+
       huelle.appendChild(h('header', { class: 'fr-kopf' }, [
         h('span', { class: 'fr-kopf__kicker', text: 'Fragen · nicht öffentlich' }),
         h('h1', { class: 'fr-kopf__titel', text: dok.titel }),
-        h('p', { class: 'trefferzahl', text: zahl(fragen.length, 'Frage', 'Fragen') + (dok.datei ? ' · ' + dok.datei : '') }),
+        zaehler,
         meldung ? h('p', { class: 'import__meldung import__meldung--fehler', text: meldung }) : null,
         h('nav', { class: 'fr-index', 'aria-label': 'Fragen' }, fragen.map(function (f) {
-          return h('a', {
+          return indexLinks[f.id] = h('a', {
             class: 'fr-index__link', href: '#/fragen?frage=' + encodeURIComponent(f.id), text: f.id,
             on: { click: function (ev) {
               ev.preventDefault();
@@ -318,7 +394,9 @@
           });
         }))
       ]));
-      fragen.forEach(function (f) { huelle.appendChild(frageBauen(f, loesungen)); });
+      fragen.forEach(function (f) { huelle.appendChild(frageBauen(f, loesungen, merker)); });
+      huelle.appendChild(alleErledigt);
+      stimmen();
       if (gesucht) {
         var ziel = document.getElementById('frage-' + gesucht.id);
         if (ziel) { ziel.scrollIntoView({ block: 'start', behavior: 'instant' }); }

@@ -14,6 +14,8 @@ body[data-route="fragen"] .view { max-width: 980px; }
   font-size: 12.5px; font-weight: 700; color: var(--text); text-decoration: none; background: var(--weiss);
 }
 .fr-index__link:hover { border-color: var(--akzent); color: var(--akzent); }
+.fr-index__link.ist-erledigt { border-color: var(--gut); color: var(--text-leise); background: var(--gut-bg); }
+.fr-index__link.ist-erledigt::before { content: '✓ '; color: var(--gut); }
 
 .fr-frage {
   background: var(--weiss);
@@ -26,7 +28,7 @@ body[data-route="fragen"] .view { max-width: 980px; }
 @media (max-width: 699.98px) {
   .fr-frage { padding: 16px 16px 18px; }
 }
-.fr-frage__kopf { display: flex; align-items: center; gap: 8px; }
+.fr-frage__kopf { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .fr-frage__id { font-size: 13px; font-weight: 800; letter-spacing: .04em; }
 .fr-frage__stufe {
   font-size: 10.5px; font-weight: 700; letter-spacing: .08em; color: var(--text-leise);
@@ -39,20 +41,31 @@ body[data-route="fragen"] .view { max-width: 980px; }
 .ra-frage__situation { margin: 12px 0 0; font-size: 14.5px; line-height: 1.55; color: var(--text-weich); white-space: pre-line; text-wrap: pretty; }
 
 .fr-antworten { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.fr-antwort {
-  display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start;
-  padding: 9px 12px; border: 1px solid var(--rand-fein); border-radius: var(--radius-s);
+.fr-antwort { border: 1px solid var(--rand-fein); border-radius: var(--radius-s); }
+.fr-antwort__knopf {
+  display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; width: 100%;
+  padding: 9px 12px; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer;
 }
+.fr-antwort__knopf:hover .fr-antwort__marke { border-color: var(--akzent); color: var(--akzent); }
+.fr-antwort.ist-gewaehlt { border-color: var(--akzent); box-shadow: 0 0 0 1px var(--akzent); }
+.fr-antwort.ist-gewaehlt .fr-antwort__marke { border-color: var(--akzent); background: var(--akzent); color: var(--weiss); }
 .fr-antwort__marke {
   display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
   border: 1px solid var(--rand); border-radius: var(--radius-xs); font-size: 13px; font-weight: 700; color: var(--text-leise);
 }
-.fr-antwort__text { margin: 2px 0 0; font-size: 14.5px; line-height: 1.5; }
+.fr-antwort__text { display: block; margin: 2px 0 0; font-size: 14.5px; line-height: 1.5; }
 .fr-antwort__buchstabe { font-weight: 700; color: var(--text-leise); }
-.fr-antwort__warum { margin: 6px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--text-leise); }
+.fr-antwort__warum { margin: 0; padding: 0 12px 10px 48px; font-size: 13.5px; line-height: 1.5; color: var(--text-leise); }
 .fr-antwort.ist-richtig { border-color: var(--gut); background: var(--gut-bg); }
 .fr-antwort.ist-richtig .fr-antwort__marke { border-color: var(--gut); background: var(--gut); color: var(--weiss); }
 .fr-antwort.ist-falsch .fr-antwort__marke { border-color: var(--schlecht); color: var(--schlecht); }
+/* Nach «Prüfen»: die eigene Wahl bleibt markiert — falsch gewählt rot, richtig gewählt grün. */
+.fr-antwort.ist-gewaehlt.ist-richtig { border-color: var(--gut); box-shadow: 0 0 0 1px var(--gut); }
+.fr-antwort.ist-gewaehlt.ist-falsch { border-color: var(--schlecht); box-shadow: 0 0 0 1px var(--schlecht); }
+.fr-antwort.ist-gewaehlt.ist-falsch .fr-antwort__marke { border-color: var(--schlecht); background: var(--schlecht); color: var(--weiss); }
+.fr-auswertung { margin: 10px 0 0; font-size: 14px; font-weight: 700; }
+.fr-auswertung.ist-richtig { color: var(--gut); }
+.fr-auswertung.ist-falsch { color: var(--schlecht); }
 
 .fr-frage__teile { margin-top: 6px; }
 .fr-abschnitt { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--rand-fein); }
@@ -116,3 +129,7 @@ body[data-route="fragen"] .view { max-width: 980px; }
 .ra-antworten > li, .ra-antwort__zitate { min-width: 0; }
 .ra-antwort__zitate .ra-zitat__text { overflow-x: auto; }
 .ra-antwort__zitate table { font-size: 12.5px; }
+
+/* Erledigt: verstanden; unter «Offene» ausgeblendet, unter «Alle» grün umrandet. */
+.fr-frage.ist-erledigt { border-color: var(--gut); }
+.fr-frage__erledigt[aria-pressed="true"] { border-color: var(--gut); background: var(--gut-bg); color: var(--text); }
