@@ -28,7 +28,8 @@
    entsteht, weiter unten. Mit Pfeilen stehen die Ergebnisse zudem in Stufen
    nach der Höhe ihres Kastens, quer über alle Spalten ausgerichtet, mit
    einer freien Gasse über jeder Stufe (ausrichten); ohne Pfeile dicht, was
-   in einer Phase fast gleich hoch steht, aber auf gleicher Höhe (angleichen).
+   in einer Phase fast gleich hoch steht, aber auf gleicher Höhe, und dieselbe
+   Aufgabe in mehreren Spalten quer auf einer Linie (angleichen).
    Aufeinanderfolgende Felder eines Moduls mit gleichem Inhalt stehen als
    ein Feld über mehrere Phasen.
 
@@ -820,15 +821,50 @@
       });
     }
 
+    /* Ohne Pfeile steht dieselbe Aufgabe (ohne Aufgaben: dasselbe Ergebnis)
+       in allen Spalten einer Phase auf der Höhe ihres frühesten Vorkommens
+       in der Abbildung — so hat sie überall denselben Platz in der Folge,
+       und angleichen() kann sie quer auf eine Höhe setzen («Prototyping
+       durchführen» in Produkt und IT-System). */
+    var gemeinsam = {};   // Zeile → Schlüssel → Zahl der Felder
+    if (!fluss) {
+      var frueh = {};
+      spaltenReihe.forEach(function (sp) {
+        sp.felder.forEach(function (f) {
+          f.stuecke.forEach(function (st) {
+            if (!/^[ae]:/.test(st.key)) { return; }
+            var g = gemeinsam[f.zeile] = gemeinsam[f.zeile] || {}, fr = frueh[f.zeile] = frueh[f.zeile] || {};
+            g[st.key] = (g[st.key] || 0) + 1;
+            var y = yVon.get(st.el);
+            if (y !== null && y !== undefined && !(fr[st.key] <= y)) { fr[st.key] = y; }
+          });
+        });
+      });
+      spaltenReihe.forEach(function (sp) {
+        sp.felder.forEach(function (f) {
+          f.stuecke.forEach(function (st) {
+            if (gemeinsam[f.zeile] && gemeinsam[f.zeile][st.key] > 1 && frueh[f.zeile][st.key] !== undefined) {
+              yVon.set(st.el, frueh[f.zeile][st.key]);
+            }
+          });
+        });
+      });
+    }
+    function geteilt(zeile, key) { return !!gemeinsam[zeile] && gemeinsam[zeile][key] > 1; }
+
     /* Alle Spalten teilen ihre Reihenfolge über die Phasen; innerhalb eines
        Feldes geht die Lage in der Abbildung 1 vor: was später entsteht,
-       steht weiter unten. */
+       steht weiter unten. Geteilte Stücke gleicher Höhe nach dem Schlüssel,
+       damit sie in jeder Spalte gleich folgen. */
     spaltenReihe.forEach(function (sp) {
       sp.keys = spalteOrdnen(sp.felder);
       sp.felder.forEach(function (f) {
         f.stuecke.sort(function (u, v) {
           var yu = yVon.get(u.el), yv = yVon.get(v.el);
-          return (yu === null || yu === undefined ? Infinity : yu) - (yv === null || yv === undefined ? Infinity : yv) || 0;
+          yu = yu === null || yu === undefined ? Infinity : yu;
+          yv = yv === null || yv === undefined ? Infinity : yv;
+          if (yu === yv && geteilt(f.zeile, u.key) && geteilt(f.zeile, v.key)) { return u.key < v.key ? -1 : u.key > v.key ? 1 : 0; }
+          return yu - yv || 0;
         });
         spurenFuellen(f, 1, null);
       });
@@ -1252,11 +1288,17 @@
       }
       spaltenReihe.forEach(function (sp) {
         sp.felder.forEach(function (f) {
+          var keyVon = new global.Map();
+          f.stuecke.forEach(function (st) { keyVon.set(st.el, st.key); });
           Array.prototype.forEach.call(f.inhalt.children, function (spur) {
-            var liste = [];
-            Array.prototype.forEach.call(spur.children, function (el) { liste.push.apply(liste, blaetter(el)); });
+            var liste = [], anfang = new global.Map();
+            Array.prototype.forEach.call(spur.children, function (el) {
+              var teile = blaetter(el), key = keyVon.get(el);
+              if (teile.length && geteilt(f.zeile, key)) { anfang.set(teile[0], key); }
+              liste.push.apply(liste, teile);
+            });
             liste.forEach(function (el) { el.style.marginTop = ''; });
-            (zeilen[f.zeile] = zeilen[f.zeile] || []).push({ spur: spur, liste: liste });
+            (zeilen[f.zeile] = zeilen[f.zeile] || []).push({ spur: spur, liste: liste, anfang: anfang });
           });
         });
       });
@@ -1270,7 +1312,8 @@
             var b = {
               el: el, h: r.height, d: r.top - oben0 - unten,
               rand: parseFloat(global.getComputedStyle(el).marginTop) || 0,
-              art: ['rolle', 'aufgabe', 'meilenstein', 'ergebnis'].filter(function (a) { return el.classList.contains('ra-k--' + a); })[0]
+              art: ['rolle', 'aufgabe', 'meilenstein', 'ergebnis'].filter(function (a) { return el.classList.contains('ra-k--' + a); })[0],
+              key: c.anfang.get(el) || null
             };
             unten = r.bottom - oben0;
             return b;
@@ -1280,23 +1323,42 @@
       });
       Object.keys(zeilen).forEach(function (z) {
         var saeulen = zeilen[z];
+        /* Ein geteiltes Stück wartet, bis es in allen seinen Säulen als
+           nächstes dran ist, und steht dann überall auf der Höhe des
+           tiefsten. Folgen zwei geteilte Stücke in zwei Säulen verkehrt,
+           gibt das oberste nach und stellt sich normal an. */
+        var zahl = {};
+        saeulen.forEach(function (c) {
+          c.blaetter.forEach(function (b) { if (b.key) { zahl[b.key] = (zahl[b.key] || 0) + 1; } });
+        });
+        function wartet(b) { return !!b.key && zahl[b.key] > 1; }
         for (;;) {
           var offen = saeulen.filter(function (c) { return c.i < c.blaetter.length; });
           if (!offen.length) { break; }
-          var erstes = null;
-          offen.forEach(function (c) {
-            c.soll = c.unten + c.blaetter[c.i].d;
-            if (!erstes || c.soll < erstes.soll) { erstes = c; }
-          });
-          var art = erstes.blaetter[erstes.i].art;
-          /* Wer knapp unter dem Ziel stünde, rückt mit. */
-          var gleicheArt = offen.filter(function (c) { return c.blaetter[c.i].art === art; });
-          var grenze = erstes.soll + ANGLEICHEN, gruppe, ziel;
-          for (;;) {
-            gruppe = gleicheArt.filter(function (c) { return c.soll <= grenze; });
+          offen.forEach(function (c) { c.soll = c.unten + c.blaetter[c.i].d; });
+          var dran = {};
+          offen.forEach(function (c) { var k = c.blaetter[c.i].key; if (k) { dran[k] = (dran[k] || 0) + 1; } });
+          var bereit = offen.filter(function (c) { var b = c.blaetter[c.i]; return !wartet(b) || dran[b.key] === zahl[b.key]; });
+          if (!bereit.length) {
+            var tiefst = offen.reduce(function (u, v) { return v.soll < u.soll ? v : u; });
+            zahl[tiefst.blaetter[tiefst.i].key] = 0;
+            continue;
+          }
+          var erstes = bereit.reduce(function (u, v) { return v.soll < u.soll ? v : u; });
+          var gruppe, ziel, eb = erstes.blaetter[erstes.i];
+          if (wartet(eb)) {
+            gruppe = bereit.filter(function (c) { return c.blaetter[c.i].key === eb.key; });
             ziel = Math.max.apply(null, gruppe.map(function (c) { return c.soll; }));
-            if (!gleicheArt.some(function (c) { return c.soll > ziel && c.soll < ziel + NACHZUEGLER; })) { break; }
-            grenze = ziel + NACHZUEGLER;
+          } else {
+            /* Wer knapp unter dem Ziel stünde, rückt mit. */
+            var gleicheArt = bereit.filter(function (c) { var b = c.blaetter[c.i]; return b.art === eb.art && !wartet(b); });
+            var grenze = erstes.soll + ANGLEICHEN;
+            for (;;) {
+              gruppe = gleicheArt.filter(function (c) { return c.soll <= grenze; });
+              ziel = Math.max.apply(null, gruppe.map(function (c) { return c.soll; }));
+              if (!gleicheArt.some(function (c) { return c.soll > ziel && c.soll < ziel + NACHZUEGLER; })) { break; }
+              grenze = ziel + NACHZUEGLER;
+            }
           }
           gruppe.forEach(function (c) {
             var b = c.blaetter[c.i];
