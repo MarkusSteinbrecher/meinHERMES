@@ -9,8 +9,9 @@
      Entscheide, mit denen sie schliesst.
    - Rolle für Rolle: was jede Rolle verantwortet, die drei Pflichtrollen
      auch Phase für Phase (Deep Dive «Aus Sicht der Rollen»).
-   - Besonderheiten: spezielle Themen (Abnahmen, Protokolle, Prüfungen) —
-     die Elemente dazu, wo sie stehen und was das Handbuch über sie sagt.
+   - Besonderheiten: spezielle Themen (vom System zum Betrieb, Abnahmen,
+     Protokolle, Prüfungen) — die Elemente dazu, wo sie stehen und was das
+     Handbuch über sie sagt.
 
    Die Texte sind wörtliche Zitate (zitate): der Anfang der Elementseite
    von hermes.admin.ch — dieselbe Seite wie im Reiter «Handbuch» — oder
@@ -46,7 +47,7 @@
     { id: 'ergebnisse', titel: 'Entlang der Ergebnisse', kurz: 'Der Fluss der Abbildung 1: welches Ergebnis wo entsteht und worauf es aufbaut — von der Initialisierung bis zum Abschluss.' },
     { id: 'phasen', titel: 'Phase für Phase', kurz: 'Jede Phase im Detail: ihr Auftrag, jedes Modul mit seinen Aufgaben, Rollen und Ergebnissen und die Meilensteine, mit denen sie endet.' },
     { id: 'rollen', titel: 'Rolle für Rolle', kurz: 'Wer was verantwortet: Auftraggeber, Projektleiter und Anwendervertreter Phase für Phase, dann die weiteren Rollen.' },
-    { id: 'besonderheiten', titel: 'Besonderheiten', kurz: 'Wie HERMES spezielle Themen behandelt: Abnahmen, Protokolle und Prüfungen — wo sie im Ablauf stehen, wer sie verantwortet und was sie festhalten.' }
+    { id: 'besonderheiten', titel: 'Besonderheiten', kurz: 'Wie HERMES spezielle Themen behandelt: vom realisierten System bis zur Abnahme, Abnahmen, Protokolle und Prüfungen — wo sie im Ablauf stehen, wer sie verantwortet und was sie festhalten.' }
   ];
 
   /** data/lernpfad.json, einmal geladen (null, wenn es fehlt). */
@@ -444,9 +445,45 @@
   /* Spezielle Themen, je ein Kapitel. Ein Schritt zeigt ein Element:
      aufgabe — Zitate aus ihrer Seite, ihre Kette(n) mit allen Ergebnissen;
      ergebnis — Zitate, wer es wo erarbeitet; ueberblick — die Elemente des
-     Themas als Liste, wo sie stehen. zitate: [[id, abschnitt]], ohne
-     abschnitt der Anfang der Seite. */
+     Themas als Liste, wo sie stehen (in der Reihenfolge von elemente).
+     zitate: [[id, abschnitt]], ohne abschnitt der Anfang der Seite, oder
+     { rhb, nummer } für einen Abschnitt des Referenzhandbuchs; zitateAgil
+     ersetzt sie in agiler Vorgehensweise. */
+  function schrittA(nr, name, abschnitte) {
+    var id = 'aufgabe-' + name;
+    return { art: 'aufgabe', id: id, nr: nr,
+      zitate: abschnitte.map(function (a) { return [id, a]; }) };
+  }
+
+  /* Vom realisierten System bis zur Abnahme, in der Folge, die das Handbuch
+     über Zweck und Grundlagen der Aufgaben vorgibt (1.4.2.2, 1.4.2.3). */
+  var ABLAUF = [
+    ['system-realisieren', ['Zweck', 'HERMES spezifisch']],
+    ['systemintegration-vorbereiten', ['Zweck', 'HERMES spezifisch']],
+    ['betrieb-realisieren', ['Zweck', 'HERMES spezifisch']],
+    ['system-in-betrieb-integrieren', ['Zweck', 'Grundlagen']],
+    ['test-durchfuehren', ['Zweck', 'HERMES spezifisch']],
+    ['migrationsverfahren-realisieren', ['Zweck', 'HERMES spezifisch']],
+    ['entscheid-vorabnahme-treffen', ['Zweck', 'Grundlagen']],
+    ['einfuehrungsmassnahmen-durchfuehren', ['Zweck', 'HERMES spezifisch']],
+    ['migration-durchfuehren', ['Zweck', 'HERMES spezifisch']],
+    ['entscheid-abnahme-migration-treffen', ['Zweck', 'HERMES spezifisch']],
+    ['entscheid-betriebsaufnahme-treffen', ['Zweck', 'Grundidee', 'HERMES spezifisch']],
+    ['system-aktivieren', ['Zweck', 'HERMES spezifisch']],
+    ['organisation-aktivieren', ['Zweck', 'HERMES spezifisch']],
+    ['betrieb-aktivieren', ['Zweck', 'Grundlagen']],
+    ['entscheid-abnahme-treffen', ['Zweck', 'HERMES spezifisch']],
+    ['altsystem-ausser-betrieb-setzen', ['Zweck', 'Grundlagen']]
+  ];
+
   var THEMEN = [
+    { kapitel: 'Vom System zum Betrieb', schritte: [
+      { art: 'ueberblick', titel: 'Die Reihenfolge im Überblick',
+        zitate: [{ rhb: 'phasen', nummer: '1.4.2.2' }, { rhb: 'phasen', nummer: '1.4.2.3' }],
+        zitateAgil: [{ rhb: 'phasen', nummer: '1.4.3.1' }],
+        elemente: ABLAUF.map(function (a) { return 'aufgabe-' + a[0]; }),
+        listenTitel: 'Die Reihenfolge' }
+    ].concat(ABLAUF.map(function (a, i) { return schrittA(i + 1, a[0], a[1]); })) },
     { kapitel: 'Abnahmen', schritte: [
       { art: 'ueberblick', titel: 'Abnahmen im Überblick', zitate: [['ergebnis-abnahmeprotokoll']],
         elemente: ['aufgabe-entscheid-vorabnahme-treffen', 'aufgabe-entscheid-abnahme-migration-treffen', 'aufgabe-entscheid-abnahme-treffen'],
@@ -516,7 +553,10 @@
     var schritte = [];
     THEMEN.forEach(function (thema) {
       thema.schritte.forEach(function (d) {
-        var zitate = (d.zitate || []).map(function (q) { return elementZitat(HT.daten.eintragMitId(q[0]), q[1]); }).filter(Boolean);
+        var quellen = m.vorgehen === 'agil' && d.zitateAgil ? d.zitateAgil : d.zitate || [];
+        var zitate = quellen.map(function (q) {
+          return Array.isArray(q) ? elementZitat(HT.daten.eintragMitId(q[0]), q[1]) : q;
+        }).filter(Boolean);
         if (d.art === 'ueberblick') {
           var zeilen = [], ids = [];
           d.elemente.forEach(function (id) {
@@ -562,9 +602,9 @@
           }
         });
         schritte.push({
-          key: 'besonders:' + e.id, kapitel: thema.kapitel,
+          key: 'besonders:' + thema.kapitel + '|' + e.id, kapitel: thema.kapitel,
           kicker: thema.kapitel + ' · ' + (d.art === 'aufgabe' ? (istEntscheid(e) ? 'Entscheid' : 'Aufgabe') : 'Ergebnis'),
-          titel: d.titel || e.begriff, element: ref(e), zitate: zitate,
+          titel: d.titel || (d.nr ? d.nr + '. ' : '') + e.begriff, element: ref(e), zitate: zitate,
           kettenTitel: d.art === 'aufgabe' ? 'Rolle → Aufgabe → Ergebnis' : 'Wer es wo erarbeitet',
           ketten: reihe,
           sicht: SICHT_BLOECKE, ziel: ziel(einmal(idsZ), felder)
