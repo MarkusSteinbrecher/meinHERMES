@@ -28,13 +28,14 @@
 
   var LOKAL = 'internal/BKI%20Fragen/fragen.json';
   var SPEICHER = 'meinHERMES:fragen';
-  var LOESUNG = 'meinHERMES:fragen-loesungen';
+  /* Lösungen gleich zeigen? Standard: verborgen, zum Üben. */
+  var LOESUNG = 'meinHERMES:fragen-loesungen-zeigen';
   /* Ausgeblendete Fragen (nur IDs) und ob die Seite sie trotzdem zeigt;
      bleiben beim Laden einer neuen Fragendatei erhalten. */
   var AUSGEBLENDET = 'meinHERMES:fragen-ausgeblendet';
   var AUSGEBLENDETE_ZEIGEN = 'meinHERMES:fragen-ausgeblendete-zeigen';
-  /* Vorgänger «erledigt» (29.9.): wird beim Öffnen der Seite entfernt. */
-  var ALT = ['meinHERMES:fragen-erledigt', 'meinHERMES:fragen-nur-offene'];
+  /* Vorgänger (29.9.: «erledigt», Lösungen standardmässig offen): werden beim Öffnen der Seite entfernt. */
+  var ALT = ['meinHERMES:fragen-erledigt', 'meinHERMES:fragen-nur-offene', 'meinHERMES:fragen-loesungen'];
   var MAX_DATEI = 5 * 1024 * 1024;
 
   function lesen(schluessel) {
@@ -327,7 +328,7 @@
       var dokumente = d.dokumente.filter(function (x) { return d.fragen.some(function (f) { return f.dokument === x.id; }); });
       var gesucht = params.frage ? d.fragen.filter(function (f) { return f.id === params.frage; })[0] : null;
       var dok = dokumente.filter(function (x) { return x.id === (gesucht ? gesucht.dokument : params.dok); })[0] || dokumente[0];
-      var loesungen = lesen(LOESUNG) !== false;
+      var loesungen = lesen(LOESUNG) === true;
       ALT.forEach(entfernen);
       var zeigeAus = lesen(AUSGEBLENDETE_ZEIGEN) === true;
       var ausgeblendet = lesen(AUSGEBLENDET);
