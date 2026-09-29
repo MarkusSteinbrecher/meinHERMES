@@ -196,8 +196,8 @@
               zeichnen();
             } }
           }, [
-            h('span', { class: 'fr-antwort__marke', 'aria-hidden': 'true', text: offen ? (a.richtig ? '✓' : '✗') : marke }),
-            h('span', { class: 'fr-antwort__text' }, [h('span', { class: 'fr-antwort__buchstabe', text: marke + ' ' }), a.text]),
+            h('span', { class: 'fr-antwort__marke', text: marke }),
+            h('span', { class: 'fr-antwort__text', text: a.text }),
             offen ? h('span', { class: 'nur-sr', text: a.richtig ? 'richtig' : 'falsch' }) : null
           ]),
           offen && a.warum ? h('p', { class: 'fr-antwort__warum', text: a.warum }) : null

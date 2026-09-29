@@ -53,7 +53,6 @@ body[data-route="fragen"] .view { max-width: 980px; }
   border: 1px solid var(--rand); border-radius: var(--radius-xs); font-size: 13px; font-weight: 700; color: var(--text-leise);
 }
 .fr-antwort__text { display: block; margin: 2px 0 0; font-size: 14.5px; line-height: 1.5; }
-.fr-antwort__buchstabe { font-weight: 700; color: var(--text-leise); }
 .fr-antwort__warum { margin: 0; padding: 0 12px 10px 48px; font-size: 13.5px; line-height: 1.5; color: var(--text-leise); }
 .fr-antwort.ist-richtig { border-color: var(--gut); background: var(--gut-bg); }
 .fr-antwort.ist-richtig .fr-antwort__marke { border-color: var(--gut); background: var(--gut); color: var(--weiss); }
@@ -106,7 +105,6 @@ body[data-route="fragen"] .view { max-width: 980px; }
   border: 1px solid var(--rand); border-radius: var(--radius-xs); font-size: 13px; font-weight: 700; color: var(--text-leise);
 }
 .ra-antwort__text { font-size: 14.5px; line-height: 1.5; padding-top: 2px; }
-.ra-antwort__text b { color: var(--text-leise); }
 .ra-antwort__warum { margin: 0; padding: 0 12px 10px 46px; font-size: 13.5px; line-height: 1.5; color: var(--text-leise); }
 .ra-antwort__zitate { padding: 0 12px 12px 46px; }
 .ra-antwort__zitate .ra-zitat:first-child { margin-top: 4px; }

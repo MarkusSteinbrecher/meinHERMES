@@ -2322,8 +2322,8 @@
             title: fokus ? 'Hervorhebung aufheben' : 'Aufdecken und im Raster zeigen',
             on: { click: function () { antwortWaehlen(k); } }
           }, [
-            h('span', { class: 'ra-antwort__marke', 'aria-hidden': 'true', text: auf ? (x.richtig ? '✓' : '✗') : marke }),
-            h('span', { class: 'ra-antwort__text' }, [h('b', { text: marke + ' ' }), x.text]),
+            h('span', { class: 'ra-antwort__marke', text: marke }),
+            h('span', { class: 'ra-antwort__text', text: x.text }),
             auf ? h('span', { class: 'nur-sr', text: x.richtig ? ' — richtig' : ' — falsch' }) : null
           ]),
           auf && x.warum ? h('p', { class: 'ra-antwort__warum', text: x.warum }) : null,
