@@ -54,7 +54,11 @@
   var ZIEL_ZUSTAENDE = ['tr-rz--leer', 'tr-rz--bereit', 'tr-rz--belegt', 'tr-rz--richtig', 'tr-rz--falsch', 'tr-rz--offen'];
   var ROLLZONE = 48;        // Randzone der Bühne, in der ein Zug sie mitrollt (px)
 
-  var zustand = { beste: {}, leer: { rolle: true, aufgabe: true, ergebnis: true }, vorgehen: 'klassisch', initialisiert: false };
+  var zustand = {
+    beste: {}, leer: { rolle: true, aufgabe: true, ergebnis: true }, vorgehen: 'klassisch',
+    zu: { phasen: [], module: [] },   // zugeklappt im Raster, für alle Übungen
+    initialisiert: false
+  };
   var refs = {};
   var uebung = null;        // laufende Übung, siehe uebungStarten()
   var listen = {};          // die Übungen je Vorgehensweise, einmal je Sitzung
@@ -80,7 +84,7 @@
   /* --- Gespeichert: beste Quote je Übung und leere Arten, welche Arten leer sind */
 
   function speichern() {
-    HT.store.schreib(SPEICHER, { version: VERSION, beste: zustand.beste, leer: zustand.leer, vorgehen: zustand.vorgehen });
+    HT.store.schreib(SPEICHER, { version: VERSION, beste: zustand.beste, leer: zustand.leer, vorgehen: zustand.vorgehen, zu: zustand.zu });
   }
 
   function wiederherstellen() {
@@ -88,6 +92,7 @@
     if (!g || typeof g !== 'object' || g.version !== VERSION) { return; }
     if (g.beste && typeof g.beste === 'object') { zustand.beste = g.beste; }
     if (vorgehenVon(g.vorgehen)) { zustand.vorgehen = g.vorgehen; }
+    if (g.zu && Array.isArray(g.zu.phasen) && Array.isArray(g.zu.module)) { zustand.zu = { phasen: g.zu.phasen.slice(), module: g.zu.module.slice() }; }
     if (g.leer && typeof g.leer === 'object') {
       var leer = {};
       ARTEN.forEach(function (art) { leer[art] = g.leer[art] !== false; });
@@ -266,7 +271,8 @@
      einen leeren Kasten zurück (Ziel) und legt dazu einen Chip an. Chips
      desselben Elements sind gleichwertig; im Pool liegen sie als Stapel aus
      stapelVon, je Element ein Knopf mit Zahl. Der Schlüssel eines Kastens
-     (Block, Art, Platz) ist bei gleichem Ausschnitt jedes Mal derselbe.
+     (Feld, Aufgabe, Art, Platz) bleibt derselbe, wenn anderes auf- oder
+     zugeklappt wird. Zugeklappte Phasen und Module haben keine Kästen.
      vorher: { Schlüssel: Id des gelegten Elements } — beim Umschalten der
      leeren Arten bleibt liegen, was noch einen Kasten hat. */
   function uebungStarten(def, vorher) {
@@ -285,7 +291,8 @@
       if (!zustand.leer[k.kategorie]) { return null; }
       var n = {
         id: k.id, kategorie: k.kategorie, begriff: k.begriff, eintrag: k.eintrag, entscheid: k.entscheid,
-        block: i, platz: ort.platz, schluessel: i + ':' + k.kategorie + ':' + ort.platz
+        block: i, platz: ort.platz,
+        schluessel: ort.phasen.join('+') + '|' + ort.modul + '|' + ort.block.aufgabe.id + '|' + k.kategorie + '|' + ort.platz
       };
       var z = { n: n, chip: null, status: '', loesung: null, gezaehlt: null, hinweis: null };
       z.el = zielBauen(z, ziele.length);
@@ -295,6 +302,8 @@
     }
     var aus = rasterAusschnitt(def);
     aus.knoten = knoten;
+    aus.zu = zustand.zu;
+    aus.klappen = function (art, name) { if (refs.klappen) { refs.klappen(art, name); } };
     var raster = HT.raster.uebung(aus);
 
     uebung = {
@@ -554,8 +563,10 @@
       HT.fortschritt.melden(liste);
     }
 
+    /* Als beste Runde zählt nur die ganze Übung (nichts zugeklappt). */
     var alt = besteVon(uebung.def);
-    if (!alt || richtig > alt.richtig) {
+    var ganz = uebung.ziele.length === leereAnzahl(uebung.def);
+    if (ganz && (!alt || richtig > alt.richtig)) {
       zustand.beste[bestSchluessel(uebung.def)] = { richtig: richtig, gesamt: uebung.ziele.length, wann: new Date().toISOString().slice(0, 10) };
       speichern();
     }
@@ -610,6 +621,7 @@
     uebung.gewaehlt = null;
     uebung.geprueft = false;
     uebung.suche = '';
+    refs.gemerkt = {};
     if (refs.suche && refs.suche.feld) { refs.suche.feld.value = ''; }
     zeichnen();
   }
@@ -1164,12 +1176,28 @@
     var folgende = naechste(def);
     var knopfNaechste = folgende && folgende !== def ? h('a', { class: 'btn', href: folgende.adresse, text: 'Nächste: ' + folgende.name + ' →' }) : null;
 
-    /* Andere leere Arten: neues Raster, was schon liegt und noch einen Kasten hat, bleibt liegen. */
+    /* Andere leere Arten oder anderes zugeklappt: neues Raster, was schon
+       liegt und noch einen Kasten hat, bleibt liegen. */
+    refs.klappen = function (art, name) {
+      var liste = art === 'modul' ? zustand.zu.module : zustand.zu.phasen;
+      var i = liste.indexOf(name);
+      if (i === -1) { liste.push(name); } else { liste.splice(i, 1); }
+      speichern();
+      neuAufbauen();
+    };
+    /* Was in zugeklappten Feldern lag, bleibt gemerkt und kommt beim
+       Aufklappen zurück. */
+    refs.gemerkt = {};
     function neuAufbauen() {
       var vorher = belegung();
+      Object.keys(refs.gemerkt).forEach(function (k) { if (!(k in vorher)) { vorher[k] = refs.gemerkt[k]; } });
       var alt = uebung.raster.buehne;
       var oben = alt.scrollTop, links = alt.scrollLeft;
       uebungStarten(def, vorher);
+      var sichtbar = {};
+      uebung.ziele.forEach(function (z) { sichtbar[z.n.schluessel] = true; });
+      refs.gemerkt = {};
+      Object.keys(vorher).forEach(function (k) { if (!sichtbar[k]) { refs.gemerkt[k] = vorher[k]; } });
       refs.seite.parentNode.replaceChild(uebung.raster.buehne, alt);
       uebung.raster.buehne.scrollTop = oben;
       uebung.raster.buehne.scrollLeft = links;
@@ -1182,8 +1210,7 @@
        Übungen. */
     leiste([
       h('div', { class: 'tr-leistentitel' }, [
-        h('span', { class: 'tr-kicker', text: def.art === 'phase' ? 'Phase' : def.art === 'modul' ? 'Modul' : 'Alles' }),
-        h('h1', { class: 'tr-titel', text: def.name }),
+        h('h1', { class: 'tr-titel' }, uebungWahl(def)),
         refs.zaehler,
         refs.beste
       ]),
@@ -1216,6 +1243,85 @@
     besteZeigen();
     zeichnen();
     groesseAnmelden();
+  }
+
+  /* Die Wahl der Übung: der Titel in der Leiste («Phase Konzept ▾») öffnet
+     ein Popover mit allen Übungen der Vorgehensweise — Phasen, Module,
+     Gesamtbild —, die laufende hervorgehoben. Es hängt am body, denn die
+     Leiste rollt waagrecht und schnitte es ab. Klick daneben oder Escape
+     schliesst. */
+  var IKONE_WAHL = ['M6.5 9.5 12 15l5.5-5.5'];
+  function uebungWahl(def) {
+    Array.prototype.forEach.call(document.querySelectorAll('.tr-wahlpop'), function (x) { x.parentNode.removeChild(x); });
+    var knopf = h('button', {
+      type: 'button', class: 'tr-wahl', 'aria-haspopup': 'dialog', 'aria-expanded': 'false',
+      title: 'Andere Phase, anderes Modul oder alles wählen'
+    }, [
+      h('span', { class: 'tr-kicker', text: def.art === 'phase' ? 'Phase' : def.art === 'modul' ? 'Modul' : 'Alles' }),
+      h('span', { class: 'tr-wahl__name', text: def.name }),
+      h('span', { class: 'tr-wahl__pfeil', 'aria-hidden': 'true' }, HT.ui.symbol(IKONE_WAHL, 14))
+    ]);
+    var pop = h('div', { class: 'gpop tr-wahlpop', role: 'dialog', 'aria-label': 'Übung wählen', hidden: true });
+    document.body.appendChild(pop);
+
+    function gruppe(titel, art, zwei) {
+      var liste = uebungen(def.vorgehen).filter(function (u) { return u.art === art; });
+      return h('section', { class: 'tr-wahlpop__gruppe' + (zwei ? ' tr-wahlpop__gruppe--zwei' : '') }, [
+        h('h3', { class: 'gpop__titel', text: titel }),
+        h('ul', { class: 'tr-wahlpop__liste' }, liste.map(function (u) {
+          var b = besteVon(u);
+          return h('li', {}, h('a', {
+            class: 'tr-wahlpop__link' + (u === def ? ' ist-aktiv' : ''), href: u.adresse,
+            'aria-current': u === def ? 'page' : null
+          }, [
+            h('span', { class: 'tr-wahlpop__name', text: HT.gesamtbild.trennen(u.name) }),
+            h('span', {
+              class: 'tr-wahlpop__zahl', text: b ? b.richtig + '/' + b.gesamt : String(leereAnzahl(u)),
+              title: b ? 'Beste Runde: ' + b.richtig + ' von ' + b.gesamt + ' richtig' : leereAnzahl(u) + ' Kästen'
+            })
+          ]));
+        }))
+      ]);
+    }
+    function zeigen(offen) {
+      pop.hidden = !offen;
+      knopf.setAttribute('aria-expanded', offen ? 'true' : 'false');
+      if (!offen) { return; }
+      HT.ui.leeren(pop);
+      pop.appendChild(h('div', { class: 'gpop__kopf' }, [
+        h('strong', { class: 'gpop__titel', text: 'Übung · ' + vorgehenVon(def.vorgehen).label }),
+        h('button', { type: 'button', class: 'graph-schliessen', 'aria-label': 'Schliessen', text: '✕', on: { click: function () { zeigen(false); knopf.focus(); } } })
+      ]));
+      pop.appendChild(h('div', { class: 'gpop__inhalt tr-wahlpop__inhalt' }, [
+        gruppe('Phasen', 'phase'),
+        gruppe('Module', 'modul', true),
+        gruppe('Alles', 'alles')
+      ]));
+      var r = knopf.getBoundingClientRect();
+      pop.style.top = Math.round(r.bottom + 6) + 'px';
+      pop.style.left = Math.round(Math.max(12, Math.min(r.left, global.innerWidth - pop.offsetWidth - 12))) + 'px';
+      var aktiv = pop.querySelector('.ist-aktiv');
+      if (aktiv) { aktiv.focus(); }
+    }
+    knopf.addEventListener('click', function () { zeigen(pop.hidden); });
+    function weg() {
+      document.removeEventListener('pointerdown', draussen, true);
+      document.removeEventListener('keydown', taste);
+      global.removeEventListener('hashchange', weg);
+      if (pop.parentNode) { pop.parentNode.removeChild(pop); }
+    }
+    function draussen(ev) {
+      if (!document.body.contains(knopf)) { weg(); return; }
+      if (pop.hidden || pop.contains(ev.target) || knopf.contains(ev.target)) { return; }
+      zeigen(false);
+    }
+    function taste(ev) {
+      if (ev.key === 'Escape' && !pop.hidden) { zeigen(false); knopf.focus(); }
+    }
+    document.addEventListener('pointerdown', draussen, true);
+    document.addEventListener('keydown', taste);
+    global.addEventListener('hashchange', weg);
+    return knopf;
   }
 
   var groesseAngemeldet = false;

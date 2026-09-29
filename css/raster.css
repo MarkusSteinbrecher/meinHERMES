@@ -36,7 +36,11 @@ body[data-route="ueberblick"] .unterleiste__inner { padding-inline: 12px; }
   --ra-band: 150px;
   --ra-spalte-min: 104px;
   --ra-linie: var(--linie-stark);
+  --ra-luecke: 10px;        /* zwischen zwei Phasen, wie PHASEN_LUECKE in js/raster.js */
+  --ra-zu-breite: 30px;     /* zugeklappte Spalte */
+  --ra-zu-hoehe: 34px;      /* zugeklappte Zeile */
   display: grid;
+  row-gap: var(--ra-luecke);
   grid-template-rows: auto;
   grid-auto-rows: minmax(96px, auto);
   min-width: min-content;
@@ -132,9 +136,60 @@ body[data-route="ueberblick"] .unterleiste__inner { padding-inline: 12px; }
 .ra-trichter.ist-aktiv { opacity: 1; color: var(--akzent); }
 .ra-trichter:focus-visible { outline: 2px solid var(--fokus); outline-offset: 0; }
 
+/* --- Klappen: Phasen und Module ein- und ausklappen --------------------------- */
+
+.ra-klappe {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-leise);
+  cursor: pointer;
+}
+.ra-klappe:hover { color: var(--akzent-text); background: var(--akzent-schwach); }
+.ra-klappe:focus-visible { outline: 2px solid var(--fokus); outline-offset: 0; }
+/* Im Modulkopf in der freien Ecke oben, links vom Trichter — der Name
+   behält die ganze Breite. */
+.ra-modulkopf--kopf .ra-klappe { position: absolute; top: 1px; right: 20px; width: 18px; height: 18px; }
+.ra-gitter.ist-uebung .ra-modulkopf--kopf .ra-klappe { right: 1px; }
+.ra-modulkopf--kopf.ist-zu .ra-klappe { position: static; }
+.ra-phase__streifen .ra-klappe { width: 26px; height: 26px; border-radius: 0; color: var(--ra-ph-fg); }
+.ra-phase__streifen .ra-klappe:hover { background: var(--ra-ph-stark); color: var(--ra-ph-fg); }
+
+/* Zugeklappte Spalte: oben die Klappe, darunter der Name senkrecht. */
+.ra-modulkopf--kopf.ist-zu { justify-content: center; padding-inline: 0; }
+.ra-zuspalte {
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  margin: 5px 2px;
+  padding: 10px 0;
+  border: 1px dashed color-mix(in srgb, var(--gk-modul) 35%, #fff);
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--gk-modul-bg) 25%, #fff);
+  color: var(--gk-modul-fg);
+  font: 700 11px/1 var(--schrift);
+  cursor: pointer;
+}
+.ra-zuspalte:hover { border-color: var(--akzent); color: var(--akzent-text); }
+.ra-zuspalte__name { position: sticky; top: 64px; align-self: flex-start; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+
+/* Zugeklappte Zeile: das Band quer, Name neben der Klappe, ohne Meilensteine. */
+.ra-phase.ist-zu { grid-template-columns: minmax(0, 1fr); }
+.ra-phase.ist-zu .ra-phase__streifen { flex-direction: row; align-items: stretch; }
+.ra-phase.ist-zu .ra-phase__name { justify-items: start; padding: 0 8px 0 2px; }
+.ra-phase.ist-zu .ra-phase__name > span { writing-mode: horizontal-tb; transform: none; }
+.ra-phase.ist-zu .ra-phase__streifen .ra-klappe { height: auto; }
+.ra-phase.ist-zu .ra-phase__ms { display: none; }
+
 /* --- Phasen: Bahnen und Band ------------------------------------------------ */
 
-.ra-bahn { z-index: 0; border-top: 1px solid var(--ra-linie); background: #fff; }
+.ra-bahn { z-index: 0; background: #fff; }
 .ra-bahn--zwei { background: var(--graph-bahn-2, #f3f2f2); }
 
 .ra-phase {
@@ -144,14 +199,17 @@ body[data-route="ueberblick"] .unterleiste__inner { padding-inline: 12px; }
   grid-column: 1;
   display: grid;
   grid-template-columns: 26px minmax(0, 1fr);
-  border-top: 1px solid var(--ra-linie);
   border-right: 1px solid var(--ra-linie);
   background: #fff;
+  /* Farben der Phasenbalken der Abbildung 1 (js/abbildung.js FARBEN.phase). */
+  --ra-ph: #d9d9d9; --ra-ph-stark: #bcbcbc; --ra-ph-fg: #2d2b2b;
 }
+.ra-phase[data-farbe="blau"] { --ra-ph: #b7d5f1; --ra-ph-stark: #8dbde9; --ra-ph-fg: #173a5c; }
+.ra-phase[data-farbe="rosa"] { --ra-ph: #ebc9c7; --ra-ph-stark: #dba7a3; --ra-ph-fg: #5e2622; }
 
-.ra-phase__streifen { display: flex; flex-direction: column; min-height: 0; background: var(--gk-phase-bg); }
-.ra-phase__streifen .ra-trichter { width: 26px; height: 26px; border-radius: 0; color: var(--gk-phase-fg); }
-.ra-phase__streifen .ra-trichter:hover { background: var(--gk-phase); color: var(--gk-phase-glyph-auf); }
+.ra-phase__streifen { display: flex; flex-direction: column; min-height: 0; background: var(--ra-ph); }
+.ra-phase__streifen .ra-trichter { width: 26px; height: 26px; border-radius: 0; color: var(--ra-ph-fg); }
+.ra-phase__streifen .ra-trichter:hover { background: var(--ra-ph-stark); color: var(--ra-ph-fg); }
 
 .ra-phase__name {
   flex: 1 1 auto;
@@ -160,15 +218,15 @@ body[data-route="ueberblick"] .unterleiste__inner { padding-inline: 12px; }
   margin: 0;
   padding: 10px 0;
   border: 0;
-  background: var(--gk-phase-bg);
-  color: var(--gk-phase-fg);
+  background: var(--ra-ph);
+  color: var(--ra-ph-fg);
   font: 800 10.5px/1 var(--schrift);
   letter-spacing: .12em;
   text-transform: uppercase;
   cursor: pointer;
 }
 .ra-phase__name > span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
-.ra-phase__name:hover, .ra-phase__name.ist-gleich, .ra-phase__name.ist-gewaehlt { background: var(--gk-phase); color: var(--gk-phase-glyph-auf); }
+.ra-phase__name:hover, .ra-phase__name.ist-gleich, .ra-phase__name.ist-gewaehlt { background: var(--ra-ph-stark); color: var(--ra-ph-fg); }
 .ra-phase__name:focus-visible { outline: 2px solid var(--fokus); outline-offset: -2px; }
 
 .ra-phase__ms {
@@ -840,7 +898,7 @@ body[data-route="ueberblick"] .unterleiste__inner { padding-inline: 12px; }
   font: 700 10px/17px var(--schrift); text-align: center; letter-spacing: 0;
   pointer-events: none;
 }
-.ra-phase.ist-tour-bereich .ra-phase__name { background: var(--gk-phase); color: var(--gk-phase-glyph-auf); }
+.ra-phase.ist-tour-bereich .ra-phase__name { background: var(--ra-ph-stark); color: var(--ra-ph-fg); }
 .ra-modul.ist-tour .ra-modul__name { color: var(--akzent-text); }
 .ra-pfeile.hat-tour .ra-pfeil { opacity: .12; }
 .ra-pfeile.hat-tour .ra-pfeil.ist-tour-bereich, .ra-pfeile.hat-tour .ra-pfeil.ist-tour { opacity: 1; }

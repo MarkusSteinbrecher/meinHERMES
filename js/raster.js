@@ -24,6 +24,13 @@
    Zeigen auf ein Element hebt jede seiner Stellen hervor; Zeigen auf einen
    Meilenstein das Feld, in dem er entsteht.
 
+   Das Phasenband trägt die Farben der Phasenbalken der Abbildung 1
+   (Initialisierung und Abschluss grau, Konzept bis Einführung blau,
+   Umsetzung rosa); zwischen zwei Phasen bleibt eine Lücke. Jede Phase und
+   jedes Modul lässt sich mit dem Pfeil zuklappen (Zeile niedrig bzw.
+   Spalte schmal, ohne Inhalt) und wieder aufklappen; gespeichert in
+   localStorage (raster-zu), im Zuordnen im Speicher des Trainers.
+
    Anordnung wie in der Abbildung 1: Im Feld steht, was dort später
    entsteht, weiter unten. Mit Pfeilen stehen die Ergebnisse zudem in Stufen
    nach der Höhe ihres Kastens, quer über alle Spalten ausgerichtet, mit
@@ -80,6 +87,7 @@
   var KASTEN = 82;
   var KASTEN_LUECKE = 8;
   var FELD_RAND = 12;          // Rand, Innenabstand und Linie des Feldes
+  var PHASEN_LUECKE = 10;      // px zwischen zwei Phasen, wie --ra-luecke in css/raster.css
   var UNTERSPALTE_TOLERANZ = 25;   // Koordinaten der Grafik
 
   var SPEICHER = 'raster-sicht';
@@ -205,6 +213,25 @@
     try {
       global.localStorage.setItem(SPEICHER, JSON.stringify({ rolle: sicht.rolle, aufgabe: sicht.aufgabe, ergebnis: sicht.ergebnis, fluss: sicht.pfeile }));
     } catch (e) { /* egal */ }
+  }
+
+  /* Zugeklappte Phasen und Module des Überblicks: { phasen: [], module: [] }. */
+  var ZU_SPEICHER = 'raster-zu';
+  function zuLesen(schluessel) {
+    try {
+      var z = JSON.parse(global.localStorage.getItem(schluessel) || 'null');
+      if (z && Array.isArray(z.phasen) && Array.isArray(z.module)) { return { phasen: z.phasen.slice(), module: z.module.slice() }; }
+    } catch (e) { /* ohne Speicher alles offen */ }
+    return { phasen: [], module: [] };
+  }
+  function zuSpeichern(schluessel, zu) {
+    try { global.localStorage.setItem(schluessel, JSON.stringify(zu)); } catch (e) { /* egal */ }
+  }
+  /* Klappt Phase bzw. Modul name in zu um. */
+  function zuUmschalten(zu, art, name) {
+    var liste = art === 'modul' ? zu.module : zu.phasen;
+    var i = liste.indexOf(name);
+    if (i === -1) { liste.push(name); } else { liste.splice(i, 1); }
   }
 
   function seiteLesen() {
@@ -346,10 +373,14 @@
    * Projektgrundlagen spannt über die gezeigten seiner drei Spalten; ist
    * keine davon gezeigt, bekommt es eine eigene.
    */
-  function ausschnitt(m, f) {
+  function ausschnitt(m, f, zu) {
+    zu = zu || { phasen: [], module: [] };
+    function istZu(liste, name) { return liste.indexOf(name) !== -1; }
     var zeilen = m.zeilen.filter(function (z) { return gezeigt(f.phasen, z.phase); });
     var spalten = SPALTEN.filter(function (s) { return gezeigt(f.module, s); });
     var pgUnter = ['Organisation', 'Produkt', 'IT-System'].filter(function (s) { return spalten.indexOf(s) !== -1; });
+    /* Projektgrundlagen spannt nur über die offenen seiner Spalten. */
+    var pgOffen = pgUnter.filter(function (s) { return !istZu(zu.module, s); });
     var pgEigen = gezeigt(f.module, 'Projektgrundlagen') && !pgUnter.length
       && m.felder.some(function (feld) { return feld.modul === 'Projektgrundlagen' && gezeigt(f.phasen, feld.phase); });
     if (pgEigen) {
@@ -362,11 +393,12 @@
     var felder = [];
     m.felder.forEach(function (feld) {
       if (!gezeigt(f.phasen, feld.phase) || !gezeigt(f.module, feld.modul)) { return; }
+      if (istZu(zu.phasen, feld.phase) || istZu(zu.module, feld.modul)) { return; }
       var start, breite, kopfImFeld = false;
       if (feld.modul === 'Projektgrundlagen' && !pgEigen) {
-        if (!pgUnter.length) { return; }
-        start = spalten.indexOf(pgUnter[0]);
-        breite = pgUnter.length;
+        if (!pgOffen.length) { return; }
+        start = spalten.indexOf(pgOffen[0]);
+        breite = spalten.indexOf(pgOffen[pgOffen.length - 1]) - start + 1;
         kopfImFeld = true;
       } else {
         start = spalten.indexOf(feld.modul);
@@ -390,6 +422,7 @@
     return {
       zeilen: zeilen,
       spalten: spalten,
+      zu: zu,
       felder: felder,
       erreicht: erreicht,
       zahlen: { rolle: Object.keys(ids.rolle).length, aufgabe: Object.keys(ids.aufgabe).length, ergebnis: Object.keys(ids.ergebnis).length },
@@ -604,7 +637,22 @@
     return h('button', { type: 'button', class: 'ra-trichter', dataset: { art: art, name: name } }, HT.ui.symbol(IKONE_FILTER, 12));
   }
 
-  function modulKopf(modul, klasse) {
+  /* Ein- und Ausklappen einer Phase (Zeile) oder eines Moduls (Spalte):
+     offen zeigt der Pfeil nach unten, zu nach rechts. */
+  var IKONE_OFFEN = ['M6.5 9.5 12 15l5.5-5.5'];
+  var IKONE_ZU = ['M9.5 6.5 15 12l-5.5 5.5'];
+  function klappe(art, name, zu) {
+    var was = (art === 'modul' ? 'Modul ' : 'Phase ') + name;
+    return h('button', {
+      type: 'button', class: 'ra-klappe', dataset: { art: art, name: name },
+      title: was + (zu ? ' aufklappen' : ' zuklappen'), 'aria-label': was + (zu ? ' aufklappen' : ' zuklappen'),
+      'aria-expanded': zu ? 'false' : 'true'
+    }, HT.ui.symbol(zu ? IKONE_ZU : IKONE_OFFEN, 14));
+  }
+
+  /* Projektgrundlagen im Feld (über Organisation bis IT-System) hat keine
+     eigene Spalte zum Zuklappen: dort ohne Klappe. */
+  function modulKopf(modul, klasse, mitKlappe) {
     var e = HT.daten.eintragMitBegriff(modul, 'modul');
     return h('div', { class: 'ra-modulkopf' + (klasse ? ' ' + klasse : '') }, [
       h('button', {
@@ -614,6 +662,7 @@
         h('span', { class: 'gswatch gswatch--modul', 'aria-hidden': 'true' }, HT.ui.katSymbol('modul', 12)),
         h('span', { class: 'ra-modul__name', text: HT.gesamtbild.trennen(modul) })
       ]),
+      mitKlappe ? klappe('modul', modul, false) : null,
       trichter('modul', modul)
     ]);
   }
@@ -631,10 +680,17 @@
     ]);
   }
 
-  function phaseBauen(z, gitterZeile) {
+  /* Die Farben der Phasenbalken in der Abbildung 1: Initialisierung und
+     Abschluss grau, Konzept bis Einführung blau, Umsetzung (agil) rosa. */
+  function phasenFarbe(phase) {
+    return phase === 'Umsetzung' ? 'rosa' : phase === 'Initialisierung' || phase === 'Abschluss' ? 'grau' : 'blau';
+  }
+
+  function phaseBauen(z, gitterZeile, zu) {
     var e = HT.daten.eintragMitBegriff(z.phase, 'phase');
-    var el = h('div', { class: 'ra-phase', dataset: { phase: z.phase } }, [
+    var el = h('div', { class: 'ra-phase' + (zu ? ' ist-zu' : ''), dataset: { phase: z.phase, farbe: phasenFarbe(z.phase) } }, [
       h('div', { class: 'ra-phase__streifen' }, [
+        klappe('phase', z.phase, zu),
         h('button', {
           type: 'button', class: 'ra-phase__name', dataset: { id: e ? e.id : '' }, title: 'Phase ' + z.phase + ' — Seite zeigen'
         }, h('span', { text: z.phase })),
@@ -677,8 +733,14 @@
     var fluss = flussMoeglich(sicht) && !!sicht.pfeile;
     gitter.classList.toggle('ist-fluss', fluss);
     gitter.classList.toggle('ist-uebung', !!uebung);
+    /* Zugeklappt: eine Spalte schmal, eine Zeile niedrig. */
+    function spalteZu(s) { return a.zu.module.indexOf(s) !== -1; }
+    function zeileZu(z) { return a.zu.phasen.indexOf(z.phase) !== -1; }
     gitter.style.gridTemplateColumns = 'var(--ra-band) ' + a.spalten.map(function (s) {
-      return 'minmax(var(--ra-spalte-min), ' + (GEWICHT[s] || 1) + 'fr)';
+      return spalteZu(s) ? 'var(--ra-zu-breite)' : 'minmax(var(--ra-spalte-min), ' + (GEWICHT[s] || 1) + 'fr)';
+    }).join(' ');
+    gitter.style.gridTemplateRows = 'auto ' + a.zeilen.map(function (z) {
+      return zeileZu(z) ? 'var(--ra-zu-hoehe)' : 'minmax(96px, auto)';
     }).join(' ');
     gitter.classList.toggle('hat-filter', trefferFilter(f));
 
@@ -698,7 +760,23 @@
       h('span', { class: 'ra-ecke__text', text: 'Phase · Meilensteine' })
     ]));
     a.spalten.forEach(function (s, i) {
-      var kopf = modulKopf(s, 'ra-modulkopf--kopf');
+      if (spalteZu(s)) {
+        /* Zugeklappt: oben die Klappe, darunter über alle Zeilen der Name
+           senkrecht — ein Klick darauf klappt wieder auf. */
+        var zuKopf = h('div', { class: 'ra-modulkopf ra-modulkopf--kopf ist-zu' }, klappe('modul', s, true));
+        zuKopf.style.gridColumn = String(i + 2);
+        zuKopf.style.gridRow = '1';
+        gitter.appendChild(zuKopf);
+        var streifen = h('button', {
+          type: 'button', class: 'ra-zuspalte', dataset: { art: 'modul', name: s },
+          title: 'Modul ' + s + ' aufklappen'
+        }, h('span', { class: 'ra-zuspalte__name', text: s }));
+        streifen.style.gridColumn = String(i + 2);
+        streifen.style.gridRow = '2 / span ' + a.zeilen.length;
+        gitter.appendChild(streifen);
+        return;
+      }
+      var kopf = modulKopf(s, 'ra-modulkopf--kopf', true);
       trichterSetzen(kopf.querySelector('.ra-trichter'), f.module, s, 'modul');
       kopf.style.gridColumn = String(i + 2);
       kopf.style.gridRow = '1';
@@ -714,7 +792,7 @@
       bahn.style.gridRow = String(zeile);
       bahn.style.gridColumn = '1 / -1';
       gitter.appendChild(bahn);
-      var band = phaseBauen(z, zeile);
+      var band = phaseBauen(z, zeile, zeileZu(z));
       /* Die Meilensteine am Ende ragen in die nächste Phase: jedes Band liegt
          über dem folgenden. */
       band.style.zIndex = String(2 + a.zeilen.length - i);
@@ -890,6 +968,7 @@
     /* Im Fluss ist jede Spalte so breit wie ihre Unterspalten fester Kästen. */
     if (fluss) {
       gitter.style.gridTemplateColumns = 'var(--ra-band) ' + a.spalten.map(function (s) {
+        if (spalteZu(s)) { return 'var(--ra-zu-breite)'; }
         var n = unterspalten(s).n;
         return 'minmax(' + (n * KASTEN + (n - 1) * KASTEN_LUECKE + FELD_RAND) + 'px, ' + n + 'fr)';
       }).join(' ');
@@ -1227,9 +1306,9 @@
         ueberhang = 0;
         if (!ende || !ende.lastElementChild) { return; }
         var halb = ende.lastElementChild.offsetHeight / 2;
-        ende.style.transform = 'translateY(' + halb + 'px)';
+        ende.style.transform = 'translateY(' + (halb + PHASEN_LUECKE / 2) + 'px)';
         ms.style.paddingBottom = (ende.offsetHeight - halb + 10) + 'px';
-        ueberhang = halb;
+        ueberhang = Math.max(0, halb - PHASEN_LUECKE / 2);
       });
     }
 
@@ -1550,6 +1629,8 @@
       if (mehrKnopf) { weitereZeigen(mehrKnopf.closest('.ra-feld'), !mehrKnopf.closest('.ra-feld').classList.contains('ist-offen')); return; }
       var t = ev.target.closest('.ra-trichter');
       if (t) { aktionen[t.dataset.art](t.dataset.name); return; }
+      var kl = ev.target.closest('.ra-klappe, .ra-zuspalte');
+      if (kl) { if (aktionen.klappen) { aktionen.klappen(kl.dataset.art, kl.dataset.name); } return; }
       var ziel = zielAus(ev.target);
       if (ziel && ziel.dataset.id) { aktionen.waehlen(ziel.dataset.id); return; }
       var feld = ev.target.closest('.ra-feld');
@@ -1654,6 +1735,7 @@
     var vorgehen = params.vorgehen === 'agil' ? 'agil' : 'klassisch';
     var sicht = sichtLesen();
     var filter = filterAusParams(params);
+    var zu = zuLesen(ZU_SPEICHER);
     var huelle = h('div', { class: 'ra' }, h('p', { class: 'ub-buehne__laden', text: 'Gesamtbild wird aufgebaut' }));
     behaelter.appendChild(huelle);
     var m = null, a = null;
@@ -2635,7 +2717,8 @@
       modul: function (name) { listeSchalten('module', name, alleModule()); },
       phase: function (name) { listeSchalten('phasen', name, m.phasen); },
       waehlen: function (id) { waehlen(id, true); },
-      feld: function (phase, modul) { feldWaehlen(phase, modul, true); }
+      feld: function (phase, modul) { feldWaehlen(phase, modul, true); },
+      klappen: function (art, name) { zuUmschalten(zu, art, name); zuSpeichern(ZU_SPEICHER, zu); zeichnen(); }
     };
 
     /* --- Popover --- */
@@ -2965,9 +3048,9 @@
       if (!document.body.contains(huelle)) { return; }
       m = modell(vorgehen);
       var s = sichtJetzt(), f = filterJetzt();
-      var schluessel = vorgehen + '|' + [s.rolle, s.aufgabe, s.ergebnis, s.pfeile].join() + '|' + JSON.stringify(f);
+      var schluessel = vorgehen + '|' + [s.rolle, s.aufgabe, s.ergebnis, s.pfeile].join() + '|' + JSON.stringify(f) + '|' + JSON.stringify(zu);
       if (!opt.wennNoetig || schluessel !== gebaut || !laufende || !huelle.contains(laufende.buehne)) {
-        a = ausschnitt(m, f);
+        a = ausschnitt(m, f, zu);
         var alt = laufende && huelle.contains(laufende.buehne) ? laufende.buehne : null;
         var oben = alt ? alt.scrollTop : 0, links = alt ? alt.scrollLeft : 0;
         laufende = aufbauen(m, a, s, f, aktionen);
@@ -3010,8 +3093,10 @@
   /* Das Raster für das Zuordnen im Trainer (js/zuordnen.js): Phase, Modul
      oder alles, mit Rollen, Aufgaben und Ergebnissen, ohne Pfeile und ohne
      Filter, Auswahl und Inhaltsseite. opts: { vorgehen, phasen, module,
-     knoten(k, ort) } — knoten gibt für ein Element seinen Kasten zurück oder
-     null (dann steht das Element wie im Überblick). Vorher bereit()
+     knoten(k, ort), zu: { phasen, module }, klappen(art, name) } — knoten
+     gibt für ein Element seinen Kasten zurück oder null (dann steht das
+     Element wie im Überblick); zu sagt, was zugeklappt ist, klappen meldet
+     einen Klick auf eine Klappe. Vorher bereit()
      abwarten: erst dann folgt die Reihenfolge der Abbildung 1. Rückgabe:
      { buehne, spurenLegen(zusatz) } — spurenLegen nach dem Einhängen und
      nach jeder Änderung der Höhen; zusatz wie breitenSchluessel(). */
@@ -3037,8 +3122,8 @@
       var m = modell(opts.vorgehen);
       var f = uebungsFilter(opts);
       var nichts = function () {};
-      var r = aufbauen(m, ausschnitt(m, f), { rolle: true, aufgabe: true, ergebnis: true, pfeile: false }, f,
-        { modul: nichts, phase: nichts, waehlen: nichts, feld: nichts }, { knoten: opts.knoten });
+      var r = aufbauen(m, ausschnitt(m, f, opts.zu), { rolle: true, aufgabe: true, ergebnis: true, pfeile: false }, f,
+        { modul: nichts, phase: nichts, waehlen: nichts, feld: nichts, klappen: opts.klappen || nichts }, { knoten: opts.knoten });
       return { buehne: r.buehne, spurenLegen: function (zusatz) { r.spurenLegen('uebung|' + zusatz); } };
     }
   };
