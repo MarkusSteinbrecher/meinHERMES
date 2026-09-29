@@ -297,6 +297,9 @@ body[data-route="ueberblick"] .unterleiste__inner { padding-inline: 12px; }
 .ra-k--aufgabe { background: var(--gk-aufgabe-bg); border-color: var(--gk-aufgabe); color: var(--gk-aufgabe-fg); }
 .ra-k--ergebnis { background: var(--gk-ergebnis-bg); border-color: color-mix(in srgb, var(--gk-ergebnis) 55%, #fff); color: var(--gk-ergebnis-fg); }
 .ra-k--zustand { background: #fff; }
+/* Meilenstein im Feld, als Ergebnis seiner Aufgabe: die Raute wie links im Phasenband. */
+.ra-k--meilenstein { gap: 6px; }
+.ra-k--meilenstein .ra-ms__raute { margin: 0 1px 0 2px; }
 .ra-k--rolle { color: var(--gk-rolle-fg); }
 
 .ra-k.ist-gleich, .ra-k.ist-gewaehlt, .ra-ms.ist-gewaehlt { box-shadow: 0 0 0 2px var(--akzent); }

@@ -16,8 +16,10 @@
    ein- und ausblenden. Mit Aufgaben steht je Aufgabe ein Block — die
    verantwortliche Rolle darüber, die Ergebnisse, die sie in diesem Feld
    erzeugt, eingerückt darunter —, dieselben Blöcke wie in der Landkarte und
-   im Zuordnen des Trainers (HT.graph.bloecke). Die Meilensteine stehen nur
-   im Phasenband, nicht noch einmal im Feld.
+   im Zuordnen des Trainers (HT.graph.bloecke). Die Meilensteine stehen im
+   Phasenband und im Feld als Ergebnis der Aufgabe, die sie erzeugt (mit
+   Raute, nach den übrigen Ergebnissen) — nur im Fluss der Abbildung 1
+   (Pfeile) nicht, dort stehen allein ihre Kästen.
 
    Zeigen auf ein Element hebt jede seiner Stellen hervor; Zeigen auf einen
    Meilenstein das Feld, in dem er entsteht.
@@ -425,13 +427,15 @@
     var e = k.eintrag || HT.daten.eintragMitId(k.id);
     var kat = k.kategorie;
     var zustand = kat === 'ergebnis' && e && e.typ === 'Zustand';
+    var ms = istMeilenstein(k);
     return h('button', {
       type: 'button',
-      class: 'ra-k ra-k--' + kat + (zustand ? ' ra-k--zustand' : ''),
+      class: 'ra-k ra-k--' + kat + (zustand ? ' ra-k--zustand' : '') + (ms ? ' ra-k--meilenstein' : ''),
       dataset: { id: k.id },
       title: k.begriff
     }, [
       kat === 'rolle' ? h('span', { class: 'gswatch gswatch--' + kat, 'aria-hidden': 'true' }, HT.ui.katSymbol(kat, 12)) : null,
+      ms ? h('span', { class: 'ra-ms__raute', 'aria-hidden': 'true' }) : null,
       h('span', { class: 'ra-k__name', text: HT.gesamtbild.trennen(k.begriff) })
     ]);
   }
@@ -444,6 +448,13 @@
     return liste.filter(function (k) { return !istMeilenstein(k); });
   }
 
+  /* Die Ergebnisse eines Blocks im Feld: die Meilensteine nach den übrigen;
+     im Fluss der Abbildung 1 ohne sie. */
+  function ergebnisseImFeld(liste, fluss) {
+    var ms = liste.filter(istMeilenstein);
+    return fluss ? ohneMeilensteine(liste) : ohneMeilensteine(liste).concat(ms);
+  }
+
   /* Der Inhalt eines Feldes nach der Sicht, als Stücke { key, el }. Mit
      Aufgaben je Aufgabe ein Block; ohne Aufgaben die Ergebnisse einzeln oder,
      bei eingeblendeten Rollen, nach der verantwortlichen Rolle gruppiert —
@@ -451,9 +462,10 @@
      derselbe, damit ein Stück in allen Feldern seiner Spalte an derselben
      Stelle steht (spurenLegen). */
   function inhaltBauen(bloecke, sicht) {
+    var fluss = flussMoeglich(sicht) && !!sicht.pfeile;
     if (sicht.aufgabe) {
       return bloecke.map(function (b) {
-        var erg = sicht.ergebnis ? ohneMeilensteine(b.ergebnisse) : [];
+        var erg = sicht.ergebnis ? ergebnisseImFeld(b.ergebnisse, fluss) : [];
         return { key: 'a:' + b.aufgabe.id, el: h('div', { class: 'ra-block' }, [
           sicht.rolle && b.rolle ? knoten(b.rolle) : null,
           knoten(b.aufgabe),
@@ -470,7 +482,7 @@
         gruppen.push(g);
       }
       if (!sicht.ergebnis) { return; }
-      ohneMeilensteine(b.ergebnisse).forEach(function (k) {
+      ergebnisseImFeld(b.ergebnisse, fluss).forEach(function (k) {
         var id = schluessel + '|' + k.id;
         if (gesehen[id]) { return; }
         gesehen[id] = true;
