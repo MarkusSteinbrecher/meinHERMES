@@ -481,7 +481,8 @@
     ['organisation-aktivieren', ['Zweck', 'HERMES spezifisch']],
     ['betrieb-aktivieren', ['Zweck', 'Grundlagen']],
     ['entscheid-abnahme-treffen', ['Zweck', 'HERMES spezifisch']],
-    ['altsystem-ausser-betrieb-setzen', ['Zweck', 'Grundlagen']]
+    ['altsystem-ausser-betrieb-setzen', ['Zweck', 'Grundlagen']],
+    ['testinfrastruktur-ueberfuehren', ['Zweck', 'HERMES spezifisch']]
   ];
 
   var THEMEN = [
