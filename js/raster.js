@@ -1710,7 +1710,10 @@
     function schrittZeigen() {
       tourSicht = null;
       var s = schritt();
-      if (s && s.vorgehen && s.vorgehen !== vorgehen) { vorgehen = s.vorgehen; filter.phasen = null; }
+      /* Rundgang-Schritte ohne Vorgehen gelten in beiden Sichten; eine Frage
+         ohne Vorgehen ist klassisch gemeint. */
+      var soll = s ? s.vorgehen || (reise.id === 'fragen' ? 'klassisch' : null) : null;
+      if (soll && soll !== vorgehen) { vorgehen = soll; filter.phasen = null; }
       adresseSetzen();
       zeichnen({ zumZiel: true, wennNoetig: true });
     }
