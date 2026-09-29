@@ -29,10 +29,12 @@
   var LOKAL = 'internal/BKI%20Fragen/fragen.json';
   var SPEICHER = 'meinHERMES:fragen';
   var LOESUNG = 'meinHERMES:fragen-loesungen';
-  /* Verstandene Fragen (nur IDs) und ob die Seite sie ausblendet; bleiben
-     beim Laden einer neuen Fragendatei erhalten. */
-  var ERLEDIGT = 'meinHERMES:fragen-erledigt';
-  var NUR_OFFENE = 'meinHERMES:fragen-nur-offene';
+  /* Ausgeblendete Fragen (nur IDs) und ob die Seite sie trotzdem zeigt;
+     bleiben beim Laden einer neuen Fragendatei erhalten. */
+  var AUSGEBLENDET = 'meinHERMES:fragen-ausgeblendet';
+  var AUSGEBLENDETE_ZEIGEN = 'meinHERMES:fragen-ausgeblendete-zeigen';
+  /* Vorgänger «erledigt» (29.9.): wird beim Öffnen der Seite entfernt. */
+  var ALT = ['meinHERMES:fragen-erledigt', 'meinHERMES:fragen-nur-offene'];
   var MAX_DATEI = 5 * 1024 * 1024;
 
   function lesen(schluessel) {
@@ -140,7 +142,10 @@
     }, [z.nummer ? h('span', { class: 'fr-link__nr', text: z.nummer }) : null, h('span', { text: z.titel || z.id })]);
   }
 
-  /* merker: { ist(id), setzen(id, an), nurOffene } — der Zustand «erledigt». */
+  /* merker: { ist(id), setzen(id, an), zeigen } — ausgeblendete Fragen.
+     Wer eine Frage gerade ausblendet, sieht sie als schmale Zeile mit
+     «Einblenden» an derselben Stelle — nichts rutscht unter den Zeiger;
+     ganz weg ist sie erst beim nächsten Aufbau der Seite. */
   function frageBauen(f, loesungen, merker) {
     var offen = loesungen;
     var gewaehlt = [];   /* Indizes der angeklickten Antworten, nur bis zum Neuladen */
@@ -148,9 +153,23 @@
 
     function zeichnen() {
       HT.ui.leeren(karte);
-      var erledigt = merker.ist(f.id);
-      karte.classList.toggle('ist-erledigt', erledigt);
-      karte.hidden = erledigt && merker.nurOffene;
+      var aus = merker.ist(f.id);
+      var schmal = aus && !merker.zeigen;
+      karte.classList.toggle('ist-ausgeblendet', aus);
+      karte.classList.toggle('ist-schmal', schmal);
+      var ausKnopf = h('button', {
+        type: 'button', class: 'btn btn--klein fr-frage__aus', text: aus ? 'Einblenden' : 'Ausblenden',
+        title: aus ? 'Diese Frage wieder zeigen' : 'Diese Frage ausblenden',
+        on: { click: function () { merker.setzen(f.id, !aus); zeichnen(); } }
+      });
+      if (schmal) {
+        karte.appendChild(h('div', { class: 'fr-frage__kopf' }, [
+          h('span', { class: 'fr-frage__id', text: f.id }),
+          h('span', { class: 'fr-frage__hinweis', text: 'ausgeblendet' }),
+          ausKnopf
+        ]));
+        return;
+      }
       karte.appendChild(h('div', { class: 'fr-frage__kopf' }, [
         h('span', { class: 'fr-frage__id', text: f.id }),
         f.stufe ? h('span', { class: 'fr-frage__stufe', text: f.stufe }) : null,
@@ -160,12 +179,7 @@
           type: 'button', class: 'btn btn--klein fr-frage__knopf', text: offen ? 'Lösung verbergen' : (gewaehlt.length ? 'Prüfen' : 'Lösung zeigen'),
           'aria-expanded': offen ? 'true' : 'false', on: { click: function () { offen = !offen; zeichnen(); } }
         }),
-        h('button', {
-          type: 'button', class: 'btn btn--klein fr-frage__erledigt', text: erledigt ? '✓ Erledigt' : 'Erledigt',
-          'aria-pressed': erledigt ? 'true' : 'false',
-          title: erledigt ? 'Wieder als offen führen' : 'Verstanden: unter «Offene» ausblenden',
-          on: { click: function () { merker.setzen(f.id, !erledigt); zeichnen(); } }
-        })
+        ausKnopf
       ]));
       if (f.situation) { karte.appendChild(h('p', { class: 'fr-frage__situation', text: f.situation })); }
       karte.appendChild(h('p', { class: 'fr-frage__text', text: f.frage }));
@@ -314,22 +328,20 @@
       var gesucht = params.frage ? d.fragen.filter(function (f) { return f.id === params.frage; })[0] : null;
       var dok = dokumente.filter(function (x) { return x.id === (gesucht ? gesucht.dokument : params.dok); })[0] || dokumente[0];
       var loesungen = lesen(LOESUNG) !== false;
-      var nurOffene = lesen(NUR_OFFENE) !== false;
-      var erledigt = lesen(ERLEDIGT);
-      if (!Array.isArray(erledigt)) { erledigt = []; }
+      ALT.forEach(entfernen);
+      var zeigeAus = lesen(AUSGEBLENDETE_ZEIGEN) === true;
+      var ausgeblendet = lesen(AUSGEBLENDET);
+      if (!Array.isArray(ausgeblendet)) { ausgeblendet = []; }
+      var ausZeigen = h('button', {
+        type: 'button', class: 'btn btn--klein',
+        on: { click: function () { schreiben(AUSGEBLENDETE_ZEIGEN, !zeigeAus); zeigen(stand); } }
+      });
 
       HT.app.unterleiste({
         label: 'Dokumente',
         links: dokumente.map(function (x) { return { href: '#/fragen?dok=' + encodeURIComponent(x.id), text: x.titel, aktiv: x === dok }; }),
         inhalt: [
-          h('div', { class: 'segment', role: 'group', 'aria-label': 'Welche Fragen' },
-            [[true, 'Offene', 'Erledigte Fragen ausblenden'], [false, 'Alle', 'Auch erledigte Fragen zeigen']].map(function (o) {
-              return h('button', {
-                type: 'button', class: 'segment__knopf', text: o[1], title: o[2], 'aria-pressed': o[0] === nurOffene ? 'true' : 'false',
-                on: { click: function () { if (o[0] !== nurOffene) { schreiben(NUR_OFFENE, o[0]); zeigen(stand); } } }
-              });
-            })),
-          h('span', { class: 'unterleiste__trenner', 'aria-hidden': 'true' }),
+          ausZeigen,
           h('button', {
             type: 'button', class: 'btn btn--klein', text: loesungen ? 'Lösungen verbergen' : 'Lösungen zeigen',
             title: loesungen ? 'Zum Üben: Lösungen erst auf Knopfdruck je Frage' : 'Alle Lösungen zeigen',
@@ -346,33 +358,37 @@
       }
       var fragen = d.fragen.filter(function (f) { return f.dokument === dok.id; });
       var zaehler = h('p', { class: 'trefferzahl' });
-      var alleErledigt = h('div', { class: 'leer fr-leer' }, [
-        h('strong', { text: 'Alle Fragen erledigt' }),
-        h('p', { text: 'Unter «Alle» in der Leiste siehst du sie wieder.' })
+      var alleAus = h('div', { class: 'leer fr-leer' }, [
+        h('strong', { text: 'Alle Fragen ausgeblendet' }),
+        h('p', { text: '«Ausgeblendete zeigen» in der Leiste holt sie zurück.' })
       ]);
       var indexLinks = {};
+      var anfangs = ausgeblendet.slice();   /* beim Aufbau schon ausgeblendet: ganz weg */
 
-      /* Zähler, Index und Hinweis nach jedem Umschalten einer Frage. */
+      /* Zähler, Index, Leistenknopf und Hinweis nach jedem Umschalten einer Frage. */
       function stimmen() {
-        var n = fragen.filter(function (f) { return erledigt.indexOf(f.id) !== -1; }).length;
+        var n = fragen.filter(function (f) { return ausgeblendet.indexOf(f.id) !== -1; }).length;
         zaehler.textContent = zahl(fragen.length, 'Frage', 'Fragen')
-          + (n ? ' · ' + n + ' erledigt' + (nurOffene ? ' (ausgeblendet)' : '') : '')
+          + (n ? ' · ' + n + ' ausgeblendet' : '')
           + (dok.datei ? ' · ' + dok.datei : '');
         fragen.forEach(function (f) {
-          var ist = erledigt.indexOf(f.id) !== -1;
-          indexLinks[f.id].classList.toggle('ist-erledigt', ist);
-          indexLinks[f.id].hidden = ist && nurOffene;
+          var ist = ausgeblendet.indexOf(f.id) !== -1;
+          indexLinks[f.id].classList.toggle('ist-ausgeblendet', ist);
+          indexLinks[f.id].hidden = ist && !zeigeAus;
         });
-        alleErledigt.hidden = !(nurOffene && fragen.length && n === fragen.length);
+        ausZeigen.textContent = zeigeAus ? 'Ausgeblendete verbergen' : 'Ausgeblendete zeigen (' + n + ')';
+        ausZeigen.hidden = !zeigeAus && !n;
+        var weg = fragen.filter(function (f) { return anfangs.indexOf(f.id) !== -1 && ausgeblendet.indexOf(f.id) !== -1; }).length;
+        alleAus.hidden = zeigeAus || !fragen.length || weg < fragen.length;
       }
 
       var merker = {
-        nurOffene: nurOffene,
-        ist: function (id) { return erledigt.indexOf(id) !== -1; },
+        zeigen: zeigeAus,
+        ist: function (id) { return ausgeblendet.indexOf(id) !== -1; },
         setzen: function (id, an) {
-          erledigt = erledigt.filter(function (x) { return x !== id; });
-          if (an) { erledigt.push(id); }
-          schreiben(ERLEDIGT, erledigt);
+          ausgeblendet = ausgeblendet.filter(function (x) { return x !== id; });
+          if (an) { ausgeblendet.push(id); }
+          schreiben(AUSGEBLENDET, ausgeblendet);
           stimmen();
         }
       };
@@ -394,8 +410,12 @@
           });
         }))
       ]));
-      fragen.forEach(function (f) { huelle.appendChild(frageBauen(f, loesungen, merker)); });
-      huelle.appendChild(alleErledigt);
+      fragen.forEach(function (f) {
+        var karte = frageBauen(f, loesungen, merker);
+        karte.hidden = !zeigeAus && anfangs.indexOf(f.id) !== -1;
+        huelle.appendChild(karte);
+      });
+      huelle.appendChild(alleAus);
       stimmen();
       if (gesucht) {
         var ziel = document.getElementById('frage-' + gesucht.id);

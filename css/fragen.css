@@ -14,8 +14,7 @@ body[data-route="fragen"] .view { max-width: 980px; }
   font-size: 12.5px; font-weight: 700; color: var(--text); text-decoration: none; background: var(--weiss);
 }
 .fr-index__link:hover { border-color: var(--akzent); color: var(--akzent); }
-.fr-index__link.ist-erledigt { border-color: var(--gut); color: var(--text-leise); background: var(--gut-bg); }
-.fr-index__link.ist-erledigt::before { content: '✓ '; color: var(--gut); }
+.fr-index__link.ist-ausgeblendet { border-style: dashed; color: var(--text-leise); }
 
 .fr-frage {
   background: var(--weiss);
@@ -130,6 +129,9 @@ body[data-route="fragen"] .view { max-width: 980px; }
 .ra-antwort__zitate .ra-zitat__text { overflow-x: auto; }
 .ra-antwort__zitate table { font-size: 12.5px; }
 
-/* Erledigt: verstanden; unter «Offene» ausgeblendet, unter «Alle» grün umrandet. */
-.fr-frage.ist-erledigt { border-color: var(--gut); }
-.fr-frage__erledigt[aria-pressed="true"] { border-color: var(--gut); background: var(--gut-bg); color: var(--text); }
+/* Ausgeblendet: gerade ausgeblendet als schmale Zeile, mit «Ausgeblendete zeigen» gestrichelt. */
+.fr-frage.ist-ausgeblendet { border-style: dashed; }
+.fr-frage.ist-schmal { padding-bottom: 16px; background: transparent; }
+.fr-frage__hinweis { font-size: 13px; color: var(--text-leise); }
+.fr-frage__aus { margin-left: 0; }
+.fr-frage.ist-schmal .fr-frage__aus { margin-left: auto; }
