@@ -700,7 +700,8 @@
     /* Folgen Felder eines Moduls mit genau denselben Aufgaben und
        Ergebnissen aufeinander (Projektführung von Konzept bis Einführung),
        steht ihr Inhalt nur einmal — in einem Feld über diese Phasen, wie
-       «Phasenunabhängig» in der Abbildung 1. */
+       «Phasenunabhängig» in der Abbildung 1, ohne Beschriftung (welche
+       Phasen, zeigt die Höhe und der Tooltip). */
     var zeilenIndex = {};
     a.zeilen.forEach(function (z, i) { zeilenIndex[z.phase] = i; });
     var gruppen = [], letzte = {};
@@ -748,10 +749,10 @@
       var weitere = fluss ? flussMarkieren(stuecke, gr.phasen, x.feld.modul) : 0;
       var el = h('div', {
         class: 'ra-feld' + (x.breite > 1 ? ' ra-feld--breit' : '') + (leer ? ' ra-feld--leer' : '') + (mehr ? ' ra-feld--phasen' : ''),
-        dataset: { phase: x.feld.phase, phasen: gr.phasen.join(' '), modul: x.feld.modul }
+        dataset: { phase: x.feld.phase, phasen: gr.phasen.join(' '), modul: x.feld.modul },
+        title: mehr ? gr.phasen[0] + ' bis ' + gr.phasen[gr.phasen.length - 1] : null
       }, [
         x.kopfImFeld ? modulKopf(x.feld.modul, 'ra-modulkopf--feld') : null,
-        mehr ? h('div', { class: 'ra-feld__phasen', text: gr.phasen[0] + ' bis ' + gr.phasen[gr.phasen.length - 1] }) : null,
         inhalt,
         weitere ? h('button', {
           type: 'button', class: 'ra-feld__mehr', 'aria-expanded': 'false',
@@ -1233,10 +1234,11 @@
        nächste Element der Zeile und alle derselben Art (Rolle, Aufgabe,
        Ergebnis, Meilenstein), die höchstens ANGLEICHEN tiefer stehen, beginnen auf der
        Höhe des tiefsten davon. Die Abstände darunter bleiben, nur wachsen
-       sie; weiter auseinander Liegendes bleibt, wie es ist. Erst alle
+       sie; weiter auseinander Liegendes bleibt, wie es ist. Ein Feld über
+       mehrere Phasen gleicht sich mit seiner ersten ab. Erst alle
        Abstände zurücksetzen, dann alle lesen, dann alle schreiben. */
     var ANGLEICHEN = 18;        // px, gut eine Zeile
-    var NACHZUEGLER = 6;        // px
+    var NACHZUEGLER = 14;       // px, knapp eine Zeile
     function angleichen() {
       var zeilen = {}, alle = [];
       function blaetter(el) {
@@ -1250,7 +1252,6 @@
       }
       spaltenReihe.forEach(function (sp) {
         sp.felder.forEach(function (f) {
-          if (f.mehr) { return; }
           Array.prototype.forEach.call(f.inhalt.children, function (spur) {
             var liste = [];
             Array.prototype.forEach.call(spur.children, function (el) { liste.push.apply(liste, blaetter(el)); });
