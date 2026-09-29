@@ -27,7 +27,8 @@
    Anordnung wie in der Abbildung 1: Im Feld steht, was dort später
    entsteht, weiter unten. Mit Pfeilen stehen die Ergebnisse zudem in Stufen
    nach der Höhe ihres Kastens, quer über alle Spalten ausgerichtet, mit
-   einer freien Gasse über jeder Stufe (ausrichten); ohne Pfeile dicht.
+   einer freien Gasse über jeder Stufe (ausrichten); ohne Pfeile dicht, was
+   in einer Phase fast gleich hoch steht, aber auf gleicher Höhe (angleichen).
    Aufeinanderfolgende Felder eines Moduls mit gleichem Inhalt stehen als
    ein Feld über mehrere Phasen.
 
@@ -1220,8 +1221,91 @@
       });
       /* Stufen und Gassen nur im Fluss: ohne Pfeile stehen die Ergebnisse
          dicht untereinander, in der Folge der Abbildung. */
-      if (fluss) { ausrichten(); }
+      if (fluss) { ausrichten(); } else { angleichen(); }
       pfeileLegen();
+    }
+
+    /* Ohne Pfeile: Was in einer Phase fast auf gleicher Höhe steht, steht
+       auf gleicher Höhe — über alle Spalten und Spuren. Bricht eine Rolle
+       («Anwendervertreter») oder ein Kasten in eine Zeile mehr um, rutscht
+       alles darunter um diese Zeile; dann rücken die Nachbarn mit, statt
+       eine Zeile versetzt zu stehen. Von oben nach unten: das höchste
+       nächste Element der Zeile und alle derselben Art (Rolle, Aufgabe,
+       Ergebnis, Meilenstein), die höchstens ANGLEICHEN tiefer stehen, beginnen auf der
+       Höhe des tiefsten davon. Die Abstände darunter bleiben, nur wachsen
+       sie; weiter auseinander Liegendes bleibt, wie es ist. Erst alle
+       Abstände zurücksetzen, dann alle lesen, dann alle schreiben. */
+    var ANGLEICHEN = 18;        // px, gut eine Zeile
+    var NACHZUEGLER = 6;        // px
+    function angleichen() {
+      var zeilen = {}, alle = [];
+      function blaetter(el) {
+        if (!el.classList.contains('ra-block')) { return [el]; }
+        var liste = [];
+        Array.prototype.forEach.call(el.children, function (k) {
+          if (k.classList.contains('ra-block__ergebnisse')) { liste.push.apply(liste, k.children); }
+          else { liste.push(k); }
+        });
+        return liste;
+      }
+      spaltenReihe.forEach(function (sp) {
+        sp.felder.forEach(function (f) {
+          if (f.mehr) { return; }
+          Array.prototype.forEach.call(f.inhalt.children, function (spur) {
+            var liste = [];
+            Array.prototype.forEach.call(spur.children, function (el) { liste.push.apply(liste, blaetter(el)); });
+            liste.forEach(function (el) { el.style.marginTop = ''; });
+            (zeilen[f.zeile] = zeilen[f.zeile] || []).push({ spur: spur, liste: liste });
+          });
+        });
+      });
+      var oben0 = gitter.getBoundingClientRect().top;
+      Object.keys(zeilen).forEach(function (z) {
+        zeilen[z] = zeilen[z].map(function (c) {
+          var unten = c.spur.getBoundingClientRect().top - oben0;
+          var basis = unten;
+          var teile = c.liste.map(function (el) {
+            var r = el.getBoundingClientRect();
+            var b = {
+              el: el, h: r.height, d: r.top - oben0 - unten,
+              rand: parseFloat(global.getComputedStyle(el).marginTop) || 0,
+              art: ['rolle', 'aufgabe', 'meilenstein', 'ergebnis'].filter(function (a) { return el.classList.contains('ra-k--' + a); })[0]
+            };
+            unten = r.bottom - oben0;
+            return b;
+          });
+          return { blaetter: teile, i: 0, unten: basis };
+        });
+      });
+      Object.keys(zeilen).forEach(function (z) {
+        var saeulen = zeilen[z];
+        for (;;) {
+          var offen = saeulen.filter(function (c) { return c.i < c.blaetter.length; });
+          if (!offen.length) { break; }
+          var erstes = null;
+          offen.forEach(function (c) {
+            c.soll = c.unten + c.blaetter[c.i].d;
+            if (!erstes || c.soll < erstes.soll) { erstes = c; }
+          });
+          var art = erstes.blaetter[erstes.i].art;
+          /* Wer knapp unter dem Ziel stünde, rückt mit. */
+          var gleicheArt = offen.filter(function (c) { return c.blaetter[c.i].art === art; });
+          var grenze = erstes.soll + ANGLEICHEN, gruppe, ziel;
+          for (;;) {
+            gruppe = gleicheArt.filter(function (c) { return c.soll <= grenze; });
+            ziel = Math.max.apply(null, gruppe.map(function (c) { return c.soll; }));
+            if (!gleicheArt.some(function (c) { return c.soll > ziel && c.soll < ziel + NACHZUEGLER; })) { break; }
+            grenze = ziel + NACHZUEGLER;
+          }
+          gruppe.forEach(function (c) {
+            var b = c.blaetter[c.i];
+            if (ziel - c.soll > 0.5) { alle.push({ el: b.el, rand: b.rand + ziel - c.soll }); }
+            c.unten = ziel + b.h;
+            c.i++;
+          });
+        }
+      });
+      alle.forEach(function (x) { x.el.style.marginTop = x.rand + 'px'; });
     }
 
     /* Stufen wie in der Abbildung 1: In einer Phase beginnen Stücke, deren
