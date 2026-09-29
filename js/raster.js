@@ -412,6 +412,31 @@
     return zahl;
   }
 
+  /* Folgen Felder eines Moduls mit genau denselben Aufgaben und
+     Ergebnissen aufeinander (Projektführung von Konzept bis Einführung),
+     steht ihr Inhalt nur einmal — in einem Feld über diese Phasen, wie
+     «Phasenunabhängig» in der Abbildung 1, ohne Beschriftung (welche
+     Phasen, zeigt die Höhe und der Tooltip).
+     [{ x: Feld aus ausschnitt(), sig, von, bis: Zeilen, phasen }] */
+  function feldGruppen(a) {
+    var zeilenIndex = {};
+    a.zeilen.forEach(function (z, i) { zeilenIndex[z.phase] = i; });
+    var gruppen = [], letzte = {};
+    a.felder.forEach(function (x) {
+      var sig = x.bloecke.map(function (b) {
+        return b.aufgabe.id + ':' + b.ergebnisse.map(function (k) { return k.id; }).join('+');
+      }).join('|');
+      var i = zeilenIndex[x.feld.phase], vor = letzte[x.feld.modul];
+      if (sig && vor && vor.sig === sig && vor.bis === i - 1 && vor.x.start === x.start && vor.x.breite === x.breite) {
+        vor.bis = i;
+        vor.phasen.push(x.feld.phase);
+        return;
+      }
+      gruppen.push(letzte[x.feld.modul] = { x: x, sig: sig, von: i, bis: i, phasen: [x.feld.phase] });
+    });
+    return gruppen;
+  }
+
   /* --- Bauen ----------------------------------------------------------------- */
 
   var SVG_NS = 'http://www.w3.org/2000/svg';
@@ -458,10 +483,13 @@
   }
 
   /* Ein Block: oben Rolle und Aufgabe, eingerückt die Ergebnisse, darunter
-     ohne Einzug die Meilensteine (die Raute bündig mit dem Icon der Rolle). */
-  function blockInhalt(kopf, ergebnisse) {
+     ohne Einzug die Meilensteine (die Raute bündig mit dem Icon der Rolle).
+     mach(k, platz) baut ein Ergebnis — platz zählt in dieser Folge. */
+  function blockInhalt(kopf, ergebnisse, mach) {
+    mach = mach || knoten;
     var erg = ohneMeilensteine(ergebnisse), ms = ergebnisse.filter(istMeilenstein);
-    return kopf.concat([erg.length ? h('div', { class: 'ra-block__ergebnisse' }, erg.map(knoten)) : null]).concat(ms.map(knoten));
+    return kopf.concat([erg.length ? h('div', { class: 'ra-block__ergebnisse' }, erg.map(function (k, j) { return mach(k, j); })) : null])
+      .concat(ms.map(function (k, j) { return mach(k, erg.length + j); }));
   }
 
   /* Der Inhalt eines Feldes nach der Sicht, als Stücke { key, el }. Mit
@@ -469,16 +497,18 @@
      bei eingeblendeten Rollen, nach der verantwortlichen Rolle gruppiert —
      jedes Element steht im Feld einmal. Der Schlüssel ist in jeder Phase
      derselbe, damit ein Stück in allen Feldern seiner Spalte an derselben
-     Stelle steht (spurenLegen). */
-  function inhaltBauen(bloecke, sicht) {
+     Stelle steht (spurenLegen). haken(k, block, platz) darf mit Aufgaben ein
+     Element durch ein eigenes ersetzen (die Kästen des Zuordnens). */
+  function inhaltBauen(bloecke, sicht, haken) {
     var fluss = flussMoeglich(sicht) && !!sicht.pfeile;
     if (sicht.aufgabe) {
       return bloecke.map(function (b) {
         var erg = sicht.ergebnis ? ergebnisseImFeld(b.ergebnisse, fluss) : [];
+        var mach = haken ? function (k, j) { return haken(k, b, j) || knoten(k); } : knoten;
         return { key: 'a:' + b.aufgabe.id, el: h('div', { class: 'ra-block' }, blockInhalt([
-          sicht.rolle && b.rolle ? knoten(b.rolle) : null,
-          knoten(b.aufgabe)
-        ], erg)) };
+          sicht.rolle && b.rolle ? mach(b.rolle, 0) : null,
+          mach(b.aufgabe, 0)
+        ], erg, mach)) };
       });
     }
     var gruppen = [], nachRolle = {}, gesehen = {};
@@ -629,8 +659,10 @@
    * aktionen: { modul(name), phase(name) } — Trichter an Modulkopf bzw. Phase;
    *   waehlen(id) — Klick auf ein Element, einen Modulkopf, eine Phase;
    *   feld(phase, modul) — Klick auf die freie Fläche eines Feldes.
+   * uebung (Zuordnen, HT.raster.uebung): { knoten(k, ort) } ersetzt ein
+   *   Element durch einen eigenen Kasten; ort = { phasen, modul, block, platz }.
    */
-  function aufbauen(m, a, sicht, f, aktionen) {
+  function aufbauen(m, a, sicht, f, aktionen, uebung) {
     var buehne = h('div', { class: 'ra-buehne' });
     if (!a.zeilen.length || !a.spalten.length) {
       buehne.appendChild(h('p', { class: 'ra-leer', text: 'Keine Phase oder kein Modul gewählt — im Filter wieder alle einschalten.' }));
@@ -644,6 +676,7 @@
        von Kasten zu Kasten. */
     var fluss = flussMoeglich(sicht) && !!sicht.pfeile;
     gitter.classList.toggle('ist-fluss', fluss);
+    gitter.classList.toggle('ist-uebung', !!uebung);
     gitter.style.gridTemplateColumns = 'var(--ra-band) ' + a.spalten.map(function (s) {
       return 'minmax(var(--ra-spalte-min), ' + (GEWICHT[s] || 1) + 'fr)';
     }).join(' ');
@@ -698,26 +731,7 @@
       gitter.appendChild(band);
     });
 
-    /* Folgen Felder eines Moduls mit genau denselben Aufgaben und
-       Ergebnissen aufeinander (Projektführung von Konzept bis Einführung),
-       steht ihr Inhalt nur einmal — in einem Feld über diese Phasen, wie
-       «Phasenunabhängig» in der Abbildung 1, ohne Beschriftung (welche
-       Phasen, zeigt die Höhe und der Tooltip). */
-    var zeilenIndex = {};
-    a.zeilen.forEach(function (z, i) { zeilenIndex[z.phase] = i; });
-    var gruppen = [], letzte = {};
-    a.felder.forEach(function (x) {
-      var sig = x.bloecke.map(function (b) {
-        return b.aufgabe.id + ':' + b.ergebnisse.map(function (k) { return k.id; }).join('+');
-      }).join('|');
-      var i = zeilenIndex[x.feld.phase], vor = letzte[x.feld.modul];
-      if (sig && vor && vor.sig === sig && vor.bis === i - 1 && vor.x.start === x.start && vor.x.breite === x.breite) {
-        vor.bis = i;
-        vor.phasen.push(x.feld.phase);
-        return;
-      }
-      gruppen.push(letzte[x.feld.modul] = { x: x, sig: sig, von: i, bis: i, phasen: [x.feld.phase] });
-    });
+    var gruppen = feldGruppen(a);
 
     /* Je Spalte (Modul) ihre Felder; die Stücke darin in der gemeinsamen
        Reihenfolge, auf Spuren verteilt erst, wenn die Breite bekannt ist. */
@@ -745,7 +759,9 @@
     gruppen.forEach(function (gr) {
       var x = gr.x, mehr = gr.phasen.length > 1;
       var leer = !x.bloecke.length;
-      var stuecke = leer ? [] : inhaltBauen(x.bloecke, sicht);
+      var stuecke = leer ? [] : inhaltBauen(x.bloecke, sicht, uebung ? function (k, b, j) {
+        return uebung.knoten(k, { phasen: gr.phasen, modul: x.feld.modul, block: b, platz: j });
+      } : null);
       var inhalt = leer ? null : h('div', { class: 'ra-feld__inhalt' + (!sicht.aufgabe && !sicht.rolle ? ' ra-feld__inhalt--liste' : '') });
       var weitere = fluss ? flussMarkieren(stuecke, gr.phasen, x.feld.modul) : 0;
       var el = h('div', {
@@ -1166,6 +1182,7 @@
     function wiederholungenDaempfen(f) {
       var gesehen = {};
       Array.prototype.forEach.call(f.inhalt.querySelectorAll('.ra-k--ergebnis'), function (k) {
+        if (!k.dataset.id) { return; }
         k.classList.toggle('ra-k--wieder', !!gesehen[k.dataset.id]);
         gesehen[k.dataset.id] = true;
       });
@@ -1516,8 +1533,10 @@
         Array.prototype.forEach.call(gitter.querySelectorAll('.ra-feld[data-phasen~="' + p + '"]'), function (x) { x.classList.add('ist-gleich'); });
       }
     }
+    /* Ein Kasten ohne Element (Zuordnen) hebt nichts hervor. */
     function zielAus(el) {
-      return el && el.closest ? el.closest('.ra-k, .ra-ms, .ra-modul, .ra-phase__name') : null;
+      var z = el && el.closest ? el.closest('.ra-k, .ra-ms, .ra-modul, .ra-phase__name') : null;
+      return z && z.classList.contains('ra-k') && !z.dataset.id ? null : z;
     }
     gitter.addEventListener('mouseover', function (ev) { markieren(zielAus(ev.target)); });
     gitter.addEventListener('mouseleave', function () { markieren(null); });
@@ -2987,6 +3006,42 @@
       } else if (reiter === 'rundgang') { lpHolen(); }
     });
   }
+
+  /* Das Raster für das Zuordnen im Trainer (js/zuordnen.js): Phase, Modul
+     oder alles, mit Rollen, Aufgaben und Ergebnissen, ohne Pfeile und ohne
+     Filter, Auswahl und Inhaltsseite. opts: { vorgehen, phasen, module,
+     knoten(k, ort) } — knoten gibt für ein Element seinen Kasten zurück oder
+     null (dann steht das Element wie im Überblick). Vorher bereit()
+     abwarten: erst dann folgt die Reihenfolge der Abbildung 1. Rückgabe:
+     { buehne, spurenLegen(zusatz) } — spurenLegen nach dem Einhängen und
+     nach jeder Änderung der Höhen; zusatz wie breitenSchluessel(). */
+  function uebungsFilter(opts) {
+    var f = leererFilter();
+    f.phasen = opts.phasen || null;
+    f.module = opts.module || null;
+    return f;
+  }
+
+  HT.raster = {
+    bereit: function () {
+      return lagenLaden().then(function () { modelle = {}; });
+    },
+    /* Die Felder der Übung ohne Bild: [{ phasen, modul, bloecke }] — für die
+       Zahl der Kästen auf der Übersicht. */
+    felder: function (opts) {
+      return feldGruppen(ausschnitt(modell(opts.vorgehen), uebungsFilter(opts))).map(function (g) {
+        return { phasen: g.phasen, modul: g.x.feld.modul, bloecke: g.x.bloecke };
+      });
+    },
+    uebung: function (opts) {
+      var m = modell(opts.vorgehen);
+      var f = uebungsFilter(opts);
+      var nichts = function () {};
+      var r = aufbauen(m, ausschnitt(m, f), { rolle: true, aufgabe: true, ergebnis: true, pfeile: false }, f,
+        { modul: nichts, phase: nichts, waehlen: nichts, feld: nichts }, { knoten: opts.knoten });
+      return { buehne: r.buehne, spurenLegen: function (zusatz) { r.spurenLegen('uebung|' + zusatz); } };
+    }
+  };
 
   HT.views.ueberblick = {
     titel: 'Überblick',

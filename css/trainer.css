@@ -8,12 +8,26 @@
    das Gerüst der Seite.
    ========================================================================== */
 
-/* Nur die Übung selbst (Phase, Modul, Gesamtbild) braucht die volle Breite;
-   die Trainer-Seite mit Leiste und Teilen bleibt in der Inhaltsbreite. */
-body[data-route="trainer"][data-teil="uebung"] .view { max-width: none; padding: 18px 20px 40px; }
+/* Die Übung selbst (Phase, Modul, Gesamtbild) steht wie der Überblick
+   (css/raster.css): volle Breite und Höhe, das Raster rollt in sich, rechts
+   die Seite mit den Elementen; die Trainer-Seite mit Leiste und Teilen
+   bleibt in der Inhaltsbreite. */
+body[data-route="trainer"][data-teil="uebung"] .view { max-width: none; margin: 0; padding: 0; }
+body[data-route="trainer"][data-teil="uebung"] .unterleiste__inner { padding-inline: 12px; }
 
-/* Die Leiste unter der Kopfzeile hat in der Übung dieselben Ränder wie die Übung. */
-body[data-route="trainer"][data-teil="uebung"] .unterleiste__inner { padding-inline: 20px; }
+@media (min-width: 700px) {
+  body[data-route="trainer"][data-teil="uebung"] {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+  }
+  body[data-route="trainer"][data-teil="uebung"] .topbar { position: static; flex: 0 0 auto; }
+  body[data-route="trainer"][data-teil="uebung"] main { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
+  body[data-route="trainer"][data-teil="uebung"] .view { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+  body[data-route="trainer"][data-teil="uebung"] .fusszeile { display: none; }
+}
 
 .tr-mikro {
   margin: 0 0 6px;
@@ -105,21 +119,16 @@ body[data-route="trainer"][data-teil="uebung"] .unterleiste__inner { padding-inl
 
 /* --- Übung: Gerüst ---------------------------------------------------------- */
 
-/* Bühne und Pool gleich breit: rechts drei Spalten (Rollen, Aufgaben,
-   Ergebnisse), in denen die meisten Namen auf einer Zeile stehen; das Bild
-   links passt sich der Breite an. */
-.tr-uebung {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: "buehne seite";
-  gap: 14px 20px;
-  align-items: start;
-}
-@media (max-width: 899.98px) {
-  .tr-uebung { grid-template-columns: minmax(0, 1fr); grid-template-areas: "buehne" "seite"; }
-  /* Bühne und Pool teilen sich den Schirm: die Bühne bleibt kürzer, damit
-     der Weg Element → Kasten ohne langes Scrollen geht. */
-  .tr-buehne { max-height: 58vh; }
+/* Wie der Überblick (.ra): links das Raster (.ra-buehne), rechts statt der
+   Inhaltsseite die Elemente (.ra-inhalt). Unter 700 px untereinander. */
+.tr-uebung.ra { flex: 1 1 auto; }
+.tr-trenner { cursor: default; }
+.tr-trenner:hover { background: transparent; }
+@media (max-width: 699.98px) {
+  .tr-uebung.ra { flex-direction: column; }
+  .tr-uebung .ra-buehne { max-height: 58vh; }
+  .tr-uebung .tr-trenner { display: none; }
+  .tr-uebung .ra-inhalt { flex: 0 0 auto; width: auto; border-top: 1px solid var(--ub-linie); }
 }
 
 /* Titel der Übung in der Leiste unter der Kopfzeile: Art, Name, Zähler und
@@ -130,189 +139,127 @@ body[data-route="trainer"][data-teil="uebung"] .unterleiste__inner { padding-inl
 .tr-zaehler { font-size: 12px; color: var(--text-weich); font-variant-numeric: tabular-nums; }
 .tr-beste { font-size: 11.5px; font-weight: 700; color: var(--text-leise); }
 
-/* --- Bühne ----------------------------------------------------------------- */
+/* --- Raster: was in der Übung still bleibt ------------------------------------ */
 
-.tr-buehne-huelle { grid-area: buehne; position: relative; min-width: 0; }
-.tr-buehne {
-  overflow: auto;
-  max-height: calc(100vh - 150px);
-  min-height: 240px;
-  padding: 14px 14px 52px;
-  background: var(--graph-bg);
-  border: 1px solid var(--rand);
-  border-radius: var(--radius);
+/* Filter, Auswahl und Inhaltsseite gibt es hier nicht: die Trichter fehlen,
+   Modulköpfe, Phasen und vorgegebene Elemente reagieren nicht auf Klicks. */
+.ra-gitter.ist-uebung .ra-trichter { display: none; }
+.ra-gitter.ist-uebung .ra-modul,
+.ra-gitter.ist-uebung .ra-phase__name,
+.ra-gitter.ist-uebung .ra-ms,
+.ra-gitter.ist-uebung .ra-feld,
+.ra-gitter.ist-uebung .ra-k:not(.tr-rz) { cursor: default; }
+
+/* --- Kästen im Raster -------------------------------------------------------- */
+
+/* Leer: der Kasten seiner Art weiss und gestrichelt, ohne Namen — auch bei
+   Rollen, die im Raster ohne Kasten stehen (dort eine Pille). */
+.ra-k.tr-rz { position: relative; cursor: pointer; }
+.ra-k.tr-rz--leer, .ra-k.tr-rz--offen { background: #fff; border-style: dashed; }
+.ra-k--aufgabe.tr-rz--leer, .ra-k--aufgabe.tr-rz--offen { border-color: color-mix(in srgb, var(--gk-aufgabe) 70%, #fff); }
+.ra-k--ergebnis.tr-rz--leer, .ra-k--ergebnis.tr-rz--offen { border-color: color-mix(in srgb, var(--gk-ergebnis) 60%, #fff); }
+.ra-k--rolle.tr-rz--leer, .ra-k--rolle.tr-rz--offen {
+  min-height: calc(1.25em + 8px);
+  padding: 2px 6px 2px 2px;
+  border-color: color-mix(in srgb, var(--gk-rolle) 60%, #fff);
+  border-radius: 999px;
 }
-
-.tr-zoom {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  background: var(--bg);
-  border: 1px solid var(--rand);
-  border-radius: var(--radius-s);
-}
-.tr-zoom__knopf, .tr-zoom__passend {
-  min-height: 26px;
-  padding: 0 8px;
-  border: 0;
-  background: transparent;
-  color: var(--text-leise);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.tr-zoom__passend { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; border-left: 1px solid var(--rand); }
-.tr-zoom__knopf:hover, .tr-zoom__passend:hover { color: var(--text); }
-.tr-zoom__wert { min-width: 44px; text-align: center; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-weich); }
-
-/* --- Bild: Blöcke aus Rolle, Aufgabe und Ergebnissen ------------------------ */
-
-.tr-graph { display: block; height: auto; max-width: none; font-family: var(--schrift); }
-/* Im Bild sind nur die Kästen zu bedienen: Modultitel und vorgegebene
-   Knoten bleiben still (im Graph sind sie anklickbar). */
-.tr-graph .gtext--untergruppe { pointer-events: none; cursor: default; }
-.tr-gegeben { cursor: default; }
-.tr-gegeben:hover .gk__form { stroke-width: 1.5; }
-.tr-gegeben.gk--entscheid:hover .gk__form { stroke-width: 2.2; }
-.tr-gegeben.gk--rolle:hover .gk__label, .tr-gegeben.gk--meilenstein:hover .gk__label { text-decoration: none; }
-/* Zwischen zwei Aufgaben: leiser als die Linie über einem Modul. */
-.tr-blocklinie { stroke-dasharray: 2 3; opacity: .8; }
-
-.tr-ziel { cursor: pointer; outline: none; }
-.tr-ziel .gk { cursor: inherit; }
-.tr-ziel--belegt { cursor: grab; }
-.tr-ziel--richtig, .tr-ziel--falsch, .tr-ziel--leer { cursor: default; }
-.tr-ziel__rahmen { stroke: none; transition: stroke .12s ease, fill-opacity .12s ease; }
-
-/* Leer: die Form des Knotens blass und gestrichelt, ohne Namen — auch bei
-   Rollen, die im Graph ohne Kasten stehen. */
-.tr-ziel--offen .gk__form { fill-opacity: .5; stroke-width: 1.2; stroke-dasharray: 4 3; }
-.tr-ziel--offen .gk__glyph { opacity: .4; }
-.tr-ziel--offen.tr-ziel--rolle .gk__form { fill: var(--gk-rolle-bg); stroke: var(--gk-rolle); }
-.tr-ziel--offen:hover .gk__form { stroke-width: 1.2; }
+.ra-k--rolle.tr-rz--leer .gswatch { opacity: .45; }
 
 /* Ein Element ist gewählt oder wird gezogen: die leeren Kästen seiner Art warten. */
-.tr-ziel--bereit .tr-ziel__rahmen,
-.tr-graph[data-zieht="rolle"] .tr-ziel--rolle.tr-ziel--offen .tr-ziel__rahmen,
-.tr-graph[data-zieht="aufgabe"] .tr-ziel--aufgabe.tr-ziel--offen .tr-ziel__rahmen,
-.tr-graph[data-zieht="ergebnis"] .tr-ziel--ergebnis.tr-ziel--offen .tr-ziel__rahmen {
-  stroke: var(--akzent); stroke-width: 1.5; stroke-dasharray: 4 3;
-}
-.tr-graph:not(.ist-geprueft) .tr-ziel:hover .tr-ziel__rahmen,
-.tr-graph:not(.ist-geprueft) .tr-ziel:focus-visible .tr-ziel__rahmen,
-.tr-ziel.ist-drueber .tr-ziel__rahmen {
-  stroke: var(--akzent); stroke-width: 2; stroke-dasharray: none; fill: var(--akzent); fill-opacity: .08;
-}
-.tr-ziel.ist-am-ziehen .tr-ziel__inhalt { opacity: .35; }
+.ra-k.tr-rz--bereit,
+.ra-buehne[data-zieht="rolle"] .ra-k--rolle.tr-rz--leer,
+.ra-buehne[data-zieht="aufgabe"] .ra-k--aufgabe.tr-rz--leer,
+.ra-buehne[data-zieht="ergebnis"] .ra-k--ergebnis.tr-rz--leer { border-color: var(--akzent); }
+.ra-buehne:not(.ist-geprueft) .ra-k.tr-rz:hover,
+.ra-buehne:not(.ist-geprueft) .ra-k.tr-rz:focus-visible,
+.ra-k.tr-rz.ist-drueber { box-shadow: 0 0 0 2px var(--akzent); outline: none; }
+.ra-k.tr-rz--belegt { cursor: grab; }
+.ra-k.tr-rz.ist-am-ziehen > * { opacity: .35; }
 
 /* Nach der Prüfung steht in jedem Kasten das gesuchte Element (bei «richtig»
    das gelegte — es kann aus einem gleichwertigen Block stammen). */
-.tr-ziel--richtig .tr-ziel__rahmen { stroke: var(--gut); stroke-width: 2.5; }
-.tr-ziel--falsch .tr-ziel__rahmen { stroke: var(--akzent); stroke-width: 2.5; fill: var(--akzent); fill-opacity: .08; }
-.tr-ziel--leer .tr-ziel__inhalt { opacity: .5; }
-.tr-ziel--leer .tr-ziel__rahmen { stroke: var(--text-leise-hell); stroke-width: 1.5; stroke-dasharray: 3 2; }
-.tr-graph.ist-geprueft .tr-ziel:focus-visible .tr-ziel__rahmen { stroke-dasharray: none; }
+.ra-buehne.ist-geprueft .ra-k.tr-rz { cursor: default; }
+.ra-k.tr-rz--richtig { box-shadow: 0 0 0 2px var(--gut); }
+.ra-k.tr-rz--falsch { box-shadow: 0 0 0 2px var(--akzent); }
+.ra-k.tr-rz--offen { color: var(--text-leise); }
 
-/* --- Seite: Schalter, Knöpfe, Pool, Auswertung ------------------------------ */
+/* Hinweis: beim Zeigen auf einen leeren Kasten ein kleiner Knopf rechts;
+   die aufgedeckten Buchstaben stehen leise im Kasten. */
+.tr-rz__hinweis {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  z-index: 2;
+  display: none;
+  padding: 1px 6px;
+  border: 1px solid var(--rand);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text-weich);
+  font: 700 9.5px/1.4 var(--schrift);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+.tr-rz__hinweis:hover { color: var(--akzent-text); border-color: var(--akzent); }
+.ra-buehne:not(.ist-geprueft) .tr-rz--leer:hover .tr-rz__hinweis,
+.ra-buehne:not(.ist-geprueft) .tr-rz--leer:focus-visible .tr-rz__hinweis { display: block; }
+body.tr-zieht .tr-rz__hinweis { display: none !important; }
+.tr-rz__hinweistext { color: var(--text-leise); font-style: italic; letter-spacing: .02em; }
 
-.tr-seite { grid-area: seite; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+/* --- Seite: Knöpfe, Suche, Auswertung, Pool ----------------------------------- */
+
+.tr-seite__kopf { flex: 0 0 auto; display: grid; gap: 12px; padding: 16px 20px 12px; border-bottom: 1px solid var(--ub-linie); }
+.tr-seite__text { padding: 14px 20px 32px; gap: 18px; }
 .tr-knoepfe { margin: 0; }
-
 .tr-suche { margin: 0; }
 .tr-suche__feld { min-height: 36px; font-size: 13.5px; }
 .tr-suche__stand { display: block; margin-top: 4px; font-size: 12px; color: var(--text-leise); }
 
-/* Pool: je leere Art eine Spalte, nebeneinander. Rechts und über jedem
-   Element Luft für die Marke mit der Zahl. */
-.tr-pool { display: flex; gap: 10px; align-items: flex-start; }
-.tr-pool__spalte { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 7px; padding: 0 6px 8px 2px; }
-/* Rollennamen sind kurz: ihre Spalte nur so breit wie der längste, den Rest
-   teilen Aufgaben und Ergebnisse — Aufgaben haben die längsten Namen. */
-.tr-pool__spalte--rolle { flex: 0 1 auto; }
-.tr-pool__spalte--aufgabe { flex-grow: 1.1; }
-.tr-pool__leer { margin: 0; font-size: 13px; color: var(--text-leise); }
-.tr-pool__titel { margin: 0; padding-block: 2px 5px; background: var(--bg); }
-
-@media (min-width: 900px) {
-  /* Die Seite ist so hoch wie die Bühne; jede Spalte des Pools rollt für
-     sich, Schalter und Knöpfe bleiben stehen. */
-  .tr-seite { max-height: calc(100vh - 150px); }
-  .tr-pool { flex: 1 1 auto; min-height: 160px; align-items: stretch; overflow: hidden; }
-  .tr-pool__spalte { overflow-y: auto; }
-  .tr-pool__titel { position: sticky; top: 0; z-index: 2; }
-  .tr-ergebnis { flex: 0 1 auto; max-height: 40vh; overflow-y: auto; }
-}
-@media (max-width: 599.98px) {
-  .tr-pool { flex-direction: column; align-items: stretch; }
-}
-
-/* Ein Element im Pool: Farben und Zeichen seines Knotens im Graph, der Name
-   bricht um; Rollen und Meilensteine wie dort ohne Kasten. */
-.tr-chip {
-  --chip: var(--gk-aufgabe);
-  --chip-bg: var(--gk-aufgabe-bg);
-  --chip-fg: var(--gk-aufgabe-fg);
-  position: relative;
-  flex: 0 0 auto;
+/* Pool: je leere Art ein Abschnitt, die Elemente wie im Raster in einem
+   Gitter; oben rechts an jedem Luft für die Marke mit der Zahl. */
+.tr-pool { display: grid; gap: 18px; }
+.tr-pool__titel {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 100%;
-  min-height: 30px;
-  padding: 3px 7px 3px 4px;
-  border: 1.5px solid var(--chip);
-  border-radius: 6px;
-  background: var(--chip-bg);
-  color: var(--chip-fg);
-  font: 600 12.5px/1.25 var(--schrift);
-  text-align: left;
-  cursor: grab;
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
+  margin: 0 0 8px;
+  font: 700 11px/1.2 var(--schrift);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-leise);
 }
-.tr-chip--ergebnis { --chip: var(--gk-ergebnis); --chip-bg: var(--gk-ergebnis-bg); --chip-fg: var(--gk-ergebnis-fg); }
-.tr-chip--rolle { --chip: var(--gk-rolle); --chip-bg: transparent; --chip-fg: var(--gk-rolle-fg); border-color: transparent; }
-.tr-chip--meilenstein { --chip-bg: transparent; border-color: transparent; }
-.tr-chip--entscheid { border-width: 2.2px; }
-.tr-chip__glyph {
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--chip);
-  color: var(--gk-glyph-auf);
-}
-.tr-chip__glyph svg { stroke-width: 2.6; }
-.tr-chip__text { flex: 1 1 auto; min-width: 0; hyphens: auto; overflow-wrap: anywhere; }
-.tr-chip__zahl {
+.tr-pool__titel .gswatch { width: 16px; height: 16px; }
+.tr-pool__zahl { font-weight: 600; letter-spacing: 0; color: var(--text-leise-hell); font-variant-numeric: tabular-nums; }
+.tr-pool__liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 9px 7px; padding-top: 4px; }
+/* Rollen mit der Zahl in der Zeile: breiter, sonst bricht «Betriebsverantwortlicher». */
+.tr-pool__liste--rolle { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 12px; }
+.tr-pool__leer { margin: 0; font-size: 13px; color: var(--text-leise); }
+
+.ra-k.tr-el { position: relative; cursor: grab; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.ra-k.tr-el:hover { box-shadow: 0 0 0 2px color-mix(in srgb, var(--akzent) 45%, transparent); }
+.ra-k.tr-el.ist-am-ziehen { opacity: .35; cursor: grabbing; }
+.ra-k.tr-el:disabled { cursor: default; opacity: .5; box-shadow: none; }
+.tr-el__zahl {
   position: absolute;
   z-index: 1;
   top: -7px;
-  right: -6px;
+  right: -5px;
   padding: 0 5px;
-  border: 1px solid var(--chip);
+  border: 1px solid var(--rand-stark);
   border-radius: 9px;
-  background: var(--weiss);
-  color: var(--chip-fg);
-  font-size: 10.5px;
+  background: #fff;
+  color: var(--text-weich);
+  font-size: 10px;
   font-weight: 700;
-  line-height: 14px;
+  line-height: 13px;
   font-variant-numeric: tabular-nums;
 }
-.tr-chip:hover .tr-chip__text { text-decoration: underline; }
-.tr-chip:focus-visible { outline: 2px solid var(--fokus); outline-offset: 1px; }
-.tr-chip.ist-gewaehlt { outline: 2px solid var(--akzent); outline-offset: 1px; }
-.tr-chip.ist-am-ziehen { opacity: .35; cursor: grabbing; }
-.tr-chip:disabled { cursor: default; opacity: .5; }
-.tr-chip:disabled:hover .tr-chip__text { text-decoration: none; }
+/* Rollen stehen ohne Kasten: die Zahl hinter dem Namen statt an der Ecke. */
+.ra-k--rolle.tr-el { align-items: center; }
+.ra-k--rolle .tr-el__zahl { position: static; flex: 0 0 auto; margin-left: auto; }
 body.tr-zieht, body.tr-zieht * { cursor: grabbing; }
 .tr-geist {
   position: fixed;
@@ -320,7 +267,8 @@ body.tr-zieht, body.tr-zieht * { cursor: grabbing; }
   pointer-events: none;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .22));
 }
-.tr-geist .tr-knotenbild { display: block; }
+.tr-geist__k { background-clip: padding-box; }
+.tr-geist .ra-k--rolle { background: #fff; border-radius: 999px; padding-right: 8px; }
 
 .tr-ergebnis { padding: 12px 14px; border: 1px solid var(--rand); border-radius: var(--radius); background: var(--weiss); outline: none; }
 .tr-ergebnis__zahl { margin: 0 0 10px; font-size: 15px; }
@@ -331,8 +279,7 @@ body.tr-zieht, body.tr-zieht * { cursor: grabbing; }
 .tr-liste__falsch { text-decoration: line-through; color: var(--akzent-text); }
 
 @media print {
-  .tr-zoom, .tr-knoepfe, .tr-arten { display: none; }
-  .tr-buehne { max-height: none; overflow: visible; border: 0; }
+  .tr-knoepfe, .tr-arten, .tr-suche { display: none; }
 }
 
 /* --- Fortschritt ------------------------------------------------------------ */
