@@ -16,7 +16,7 @@
        dokumente: [{ id, titel, datei }],
        fragen: [{ id, stufe, dokument, situation?, frage,
          antworten: [{ text, richtig, warum }],
-         tipp: { text, verweise: [{ nummer, kapitel?, titel? }] },
+         tipp: { text, verweise: [{ nummer, kapitel?, titel? }], eigen? },
          lesart: [text], merksaetze: [text],
          gesamtbild: [{ id | feld: 'Phase|Modul', vorgehen?, text? }],
          handbuch: [{ id } | { nummer, kapitel, titel }] }] } */
@@ -124,7 +124,7 @@
 
   function gesamtbildLink(g) {
     var e = g.id ? HT.daten.eintragMitId(g.id) : null;
-    var text = g.text || (e ? e.begriff : g.id || g.feld);
+    var text = g.text || (e ? e.begriff : g.id || g.feld.replace('|', ' · '));
     return h('a', {
       class: 'fr-link' + (e ? ' fr-link--' + e.kategorie : ' fr-link--feld'), href: ueberblickAdresse(g),
       title: 'Im Überblick zeigen' + (g.vorgehen === 'agil' ? ' (agil)' : '')
@@ -218,8 +218,9 @@
       }
       if (offen && f.tipp && f.tipp.text) {
         var verweise = f.tipp.verweise || [];
-        teile.push(abschnitt('Tipp aus dem Dokument', [
-          h('p', { class: 'fr-tipp', text: f.tipp.text }),
+        /* eigen: von meinHERMES verfasst (Dokumente ohne Tipps, z. B. Musterprüfungen). */
+        teile.push(abschnitt(f.tipp.eigen ? 'Erläuterung' : 'Tipp aus dem Dokument', [
+          h('p', { class: 'fr-tipp' + (f.tipp.eigen ? ' fr-tipp--eigen' : ''), text: f.tipp.text }),
           verweise.length ? h('div', { class: 'fr-links' }, verweise.map(handbuchKnopf)) : null
         ]));
       }

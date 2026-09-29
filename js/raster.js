@@ -2337,8 +2337,8 @@
       }
 
       if (alleAuf && f.tipp && f.tipp.text) {
-        teile.push(HT.inhaltsseite.abschnitt('Tipp aus dem Dokument', [
-          h('p', { class: 'ra-frage__tipp', text: f.tipp.text }),
+        teile.push(HT.inhaltsseite.abschnitt(f.tipp.eigen ? 'Erläuterung' : 'Tipp aus dem Dokument', [
+          h('p', { class: 'ra-frage__tipp' + (f.tipp.eigen ? ' ra-frage__tipp--eigen' : ''), text: f.tipp.text }),
           (f.tipp.verweise || []).length ? h('p', { class: 'ra-frage__verweise' }, mitKomma(f.tipp.verweise.map(function (v) {
             if (!v.kapitel) { return h('span', { class: 'ra-frage__alt', title: 'Diese Nummer gibt es im heutigen Handbuch nicht', text: v.nummer + ' (nicht im heutigen Handbuch)' }); }
             return h('a', { class: 'ra-ort__link', href: HT.handbuch.adresse(v.kapitel, v.nummer), text: v.nummer + ' ' + (v.titel || ''), on: { click: imFenster } });

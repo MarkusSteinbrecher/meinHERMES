@@ -72,6 +72,8 @@ body[data-route="fragen"] .view { max-width: 980px; }
 }
 .fr-abschnitt p { margin: 0 0 6px; font-size: 14px; line-height: 1.55; }
 .fr-tipp { font-style: italic; }
+/* Eigene Erläuterung (Musterprüfungen): je Antwort eine Zeile, nicht kursiv wie ein Zitat. */
+.fr-tipp.fr-tipp--eigen, .ra-frage__tipp.ra-frage__tipp--eigen { font-style: normal; white-space: pre-line; }
 .fr-merksaetze { margin: 0; padding-left: 1.1rem; font-size: 14px; line-height: 1.55; }
 
 .fr-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
