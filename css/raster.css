@@ -608,6 +608,7 @@ body[data-route="ueberblick"] .unterleiste__inner { padding-inline: 12px; }
 }
 .ra-ort__link:hover { color: var(--akzent-text); border-bottom-color: var(--akzent); }
 .ra-ort__leise { color: var(--text-leise); font-size: 12.5px; }
+.ra-ort__nr { margin-right: 5px; font-weight: 800; color: var(--akzent-text); font-variant-numeric: tabular-nums; }
 .ra-ort__block { display: block; }
 .ra-ort__ms { display: block; color: var(--gk-ergebnis-fg); }
 
@@ -831,6 +832,16 @@ body[data-route="ueberblick"] .unterleiste__inner { padding-inline: 12px; }
 .ra-gitter.hat-tour .ra-feld.ist-tour .ra-k--wieder,
 .ra-gitter.hat-tour .ra-feld.ist-tour-bereich .ra-k--wieder { opacity: .45; }
 .ra-k.ist-tour, .ra-ms.ist-tour, .ra-feld.ist-tour { box-shadow: 0 0 0 2px var(--akzent); }
+/* Rundgang «Vom System zum Betrieb»: die Nummer des Schritts oben links am Kasten. */
+.ra-k[data-tour-nr] { position: relative; }
+.ra-k[data-tour-nr]::after {
+  content: attr(data-tour-nr);
+  position: absolute; top: -8px; left: -8px; z-index: 2;
+  min-width: 17px; height: 17px; padding: 0 3px; box-sizing: border-box;
+  border-radius: 999px; background: var(--akzent); color: var(--akzent-auf);
+  font: 700 10px/17px var(--schrift); text-align: center; letter-spacing: 0;
+  pointer-events: none;
+}
 .ra-phase.ist-tour-bereich .ra-phase__name { background: var(--gk-phase); color: var(--gk-phase-glyph-auf); }
 .ra-modul.ist-tour .ra-modul__name { color: var(--akzent-text); }
 .ra-pfeile.hat-tour .ra-pfeil { opacity: .12; }

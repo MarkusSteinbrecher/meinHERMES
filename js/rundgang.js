@@ -23,7 +23,7 @@
        hinweis: [text], ketten: [{ wo, phase, modul, rolle, aufgabe, ergebnisse, beteiligt }],
        kettenTitel, fakten: [{ titel, zeilen: [{ wo, phase, modul, k, text, links, ms }] }],
        sicht: { rolle, aufgabe, ergebnis, pfeile }, filter: { phasen, module, rolle, bezug },
-       ziel: { ids, felder: [[phase, modul]], phasen, module } | null }
+       ziel: { ids, felder: [[phase, modul]], phasen, module, nummern? } | null }
    Schritte, deren Stellen es in der Vorgehensweise nicht gibt, fallen weg
    (Konzept agil, Umsetzungsorganisation klassisch). */
 (function (global) {
@@ -206,6 +206,14 @@
 
   function ziel(ids, felder, phasen, module) {
     return { ids: ids || [], felder: felder || [], phasen: phasen || [], module: module || [] };
+  }
+
+  function eine(id, nr) { var o = {}; o[id] = nr; return o; }
+
+  /* nummern: { id: n } — das Raster setzt die Zahl an die Kästen der Aufgabe. */
+  function mitNummern(z, nummern) {
+    if (nummern && Object.keys(nummern).length) { z.nummern = nummern; }
+    return z;
   }
 
   /* --- Entlang der Ergebnisse ------------------------------------------------ */
@@ -481,7 +489,7 @@
       { art: 'ueberblick', titel: 'Die Reihenfolge im Überblick',
         zitate: [{ rhb: 'phasen', nummer: '1.4.2.2' }, { rhb: 'phasen', nummer: '1.4.2.3' }],
         zitateAgil: [{ rhb: 'phasen', nummer: '1.4.3.1' }],
-        elemente: ABLAUF.map(function (a) { return 'aufgabe-' + a[0]; }),
+        elemente: ABLAUF.map(function (a) { return 'aufgabe-' + a[0]; }), nummeriert: true,
         listenTitel: 'Die Reihenfolge' }
     ].concat(ABLAUF.map(function (a, i) { return schrittA(i + 1, a[0], a[1]); })) },
     { kapitel: 'Abnahmen', schritte: [
@@ -558,8 +566,8 @@
           return Array.isArray(q) ? elementZitat(HT.daten.eintragMitId(q[0]), q[1]) : q;
         }).filter(Boolean);
         if (d.art === 'ueberblick') {
-          var zeilen = [], ids = [];
-          d.elemente.forEach(function (id) {
+          var zeilen = [], ids = [], nummern = {};
+          d.elemente.forEach(function (id, nr) {
             var e = HT.daten.eintragMitId(id);
             var reihe = e ? stellen(m, e) : [];
             if (!reihe.length) { return; }
@@ -570,9 +578,12 @@
             })) : [];
             ids.push(id);
             ms.forEach(function (k) { ids.push(k.id); });
+            /* nummeriert: die Nummer in der Liste und im Raster, dazu wer die Aufgabe verantwortet. */
+            var rollen = d.nummeriert ? einmal(reihe.map(function (z) { return z.rolle ? z.rolle.begriff : null; })) : [];
+            if (d.nummeriert) { nummern[id] = nr + 1; }
             zeilen.push({
               wo: phasenText(m, phasen), phase: reihe[0].phase, modul: reihe[0].modul, zeigeId: id,
-              k: ref(e), text: module.join(', '), ms: ms
+              k: ref(e), nr: d.nummeriert ? nr + 1 : null, text: module.concat(rollen).join(' · '), ms: ms
             });
           });
           if (!zeilen.length) { return; }
@@ -583,7 +594,7 @@
             zitate: zitate,
             hinweis: ['In dieser Vorgehensweise: ' + zahlText(zeilen.length, wort[0], wort[1]) + '. Das Raster hebt sie hervor; ein Ort in der Liste springt ins Feld.'],
             fakten: [{ titel: d.listenTitel, zeilen: zeilen }],
-            sicht: SICHT_BLOECKE, ziel: ziel(einmal(ids))
+            sicht: SICHT_BLOECKE, ziel: mitNummern(ziel(einmal(ids)), nummern)
           });
           return;
         }
@@ -607,7 +618,7 @@
           titel: d.titel || (d.nr ? d.nr + '. ' : '') + e.begriff, element: ref(e), zitate: zitate,
           kettenTitel: d.art === 'aufgabe' ? 'Rolle → Aufgabe → Ergebnis' : 'Wer es wo erarbeitet',
           ketten: reihe,
-          sicht: SICHT_BLOECKE, ziel: ziel(einmal(idsZ), felder)
+          sicht: SICHT_BLOECKE, ziel: mitNummern(ziel(einmal(idsZ), felder), d.nr ? eine(e.id, d.nr) : null)
         });
       });
     });

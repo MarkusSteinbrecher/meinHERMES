@@ -1016,12 +1016,19 @@
       ['ist-tour', 'ist-tour-bereich', 'ist-tour-nachbar'].forEach(function (c) {
         Array.prototype.forEach.call(gitter.querySelectorAll('.' + c), function (x) { x.classList.remove(c); });
       });
+      Array.prototype.forEach.call(gitter.querySelectorAll('[data-tour-nr]'), function (x) { x.removeAttribute('data-tour-nr'); });
       gitter.classList.toggle('hat-tour', !!tourZiel);
       if (tourZiel) {
         (tourZiel.ids || []).forEach(function (id) {
           Array.prototype.forEach.call(gitter.querySelectorAll('.ra-k[data-id="' + id + '"], .ra-ms[data-id="' + id + '"]'), function (x) {
             x.classList.add('ist-tour');
             if (x.classList.contains('ra-k--weiter')) { weitereZeigen(x.closest('.ra-feld'), true); }
+          });
+        });
+        /* Schritte einer Reihenfolge: die Nummer am Kasten (nummern: { id: n }). */
+        Object.keys(tourZiel.nummern || {}).forEach(function (id) {
+          Array.prototype.forEach.call(gitter.querySelectorAll('.ra-k[data-id="' + id + '"]'), function (x) {
+            x.setAttribute('data-tour-nr', tourZiel.nummern[id]);
           });
         });
         (tourZiel.felder || []).forEach(function (fm) {
@@ -2042,6 +2049,7 @@
     function faktZeile(z) {
       var links = z.links && z.links.length ? mitKomma(z.links.map(verweis)) : [];
       var inhalt = z.k ? [
+        z.nr ? h('span', { class: 'ra-ort__nr', text: z.nr + '.' }) : null,
         verweis(z.k),
         z.text ? h('span', { class: 'ra-ort__leise ra-ort__block', text: z.text }) : null,
         links.length ? h('span', { class: 'ra-ort__block ra-tour__folge' }, ['→ '].concat(links)) : null
@@ -2099,7 +2107,7 @@
     }
 
     function zitatBlock(q) {
-      var bs, quelle, mehr;
+      var bs, quelle, mehr, ort;
       var laden = h('p', { class: 'ra-zitat__laden', text: 'Handbuchtext wird geladen …' });
       if (q.rhb) {
         var ab = rhbAbschnitt(q.rhb, q.nummer);
@@ -2107,6 +2115,7 @@
         if (!ab) { return null; }
         bs = ab.bloecke || [];
         var adresse = HT.handbuch.adresse(q.rhb, q.nummer);
+        ort = HT.handbuch.markOrtVon(q.rhb, rhbTexte[q.rhb], q.nummer);
         quelle = h('a', { class: 'ra-zitat__quelle', href: adresse, text: 'Referenzhandbuch ' + q.nummer + ' · ' + ab.titel, on: { click: imFenster } });
         mehr = h('a', { class: 'ra-zitat__mehr', href: adresse, text: 'Weiterlesen im Handbuch', on: { click: imFenster } });
       } else {
@@ -2116,13 +2125,17 @@
         if (bs === undefined) { return laden; }
         if (!bs) { return null; }
         var wahl = function () { waehlen(e.id, false); };
+        ort = '#/handbuch?id=' + encodeURIComponent(e.id);
         quelle = h('button', { type: 'button', class: 'ra-zitat__quelle', text: 'Handbuch · ' + e.begriff + (q.abschnitt ? ' · ' + q.abschnitt : ''), on: { click: wahl } });
         mehr = h('button', { type: 'button', class: 'ra-zitat__mehr', text: 'Weiterlesen im Handbuch', on: { click: wahl } });
       }
       var k = kuerzen(bs);
       return h('figure', { class: 'ra-zitat' }, [
         h('figcaption', {}, quelle),
-        h('blockquote', { class: 'ra-zitat__text' }, HT.ui.bloecke(k.bloecke, { verlinken: false, ebene: 4 })),
+        /* Derselbe Ort wie die Stelle im Handbuch: Markierungen von dort
+           erscheinen hier und umgekehrt (js/markieren.js, als Auszug). */
+        h('blockquote', { class: 'ra-zitat__text', dataset: ort ? { markOrt: ort, markAuszug: '' } : {} },
+          HT.ui.bloecke(k.bloecke, { verlinken: false, ebene: 4 })),
         k.mehr ? mehr : null
       ]);
     }
