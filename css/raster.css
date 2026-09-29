@@ -297,9 +297,14 @@ body[data-route="ueberblick"] .unterleiste__inner { padding-inline: 12px; }
 .ra-k--aufgabe { background: var(--gk-aufgabe-bg); border-color: var(--gk-aufgabe); color: var(--gk-aufgabe-fg); }
 .ra-k--ergebnis { background: var(--gk-ergebnis-bg); border-color: color-mix(in srgb, var(--gk-ergebnis) 55%, #fff); color: var(--gk-ergebnis-fg); }
 .ra-k--zustand { background: #fff; }
-/* Meilenstein im Feld, als Ergebnis seiner Aufgabe: die Raute wie links im Phasenband. */
-.ra-k--meilenstein { gap: 6px; }
-.ra-k--meilenstein .ra-ms__raute { margin: 0 1px 0 2px; }
+/* Meilenstein im Feld, als Ergebnis seiner Aufgabe: ohne Kasten, die Raute
+   wie links im Phasenband in einem Platz so breit wie das Icon der Rolle. */
+.ra-k.ra-k--meilenstein {
+  align-items: flex-start; min-height: 0; padding-left: 0;
+  background: none; border-color: transparent; color: var(--gk-ergebnis-fg);
+}
+.ra-k__ikone { display: grid; place-items: center; flex: 0 0 13px; width: 13px; height: 13px; margin-top: 1px; }
+.ra-k__ikone .ra-ms__raute { width: 9px; height: 9px; margin: 0; }
 .ra-k--rolle { color: var(--gk-rolle-fg); }
 
 .ra-k.ist-gleich, .ra-k.ist-gewaehlt, .ra-ms.ist-gewaehlt { box-shadow: 0 0 0 2px var(--akzent); }

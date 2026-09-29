@@ -17,9 +17,9 @@
    verantwortliche Rolle darüber, die Ergebnisse, die sie in diesem Feld
    erzeugt, eingerückt darunter —, dieselben Blöcke wie in der Landkarte und
    im Zuordnen des Trainers (HT.graph.bloecke). Die Meilensteine stehen im
-   Phasenband und im Feld als Ergebnis der Aufgabe, die sie erzeugt (mit
-   Raute, nach den übrigen Ergebnissen) — nur im Fluss der Abbildung 1
-   (Pfeile) nicht, dort stehen allein ihre Kästen.
+   Phasenband und im Feld als Ergebnis der Aufgabe, die sie erzeugt: ohne
+   Kasten unter dem Block, die Raute bündig mit dem Icon der Rolle — nur im
+   Fluss der Abbildung 1 (Pfeile) nicht, dort stehen allein ihre Kästen.
 
    Zeigen auf ein Element hebt jede seiner Stellen hervor; Zeigen auf einen
    Meilenstein das Feld, in dem er entsteht.
@@ -435,7 +435,7 @@
       title: k.begriff
     }, [
       kat === 'rolle' ? h('span', { class: 'gswatch gswatch--' + kat, 'aria-hidden': 'true' }, HT.ui.katSymbol(kat, 12)) : null,
-      ms ? h('span', { class: 'ra-ms__raute', 'aria-hidden': 'true' }) : null,
+      ms ? h('span', { class: 'ra-k__ikone', 'aria-hidden': 'true' }, h('span', { class: 'ra-ms__raute' })) : null,
       h('span', { class: 'ra-k__name', text: HT.gesamtbild.trennen(k.begriff) })
     ]);
   }
@@ -455,6 +455,13 @@
     return fluss ? ohneMeilensteine(liste) : ohneMeilensteine(liste).concat(ms);
   }
 
+  /* Ein Block: oben Rolle und Aufgabe, eingerückt die Ergebnisse, darunter
+     ohne Einzug die Meilensteine (die Raute bündig mit dem Icon der Rolle). */
+  function blockInhalt(kopf, ergebnisse) {
+    var erg = ohneMeilensteine(ergebnisse), ms = ergebnisse.filter(istMeilenstein);
+    return kopf.concat([erg.length ? h('div', { class: 'ra-block__ergebnisse' }, erg.map(knoten)) : null]).concat(ms.map(knoten));
+  }
+
   /* Der Inhalt eines Feldes nach der Sicht, als Stücke { key, el }. Mit
      Aufgaben je Aufgabe ein Block; ohne Aufgaben die Ergebnisse einzeln oder,
      bei eingeblendeten Rollen, nach der verantwortlichen Rolle gruppiert —
@@ -466,11 +473,10 @@
     if (sicht.aufgabe) {
       return bloecke.map(function (b) {
         var erg = sicht.ergebnis ? ergebnisseImFeld(b.ergebnisse, fluss) : [];
-        return { key: 'a:' + b.aufgabe.id, el: h('div', { class: 'ra-block' }, [
+        return { key: 'a:' + b.aufgabe.id, el: h('div', { class: 'ra-block' }, blockInhalt([
           sicht.rolle && b.rolle ? knoten(b.rolle) : null,
-          knoten(b.aufgabe),
-          erg.length ? h('div', { class: 'ra-block__ergebnisse' }, erg.map(knoten)) : null
-        ]) };
+          knoten(b.aufgabe)
+        ], erg)) };
       });
     }
     var gruppen = [], nachRolle = {}, gesehen = {};
@@ -495,10 +501,7 @@
         g.ergebnisse.forEach(function (k) { stuecke.push({ key: 'e:' + k.id, el: knoten(k) }); });
         return;
       }
-      stuecke.push({ key: 'r:' + g.rolle.id, el: h('div', { class: 'ra-block' }, [
-        knoten(g.rolle),
-        g.ergebnisse.length ? h('div', { class: 'ra-block__ergebnisse' }, g.ergebnisse.map(knoten)) : null
-      ]) });
+      stuecke.push({ key: 'r:' + g.rolle.id, el: h('div', { class: 'ra-block' }, blockInhalt([knoten(g.rolle)], g.ergebnisse)) });
     });
     return stuecke;
   }
