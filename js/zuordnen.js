@@ -71,6 +71,16 @@
     return e.kategorie === 'ergebnis' && !!e.eintrag && e.eintrag.typ === 'Meilenstein';
   }
 
+  /* Zustände (z. B. «Betriebsorganisation realisiert») wie im Raster weiss
+     statt hellblau: ra-k--zustand. */
+  function istZustand(e) {
+    var eintrag = e.kategorie === 'ergebnis' && (e.eintrag || HT.daten.eintragMitId(e.id));
+    return !!eintrag && eintrag.typ === 'Zustand';
+  }
+  function artKlassen(e) {
+    return 'ra-k ra-k--' + e.kategorie + (istMeilenstein(e) ? ' ra-k--meilenstein' : '') + (istZustand(e) ? ' ra-k--zustand' : '');
+  }
+
   /* «Rolle», «Aufgabe», «Ergebnis» — Meilensteine heissen wie im Graph. */
   function artName(e) {
     return istMeilenstein(e) ? 'Meilenstein' : HT.graph.KAT[e.kategorie].singular;
@@ -681,6 +691,7 @@
     var kat = z.n.kategorie;
     var ms = !!zeigen && istMeilenstein(zeigen);
     z.el.classList.toggle('ra-k--meilenstein', ms);
+    z.el.classList.toggle('ra-k--zustand', !!zeigen && istZustand(zeigen));
     HT.ui.leeren(z.el);
     if (kat === 'rolle') { z.el.appendChild(h('span', { class: 'gswatch gswatch--rolle', 'aria-hidden': 'true' }, HT.ui.katSymbol('rolle', 12))); }
     if (ms) { z.el.appendChild(h('span', { class: 'ra-k__ikone', 'aria-hidden': 'true' }, h('span', { class: 'ra-ms__raute' }))); }
@@ -827,7 +838,7 @@
     var ist = istGewaehlt(s, gewaehlt);
     var el = h('button', {
       type: 'button',
-      class: 'ra-k ra-k--' + s.kategorie + (ms ? ' ra-k--meilenstein' : '') + ' tr-el' + (ist ? ' ist-gewaehlt' : ''),
+      class: artKlassen(s) + ' tr-el' + (ist ? ' ist-gewaehlt' : ''),
       title: s.begriff,
       'aria-label': artName(s) + ' ' + s.begriff + (s.anzahl > 1 ? ', ' + s.anzahl + ' Kästen' : ''),
       'aria-pressed': ist ? 'true' : 'false',
@@ -1002,7 +1013,7 @@
     var ms = istMeilenstein(chip);
     var ziel = uebung.ziele.filter(function (z) { return z.n.kategorie === chip.kategorie; })[0];
     return h('div', {
-      class: 'ra-k ra-k--' + chip.kategorie + (ms ? ' ra-k--meilenstein' : '') + ' tr-geist__k',
+      class: artKlassen(chip) + ' tr-geist__k',
       style: ziel ? 'width:' + ziel.el.offsetWidth + 'px' : null
     }, [
       chip.kategorie === 'rolle' ? h('span', { class: 'gswatch gswatch--rolle' }, HT.ui.katSymbol('rolle', 12)) : null,
