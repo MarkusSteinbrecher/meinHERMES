@@ -19,6 +19,9 @@
    Vorgehensweise steht oben auf der Seite; die Kästen zählt sie mit der
    zuletzt gewählten Einstellung.
 
+   Ein Klick in einen leeren Kasten öffnet darin eine Eingabe: getippt wird
+   ein Name, eine Liste darunter schlägt die freien Elemente seiner Art vor.
+
    Ein leerer Kasten zeigt beim Zeigen den Knopf «?» (Hinweis): jeder Klick
    deckt einen Buchstaben des gesuchten Elements mehr auf. Ein belegter
    zeigt den Knopf «Prüfen»: er sagt für diesen einen Kasten, ob das
@@ -289,6 +292,7 @@
      vorher: { Schlüssel: Id des gelegten Elements } — beim Umschalten der
      leeren Arten bleibt liegen, was noch einen Kasten hat. */
   function uebungStarten(def, vorher) {
+    eingabeSchliessen();
     var bloecke = [], ziele = [], chips = [];
     var blockVon = new global.Map();
     function knoten(k, ort) {
@@ -411,11 +415,15 @@
   }
 
   /* Ein Klick legt das gewählte Element hinein (ein belegter Kasten
-     tauscht). Ohne Wahl tut er nichts: ein Fehlklick soll kein gelegtes
-     Element zurück in den Pool werfen — zurück geht es durch Herausziehen
-     oder mit Entf. */
+     tauscht). Ohne Wahl öffnet er im leeren Kasten die Eingabe; im belegten
+     tut er nichts: ein Fehlklick soll kein gelegtes Element zurück in den
+     Pool werfen — zurück geht es durch Herausziehen oder mit Entf. */
   function zielGeklickt(ziel) {
-    if (uebung.geprueft || !uebung.gewaehlt) { return; }
+    if (uebung.geprueft) { return; }
+    if (!uebung.gewaehlt) {
+      if (!ziel.chip) { eingabeOeffnen(ziel); }
+      return;
+    }
     var c = freierChip(uebung.gewaehlt.id);
     if (c && c.kategorie === ziel.n.kategorie) { setzen(c, ziel, true); }
   }
@@ -534,6 +542,7 @@
 
   /* Danach steht in jedem Kasten, der nicht stimmt, das gesuchte Element. */
   function pruefen() {
+    eingabeSchliessen();
     var res = abgleich();
     var richtig = 0;
     uebung.ziele.forEach(function (z) {
@@ -639,6 +648,7 @@
   /* Zurück auf Anfang — an den bestehenden Objekten, denn die Ziele tragen
      die Verweise auf ihre Kästen im Raster. */
   function zuruecksetzen() {
+    eingabeSchliessen();
     uebung.ziele.forEach(function (z) { z.chip = null; z.status = ''; z.loesung = null; z.gezaehlt = null; z.hinweis = null; z.einzeln = null; });
     uebung.chips.forEach(function (c) { c.ziel = null; });
     uebung.gewaehlt = null;
@@ -649,13 +659,145 @@
     zeichnen();
   }
 
+  /* --- Eingabe im leeren Kasten ---------------------------------------------- */
+
+  /* Im Kasten ein Textfeld, darunter (fest am Fenster, die Bühne rollt) die
+     freien Elemente seiner Art, die den Text enthalten — die mit diesem
+     Anfang zuerst. Pfeiltasten wählen, Enter oder Klick legt hinein, Esc,
+     Tab oder ein Klick daneben schliesst. Offen ist höchstens ein Kasten. */
+  var eingabe = null;       // { z, feld, liste, treffer, aktiv }
+
+  function eingabeOeffnen(z) {
+    if (eingabe && eingabe.z === z) { eingabe.feld.focus(); return; }
+    eingabeSchliessen();
+    var feld = h('input', {
+      type: 'text', class: 'tr-rz__eingabe', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false',
+      placeholder: z.hinweis && z.hinweis.n ? hinweisText(z) : 'Name tippen …',
+      role: 'combobox', 'aria-expanded': 'true', 'aria-autocomplete': 'list',
+      'aria-label': HT.graph.KAT[z.n.kategorie].singular + ' eingeben'
+    });
+    var liste = h('ul', { class: 'gs-treffer tr-vorschlag', role: 'listbox' });
+    liste.style.setProperty('--tr-farbe', 'var(--gk-' + z.n.kategorie + ')');
+    eingabe = { z: z, feld: feld, liste: liste, treffer: [], aktiv: 0 };
+    z.eingabe = feld;
+    feld.addEventListener('input', function () { eingabe.aktiv = 0; vorschlagZeigen(); });
+    feld.addEventListener('keydown', eingabeTaste);
+    feld.addEventListener('blur', function () { if (eingabe && eingabe.feld === feld) { eingabeSchliessen(); } });
+    feld.addEventListener('click', function (ev) { ev.stopPropagation(); });
+    feld.addEventListener('pointerdown', function (ev) { ev.stopPropagation(); });
+    document.body.appendChild(liste);
+    uebung.raster.buehne.addEventListener('scroll', vorschlagLegen);
+    global.addEventListener('resize', eingabeSchliessen);
+    global.addEventListener('hashchange', eingabeSchliessen);
+    zeichnen();
+    feld.focus();
+    vorschlagZeigen();
+  }
+
+  function eingabeSchliessen() {
+    if (!eingabe) { return; }
+    var e = eingabe;
+    eingabe = null;
+    e.z.eingabe = null;
+    if (e.liste.parentNode) { e.liste.parentNode.removeChild(e.liste); }
+    if (uebung && uebung.raster) { uebung.raster.buehne.removeEventListener('scroll', vorschlagLegen); }
+    global.removeEventListener('resize', eingabeSchliessen);
+    global.removeEventListener('hashchange', eingabeSchliessen);
+    /* Nur den Kasten neu füllen, nicht alles zeichnen: schliesst ein Klick
+       auf den Pool die Eingabe (blur beim Drücken), fände sein Loslassen
+       sonst einen neu gebauten Knopf, und der Klick ginge verloren. */
+    var z = e.z;
+    if (uebung && document.body.contains(z.el) && !z.chip) {
+      z.el.classList.remove('ist-eingabe');
+      zielFuellen(z, null, z.hinweis && z.hinweis.n ? hinweisText(z) : null, !!uebung.geprueft, null);
+      z.inhalt = null;
+    }
+  }
+
+  function vorschlagZeigen() {
+    if (!eingabe) { return; }
+    var art = eingabe.z.n.kategorie;
+    var q = suchform(eingabe.feld.value.trim());
+    var treffer = stapelVon(chipsImPool()).filter(function (st) { return st.kategorie === art && trifft(st, q); });
+    if (q) {
+      treffer.sort(function (a, b) {
+        return (suchform(a.begriff).indexOf(q) !== 0) - (suchform(b.begriff).indexOf(q) !== 0);
+      });
+    }
+    eingabe.treffer = treffer;
+    eingabe.aktiv = Math.max(0, Math.min(eingabe.aktiv, treffer.length - 1));
+    HT.ui.leeren(eingabe.liste);
+    if (!treffer.length) {
+      eingabe.liste.appendChild(h('li', { class: 'gs-treffer__leer', text: q ? 'Kein freies Element passt' : 'Alle Elemente dieser Art liegen' }));
+    }
+    treffer.forEach(function (st, i) {
+      var knopf = h('button', {
+        type: 'button', class: 'gs-treffer__knopf' + (i === eingabe.aktiv ? ' ist-aktiv' : ''), tabindex: '-1',
+        role: 'option', 'aria-selected': i === eingabe.aktiv ? 'true' : 'false'
+      }, [
+        h('span', { class: 'gswatch gswatch--' + art, 'aria-hidden': 'true' }, HT.ui.katSymbol(art, 12)),
+        h('span', { class: 'gs-treffer__text', text: sichtbar(st.begriff) }),
+        st.anzahl > 1 ? h('span', { class: 'gs-treffer__art', text: '×' + st.anzahl }) : null
+      ]);
+      /* Der Klick darf das Feld nicht erst verlassen (blur schlösse die Liste). */
+      knopf.addEventListener('pointerdown', function (ev) { ev.preventDefault(); });
+      knopf.addEventListener('click', function () { eingabeLegen(st); });
+      eingabe.liste.appendChild(h('li', {}, knopf));
+    });
+    vorschlagLegen();
+    var aktiv = eingabe.liste.querySelector('.ist-aktiv');
+    if (aktiv) { aktiv.scrollIntoView({ block: 'nearest' }); }
+  }
+
+  /* Unter den Kasten, mindestens 240 px breit; reicht der Platz unten nicht,
+     darüber. */
+  function vorschlagLegen() {
+    if (!eingabe) { return; }
+    var r = eingabe.z.el.getBoundingClientRect();
+    var l = eingabe.liste;
+    var breite = Math.max(240, r.width);
+    l.style.width = breite + 'px';
+    l.style.left = Math.round(Math.max(8, Math.min(r.left, global.innerWidth - breite - 8))) + 'px';
+    var hoehe = l.offsetHeight;
+    var oben = r.bottom + 4 + hoehe > global.innerHeight - 8 && r.top - 4 - hoehe > 8;
+    l.style.top = Math.round(oben ? r.top - 4 - hoehe : r.bottom + 4) + 'px';
+  }
+
+  function eingabeTaste(ev) {
+    if (!eingabe) { return; }
+    var n = eingabe.treffer.length;
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      if (n) { eingabe.aktiv = (eingabe.aktiv + (ev.key === 'ArrowDown' ? 1 : n - 1)) % n; vorschlagZeigen(); }
+    } else if (ev.key === 'Enter') {
+      ev.preventDefault();
+      if (n) { eingabeLegen(eingabe.treffer[eingabe.aktiv]); }
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      var z = eingabe.z;
+      eingabeSchliessen();
+      z.el.focus();
+    } else if (ev.key === 'Tab') {
+      eingabeSchliessen();
+    }
+  }
+
+  function eingabeLegen(st) {
+    var z = eingabe.z;
+    var c = freierChip(st.id);
+    eingabeSchliessen();
+    if (c) { setzen(c, z, false); }
+    try { z.el.focus({ preventScroll: true }); } catch (x) { z.el.focus(); }
+  }
+
   /* --- Kästen im Raster -------------------------------------------------------- */
 
   /* Ein leerer Kasten im Raster: dieselbe Grösse und Art wie das Element im
      Überblick (ra-k--rolle, --aufgabe, --ergebnis — danach richtet das
      Raster aus), ohne Namen. Kein <button>: darin steht der Knopf
-     «Hinweis». Klick oder Enter legt das gewählte Element hinein; ein
-     gelegtes geht durch Herausziehen oder mit Entf zurück. */
+     «Hinweis». Klick oder Enter legt das gewählte Element hinein, ohne Wahl
+     öffnet er die Eingabe; ein gelegtes geht durch Herausziehen oder mit
+     Entf zurück. */
   function zielBauen(z, i) {
     var el = h('div', {
       class: 'ra-k ra-k--' + z.n.kategorie + ' tr-rz tr-rz--leer', tabindex: '0', role: 'button',
@@ -664,6 +806,7 @@
     el.addEventListener('click', function (ev) {
       if (ev.target.closest('.tr-rz__pruefen')) { ev.stopPropagation(); einzelnPruefen(z); return; }
       if (ev.target.closest('.tr-rz__hinweis')) { ev.stopPropagation(); hinweisGeben(z); return; }
+      if (ev.target.closest('.tr-rz__eingabe')) { return; }
       if (z.gezogen) { z.gezogen = false; return; }
       zielGeklickt(z);
     });
@@ -695,6 +838,10 @@
     HT.ui.leeren(z.el);
     if (kat === 'rolle') { z.el.appendChild(h('span', { class: 'gswatch gswatch--rolle', 'aria-hidden': 'true' }, HT.ui.katSymbol('rolle', 12))); }
     if (ms) { z.el.appendChild(h('span', { class: 'ra-k__ikone', 'aria-hidden': 'true' }, h('span', { class: 'ra-ms__raute' }))); }
+    if (z.eingabe && !zeigen && !gepr) {
+      z.el.appendChild(z.eingabe);
+      return;
+    }
     if (zeigen) {
       z.el.appendChild(h('span', { class: 'ra-k__name', text: HT.gesamtbild.trennen(zeigen.begriff) }));
     } else if (hinweis) {
@@ -755,10 +902,11 @@
         klassen = passend ? ['tr-rz--leer', 'tr-rz--bereit'] : ['tr-rz--leer'];
         hinweis = z.hinweis && z.hinweis.n ? hinweisText(z) : null;
         beschreibung = 'Leerer Kasten (' + art + ')' + (hinweis ? ', Hinweis ' + hinweis : '')
-          + (passend ? ' — Klick oder Enter legt ' + gewaehlt.begriff + ' hierher' : '');
+          + (passend ? ' — Klick oder Enter legt ' + gewaehlt.begriff + ' hierher' : ' — Klick öffnet die Eingabe');
       }
       ZIEL_ZUSTAENDE.forEach(function (k) { z.el.classList.toggle(k, klassen.indexOf(k) !== -1); });
-      var inhalt = (zeigen ? zeigen.id : '') + '|' + (hinweis || '') + '|' + !!gepr + '|' + (urteil || '');
+      z.el.classList.toggle('ist-eingabe', !!z.eingabe);
+      var inhalt = (zeigen ? zeigen.id : '') + '|' + (hinweis || '') + '|' + !!gepr + '|' + (urteil || '') + '|' + !!z.eingabe;
       if (inhalt !== z.inhalt) {
         z.inhalt = inhalt;
         zielFuellen(z, zeigen, hinweis, gepr, urteil);
@@ -1200,6 +1348,7 @@
       h('p', { text: 'Rollen, Aufgaben und Ergebnisse der ' + vorgehenVon(vorgehen).adjektiv + ' Vorgehensweise — je Phase, je Modul oder alles auf einmal. '
         + 'Je Aufgabe eine Zeile: links die verantwortliche Rolle, rechts die Ergebnisse, die sie erzeugt. Die Kästen sind leer, '
         + 'die Elemente liegen daneben bereit und wollen an ihren Platz; es zählt die Zuordnung, nicht die Reihenfolge. '
+        + 'Statt zu ziehen kann man in einen leeren Kasten klicken und den Namen tippen — eine Liste schlägt die passenden Elemente vor. '
         + 'Ein gelegtes Element lässt sich in einen anderen Kasten ziehen; zurück zu den übrigen geht es, wenn man es aus dem Bild zieht (oder mit Entf). '
         + 'Welche Arten leer bleiben — Rollen, Aufgaben, Ergebnisse —, sagt die Leiste in der Übung; die übrigen stehen ausgefüllt da. '
         + 'Am Ende zeigt die Prüfung, was richtig, falsch oder offen geblieben ist.' }),

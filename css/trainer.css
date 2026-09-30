@@ -227,6 +227,37 @@ body[data-route="trainer"][data-teil="uebung"] .unterleiste__inner { padding-inl
 .ra-k.tr-rz--falsch { box-shadow: 0 0 7px 1px color-mix(in srgb, var(--akzent) 55%, transparent); }
 .ra-k.tr-rz--offen { color: var(--text-leise); }
 
+/* Eingabe im leeren Kasten: das Feld füllt den Kasten, der Rand leuchtet
+   in der Farbe der Art; die Vorschläge hängen am Fenster (js: vorschlagLegen). */
+.ra-k.tr-rz.ist-eingabe { box-shadow: 0 0 0 2px var(--tr-farbe); cursor: text; }
+.tr-rz__eingabe {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: 600 11.5px/1.2 var(--schrift);
+  outline: none;
+}
+.tr-rz__eingabe::placeholder { color: var(--text-leise-hell); font-weight: 500; font-style: italic; }
+.tr-vorschlag {
+  position: fixed;
+  z-index: 60;
+  max-height: 260px;
+  padding: 6px 8px;
+  background: var(--bg);
+  border: 1px solid var(--rand);
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .12);
+}
+.tr-vorschlag .gs-treffer__knopf { padding: 6px 8px; border-radius: 8px; font-size: 13px; line-height: 1.25; }
+/* Lange Namen umbrechen statt abschneiden — sie unterscheiden sich oft erst am Ende. */
+.tr-vorschlag .gs-treffer__text { white-space: normal; overflow: visible; }
+.tr-vorschlag .gs-treffer__knopf.ist-aktiv { background: color-mix(in srgb, var(--tr-farbe, var(--akzent)) 14%, #fff); }
+.tr-vorschlag .gswatch { width: 18px; height: 18px; }
+
 /* Hinweis: beim Zeigen auf einen leeren Kasten ein kleiner Knopf rechts;
    die aufgedeckten Buchstaben stehen leise im Kasten. */
 .tr-rz__hinweis {
