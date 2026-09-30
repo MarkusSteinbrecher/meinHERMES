@@ -400,15 +400,14 @@
     zeichnen();
   }
 
+  /* Ein Klick legt das gewählte Element hinein (ein belegter Kasten
+     tauscht). Ohne Wahl tut er nichts: ein Fehlklick soll kein gelegtes
+     Element zurück in den Pool werfen — zurück geht es durch Herausziehen
+     oder mit Entf. */
   function zielGeklickt(ziel) {
-    if (uebung.geprueft) { return; }
-    if (uebung.gewaehlt) {
-      var g = uebung.gewaehlt;
-      var c = freierChip(g.id);
-      if (c && c.kategorie === ziel.n.kategorie) { setzen(c, ziel, true); }
-    } else if (ziel.chip) {
-      loesen(ziel);
-    }
+    if (uebung.geprueft || !uebung.gewaehlt) { return; }
+    var c = freierChip(uebung.gewaehlt.id);
+    if (c && c.kategorie === ziel.n.kategorie) { setzen(c, ziel, true); }
   }
 
   /* Ein Stapel ist über sein Element gewählt. */
@@ -645,8 +644,8 @@
   /* Ein leerer Kasten im Raster: dieselbe Grösse und Art wie das Element im
      Überblick (ra-k--rolle, --aufgabe, --ergebnis — danach richtet das
      Raster aus), ohne Namen. Kein <button>: darin steht der Knopf
-     «Hinweis». Klick oder Enter legt das gewählte Element hinein bzw. ein
-     gelegtes zurück; ein gelegtes lässt sich herausziehen. */
+     «Hinweis». Klick oder Enter legt das gewählte Element hinein; ein
+     gelegtes geht durch Herausziehen oder mit Entf zurück. */
   function zielBauen(z, i) {
     var el = h('div', {
       class: 'ra-k ra-k--' + z.n.kategorie + ' tr-rz tr-rz--leer', tabindex: '0', role: 'button',
@@ -661,6 +660,7 @@
     el.addEventListener('keydown', function (ev) {
       if (ev.target !== el) { return; }
       if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Spacebar') { ev.preventDefault(); zielGeklickt(z); }
+      if (ev.key === 'Delete' || ev.key === 'Backspace') { ev.preventDefault(); loesen(z); }
     });
     zielZiehbar(z, el);
     return el;
@@ -739,7 +739,7 @@
           klassen.push('tr-rz--' + urteil);
         }
         beschreibung = artName(z.chip) + ' ' + z.chip.begriff + (urteil ? ' (geprüft: ' + urteil + ')' : '')
-          + ' — Klick oder Enter legt es zurück, Ziehen verschiebt es';
+          + ' — Ziehen verschiebt es, aus dem Bild gezogen oder mit Entf geht es zurück';
       } else {
         klassen = passend ? ['tr-rz--leer', 'tr-rz--bereit'] : ['tr-rz--leer'];
         hinweis = z.hinweis && z.hinweis.n ? hinweisText(z) : null;
@@ -1189,6 +1189,7 @@
       h('p', { text: 'Rollen, Aufgaben und Ergebnisse der ' + vorgehenVon(vorgehen).adjektiv + ' Vorgehensweise — je Phase, je Modul oder alles auf einmal. '
         + 'Je Aufgabe eine Zeile: links die verantwortliche Rolle, rechts die Ergebnisse, die sie erzeugt. Die Kästen sind leer, '
         + 'die Elemente liegen daneben bereit und wollen an ihren Platz; es zählt die Zuordnung, nicht die Reihenfolge. '
+        + 'Ein gelegtes Element lässt sich in einen anderen Kasten ziehen; zurück zu den übrigen geht es, wenn man es aus dem Bild zieht (oder mit Entf). '
         + 'Welche Arten leer bleiben — Rollen, Aufgaben, Ergebnisse —, sagt die Leiste in der Übung; die übrigen stehen ausgefüllt da. '
         + 'Am Ende zeigt die Prüfung, was richtig, falsch oder offen geblieben ist.' }),
       h('p', {}, [
