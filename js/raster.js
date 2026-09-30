@@ -1296,15 +1296,26 @@
        jede Spalte neu. */
     /* Die grossen Meilensteine am Ende einer Phase stehen auf der Linie zur
        nächsten, wie die Rauten der Abbildung: die Mitte des letzten auf der
-       Linie. Das Band hält darüber Platz frei, das nächste darunter. */
+       Linie. Das Band hält darüber Platz frei, das nächste darunter.
+       Ist die nächste Phase zugeklappt, hat ihre Zeile keinen Platz dafür:
+       dann stehen sie ganz in ihrer Phase, der Name des untersten bündig
+       mit dem Ende des Phasenbalkens. */
     function meilensteineLegen() {
       var ueberhang = 0;
-      Array.prototype.forEach.call(gitter.querySelectorAll('.ra-phase'), function (band) {
+      var baender = gitter.querySelectorAll('.ra-phase');
+      Array.prototype.forEach.call(baender, function (band, i) {
         var ms = band.querySelector('.ra-phase__ms');
         var ende = ms.querySelector('.ra-ms-gruppe[data-lage="ende"]');
         ms.style.paddingTop = (ueberhang ? ueberhang + 8 : 8) + 'px';
         ueberhang = 0;
         if (!ende || !ende.lastElementChild) { return; }
+        var naechstes = baender[i + 1];
+        if (naechstes && naechstes.classList.contains('ist-zu')) {
+          /* Der Knopf hat 2 px Innenabstand: so schliesst der Name ab. */
+          ende.style.transform = 'translateY(2px)';
+          ms.style.paddingBottom = (ende.offsetHeight + 10) + 'px';
+          return;
+        }
         var halb = ende.lastElementChild.offsetHeight / 2;
         ende.style.transform = 'translateY(' + (halb + PHASEN_LUECKE / 2) + 'px)';
         ms.style.paddingBottom = (ende.offsetHeight - halb + 10) + 'px';
