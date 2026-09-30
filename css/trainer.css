@@ -251,24 +251,28 @@ body[data-route="trainer"][data-teil="uebung"] .unterleiste__inner { padding-inl
 .ra-buehne:not(.ist-geprueft) .tr-rz--belegt:focus-visible .tr-rz__pruefen { display: block; }
 body.tr-zieht .tr-rz__hinweis { display: none !important; }
 /* Prüfen: derselbe Knopf auf einem belegten Kasten, aber auf der oberen
-   Kante — der Name bleibt lesbar; danach steht dort das Urteil, bis ein
-   anderes Element im Kasten liegt. */
+   Kante — der Name bleibt lesbar; danach steht dort das Urteil als runde
+   Marke (Haken grün, Kreuz rot), bis ein anderes Element im Kasten liegt.
+   Die Prüfung der ganzen Übung setzt dieselben Marken. */
 .tr-rz__pruefen { top: 0; right: 4px; }
 .tr-rz__urteil {
   position: absolute;
   top: 0;
   right: 4px;
   z-index: 2;
-  padding: 1px 6px;
-  border-radius: 999px;
-  font: 700 9.5px/1.4 var(--schrift);
-  letter-spacing: .06em;
-  text-transform: uppercase;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  color: #fff;
   transform: translateY(-50%);
   pointer-events: none;
 }
-.tr-rz__urteil--richtig { color: var(--gut); background: var(--gut-bg); }
-.tr-rz__urteil--falsch { color: #fff; background: var(--akzent); }
+.tr-rz__urteil svg { display: block; }
+.tr-rz__urteil--richtig { background: var(--gut); }
+.tr-rz__urteil--falsch { background: var(--akzent); }
 body.tr-zieht .tr-rz__urteil { display: none; }
 .tr-rz__hinweistext { color: var(--text-leise); font-style: italic; letter-spacing: .02em; }
 

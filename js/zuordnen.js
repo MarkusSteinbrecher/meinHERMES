@@ -22,7 +22,8 @@
    Ein leerer Kasten zeigt beim Zeigen den Knopf «Hinweis»: jeder Klick
    deckt einen Buchstaben des gesuchten Elements mehr auf. Ein belegter
    zeigt den Knopf «Prüfen»: er sagt für diesen einen Kasten, ob das
-   Element stimmt — richtig oder falsch, ohne die Lösung zu verraten.
+   Element stimmt — grüner Haken oder rotes Kreuz, ohne die Lösung zu
+   verraten. Dieselben Marken setzt die Prüfung der ganzen Übung.
 
    Geprüft wird die Zuordnung, nicht die Reihenfolge: Blöcke im selben Feld
    mit gleich vielen Ergebniskästen sind vertauschbar, und innerhalb eines
@@ -665,6 +666,15 @@
     return el;
   }
 
+  /* Urteil auf der oberen Kante eines Kastens: grüner Haken oder rotes
+     Kreuz — nach «Prüfen» am Kasten und nach der Prüfung der Übung. */
+  var URTEIL_PFADE = { richtig: ['M5.5 12.5l4.2 4.2L18.5 7.5'], falsch: ['M7 7l10 10', 'M17 7L7 17'] };
+  function urteilMarke(status) {
+    var svg = HT.ui.symbol(URTEIL_PFADE[status], 12);
+    svg.setAttribute('stroke-width', '3.2');
+    return h('span', { class: 'tr-rz__urteil tr-rz__urteil--' + status, 'aria-hidden': 'true' }, svg);
+  }
+
   /* Der Inhalt eines Kastens wie ein Element im Raster (js/raster.js,
      knoten): Rolle mit Zeichen, Meilenstein mit Raute, sonst der Name. */
   function zielFuellen(z, zeigen, hinweis, gepr, urteil) {
@@ -686,11 +696,13 @@
       }));
     } else if (zeigen && !gepr) {
       z.el.appendChild(urteil
-        ? h('span', { class: 'tr-rz__urteil tr-rz__urteil--' + urteil, text: urteil === 'richtig' ? 'Richtig' : 'Falsch' })
+        ? urteilMarke(urteil)
         : h('button', {
           type: 'button', class: 'tr-rz__hinweis tr-rz__pruefen', tabindex: '-1',
           title: 'Prüfen: stimmt dieses Element hier?', 'aria-label': 'Prüfen', text: 'Prüfen'
         }));
+    } else if (gepr && (z.status === 'richtig' || z.status === 'falsch')) {
+      z.el.appendChild(urteilMarke(z.status));
     }
   }
 
