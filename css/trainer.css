@@ -191,28 +191,30 @@ body[data-route="trainer"][data-teil="uebung"] .unterleiste__inner { padding-inl
 
 /* --- Kästen im Raster -------------------------------------------------------- */
 
-/* Leer: der Kasten seiner Art weiss und gestrichelt, ohne Namen — auch bei
-   Rollen, die im Raster ohne Kasten stehen (dort eine Pille). */
+/* Leer: der Kasten seiner Art weiss und gestrichelt in der Farbe der Art
+   (--tr-farbe), ohne Namen — auch bei Rollen, die im Raster ohne Kasten
+   stehen (dort eine Pille). */
+.ra-k--rolle.tr-rz { --tr-farbe: var(--gk-rolle); --tr-farbe-bg: var(--gk-rolle-bg); }
+.ra-k--aufgabe.tr-rz { --tr-farbe: var(--gk-aufgabe); --tr-farbe-bg: var(--gk-aufgabe-bg); }
+.ra-k--ergebnis.tr-rz { --tr-farbe: var(--gk-ergebnis); --tr-farbe-bg: var(--gk-ergebnis-bg); }
 .ra-k.tr-rz { position: relative; cursor: pointer; }
-.ra-k.tr-rz--leer, .ra-k.tr-rz--offen { background: #fff; border-style: dashed; }
-.ra-k--aufgabe.tr-rz--leer, .ra-k--aufgabe.tr-rz--offen { border-color: color-mix(in srgb, var(--gk-aufgabe) 70%, #fff); }
-.ra-k--ergebnis.tr-rz--leer, .ra-k--ergebnis.tr-rz--offen { border-color: color-mix(in srgb, var(--gk-ergebnis) 60%, #fff); }
+.ra-k.tr-rz--leer, .ra-k.tr-rz--offen { background: #fff; border-style: dashed; border-color: var(--tr-farbe); }
 .ra-k--rolle.tr-rz--leer, .ra-k--rolle.tr-rz--offen {
   min-height: calc(1.25em + 8px);
   padding: 2px 6px 2px 2px;
-  border-color: color-mix(in srgb, var(--gk-rolle) 60%, #fff);
   border-radius: 999px;
 }
 .ra-k--rolle.tr-rz--leer .gswatch { opacity: .45; }
 
-/* Ein Element ist gewählt oder wird gezogen: die leeren Kästen seiner Art warten. */
+/* Ein Element ist gewählt oder wird gezogen: die leeren Kästen seiner Art
+   warten — getönt in ihrer Farbe. */
 .ra-k.tr-rz--bereit,
 .ra-buehne[data-zieht="rolle"] .ra-k--rolle.tr-rz--leer,
 .ra-buehne[data-zieht="aufgabe"] .ra-k--aufgabe.tr-rz--leer,
-.ra-buehne[data-zieht="ergebnis"] .ra-k--ergebnis.tr-rz--leer { border-color: var(--akzent); }
+.ra-buehne[data-zieht="ergebnis"] .ra-k--ergebnis.tr-rz--leer { background: var(--tr-farbe-bg); }
 .ra-buehne:not(.ist-geprueft) .ra-k.tr-rz:hover,
 .ra-buehne:not(.ist-geprueft) .ra-k.tr-rz:focus-visible,
-.ra-k.tr-rz.ist-drueber { box-shadow: 0 0 0 2px var(--akzent); outline: none; }
+.ra-k.tr-rz.ist-drueber { box-shadow: 0 0 0 2px var(--tr-farbe); outline: none; }
 .ra-k.tr-rz--belegt { cursor: grab; }
 .ra-k.tr-rz.ist-am-ziehen > * { opacity: .35; }
 
