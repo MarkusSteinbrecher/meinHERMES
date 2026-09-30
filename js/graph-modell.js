@@ -189,6 +189,39 @@
     return aus;
   }
 
+  /* Feste Folge der Aufgaben in Projektsteuerung und Projektführung, nach
+     dem Muster von Konzept bis Einführung: die Gegenstücke späterer Phasen
+     (Phasenfreigabe → Phasenfreigabe Abschluss, Projektabschluss;
+     Phasenfreigabe vorbereiten → Projektabschluss vorbereiten) stehen an
+     derselben Stelle — sonst stünde in der letzten Phase anderes oben als in
+     den Phasen davor. Gilt je Phase nur, wenn alle Aufgaben des Moduls dort
+     in der Liste stehen (die Initialisierung der Steuerung bleibt, wie sie
+     ist). Das Raster sortiert sonst nach der Höhe in Abbildung 1 — dort steht
+     im Abschluss «Projektabschluss vorbereiten» oben. */
+  var FESTE_FOLGE = {
+    Projektsteuerung: [
+      'Projekt steuern',
+      'Entscheid Releasefreigabe treffen', 'Entscheid Phasenfreigabe treffen',
+      'Entscheid Phasenfreigabe Abschluss treffen', 'Entscheid Projektabschluss treffen',
+      'Entscheid Projektabbruch treffen'
+    ],
+    Projektführung: [
+      'Stakeholder managen und informieren', 'Änderungen managen', 'Projektmanagementplan erarbeiten',
+      'Projekt führen und kontrollieren', 'Leistungen vereinbaren und steuern',
+      'Releaseabschluss vorbereiten', 'Phasenfreigabe vorbereiten', 'Projektabschluss vorbereiten',
+      'Durchführungsauftrag erarbeiten',
+      'Probleme behandeln und Erfahrungen nutzen', 'Risiken managen', 'Qualitätssicherung führen'
+    ]
+  };
+
+  /* Platz einer Aufgabe in der festen Folge ihres Moduls; null, wenn das
+     Modul keine hat, -1, wenn die Aufgabe nicht darin steht. Das Raster
+     ordnet danach die Blöcke eines Feldes (js/raster.js, festeFolge). */
+  function folgeRang(modul, begriff) {
+    var folge = FESTE_FOLGE[modul];
+    return folge ? folge.indexOf(begriff) : null;
+  }
+
   /* Handbuch Kap. 3.2.1: zwingend in jedem Projekt. */
   var ZWINGENDE_MODULE = ['Projektsteuerung', 'Projektführung', 'Projektgrundlagen', 'Einführungsorganisation'];
 
@@ -876,6 +909,7 @@
     bloecke: bloecke,
     abbildungLagenSetzen: abbildungLagenSetzen,
     abbildungY: abbildungY,
+    folgeRang: folgeRang,
     abbildungLage: abbildungLage,
     einstieg: einstieg,
     suchen: suchen

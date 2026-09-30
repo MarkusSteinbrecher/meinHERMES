@@ -578,6 +578,25 @@
      Abbildung 1 je Feld), Gleichstand nach dem ersten Vorkommen. So steht
      «Projekt führen und kontrollieren» in der Initialisierung nicht unten
      und ab dem Konzept oben, sondern überall an derselben Stelle der Folge. */
+  /* Projektsteuerung und Projektführung haben eine feste Folge ihrer
+     Aufgaben (HT.graph.folgeRang), damit jede Phase gleich aussieht: die
+     Blöcke tauschen nur untereinander die Plätze, anderes bleibt stehen.
+     Steht eine Aufgabe des Feldes nicht in der Folge, bleibt alles. */
+  function festeFolge(stuecke, modul) {
+    var plaetze = [], raenge = {};
+    for (var i = 0; i < stuecke.length; i++) {
+      if (stuecke[i].key.slice(0, 2) !== 'a:') { continue; }
+      var e = HT.daten.eintragMitId(stuecke[i].key.slice(2));
+      var r = e ? HT.graph.folgeRang(modul, e.begriff) : null;
+      if (r === null || r === -1) { return; }
+      raenge[stuecke[i].key] = r;
+      plaetze.push(i);
+    }
+    var teil = plaetze.map(function (i) { return stuecke[i]; });
+    teil.sort(function (u, v) { return raenge[u.key] - raenge[v.key]; });
+    plaetze.forEach(function (i, j) { stuecke[i] = teil[j]; });
+  }
+
   function spalteOrdnen(felder) {
     var summe = {}, zahl = {}, erstes = {}, n = 0;
     felder.forEach(function (f) {
@@ -960,6 +979,7 @@
           if (yu === yv && geteilt(f.zeile, u.key) && geteilt(f.zeile, v.key)) { return u.key < v.key ? -1 : u.key > v.key ? 1 : 0; }
           return yu - yv || 0;
         });
+        festeFolge(f.stuecke, sp.modul);
         spurenFuellen(f, 1, null);
       });
       sp.anzahl = 1;
