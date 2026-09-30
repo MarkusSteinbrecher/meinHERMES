@@ -779,8 +779,14 @@
   var BLOCK_RELATIONEN = { verantwortlich: true, beteiligt: false, erzeugt: true, ergebnisrolle: false };
 
   /* Je Aufgabe im Umfang ihre verantwortliche Rolle und die Ergebnisse, die
-     sie im Umfang erzeugt, in der Reihenfolge des Graphen; Bahn ist die Phase,
-     Unterbahn das übergebene Modul (leer: keine). */
+     sie im Umfang erzeugt, in der Reihenfolge des Graphen — die Zustände
+     (z. B. «Produkt entwickelt oder angepasst») immer am Ende; Bahn ist die
+     Phase, Unterbahn das übergebene Modul (leer: keine). */
+  function istZustand(k) {
+    var e = k && (k.eintrag || HT.daten.eintragMitId(k.id));
+    return !!e && e.typ === 'Zustand';
+  }
+
   function bloeckeImFeld(umfang, unter) {
     var tg = teilgraph({
       umfang: umfang,
@@ -803,7 +809,9 @@
       return {
         aufgabe: a,
         rolle: rolleVon[a.id] || null,
-        ergebnisse: (ergebnisseVon[a.id] || []).sort(function (x, y) { return rang[x.id] - rang[y.id]; }),
+        ergebnisse: (ergebnisseVon[a.id] || []).sort(function (x, y) {
+          return (istZustand(x) - istZustand(y)) || (rang[x.id] - rang[y.id]);
+        }),
         bahn: aufgaben.gruppeVon[a.id] || '',
         unter: unter
       };
