@@ -19,7 +19,7 @@
    Vorgehensweise steht oben auf der Seite; die Kästen zählt sie mit der
    zuletzt gewählten Einstellung.
 
-   Ein leerer Kasten zeigt beim Zeigen den Knopf «Hinweis»: jeder Klick
+   Ein leerer Kasten zeigt beim Zeigen den Knopf «?» (Hinweis): jeder Klick
    deckt einen Buchstaben des gesuchten Elements mehr auf. Ein belegter
    zeigt den Knopf «Prüfen»: er sagt für diesen einen Kasten, ob das
    Element stimmt — grüner Haken oder rotes Kreuz, ohne die Lösung zu
@@ -692,7 +692,7 @@
     if (!zeigen && !gepr) {
       z.el.appendChild(h('button', {
         type: 'button', class: 'tr-rz__hinweis', tabindex: '-1',
-        title: 'Hinweis: einen Buchstaben mehr zeigen', 'aria-label': 'Hinweis', text: 'Hinweis'
+        title: 'Hinweis: einen Buchstaben mehr zeigen', 'aria-label': 'Hinweis', text: '?'
       }));
     } else if (zeigen && !gepr) {
       z.el.appendChild(urteil

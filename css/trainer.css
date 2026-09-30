@@ -245,6 +245,17 @@ body[data-route="trainer"][data-teil="uebung"] .unterleiste__inner { padding-inl
   cursor: pointer;
 }
 .tr-rz__hinweis:hover { color: var(--akzent-text); border-color: var(--akzent); }
+/* Im leeren Kasten nur ein «?» im Kreis. */
+.tr-rz__hinweis:not(.tr-rz__pruefen) {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0;
+  text-align: center;
+}
 .ra-buehne:not(.ist-geprueft) .tr-rz--leer:hover .tr-rz__hinweis,
 .ra-buehne:not(.ist-geprueft) .tr-rz--leer:focus-visible .tr-rz__hinweis,
 .ra-buehne:not(.ist-geprueft) .tr-rz--belegt:hover .tr-rz__pruefen,
