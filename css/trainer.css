@@ -221,8 +221,10 @@ body[data-route="trainer"][data-teil="uebung"] .unterleiste__inner { padding-inl
 /* Nach der Prüfung steht in jedem Kasten das gesuchte Element (bei «richtig»
    das gelegte — es kann aus einem gleichwertigen Block stammen). */
 .ra-buehne.ist-geprueft .ra-k.tr-rz { cursor: default; }
-.ra-k.tr-rz--richtig { box-shadow: 0 0 0 2px var(--gut); }
-.ra-k.tr-rz--falsch { box-shadow: 0 0 0 2px var(--akzent); }
+/* Richtig und falsch: ein weicher Schein statt eines Rings — der Rand
+   bleibt in der Farbe der Art. */
+.ra-k.tr-rz--richtig { box-shadow: 0 0 7px 1px color-mix(in srgb, var(--gut) 55%, transparent); }
+.ra-k.tr-rz--falsch { box-shadow: 0 0 7px 1px color-mix(in srgb, var(--akzent) 55%, transparent); }
 .ra-k.tr-rz--offen { color: var(--text-leise); }
 
 /* Hinweis: beim Zeigen auf einen leeren Kasten ein kleiner Knopf rechts;
