@@ -20,7 +20,9 @@
    zuletzt gewählten Einstellung.
 
    Ein leerer Kasten zeigt beim Zeigen den Knopf «Hinweis»: jeder Klick
-   deckt einen Buchstaben des gesuchten Elements mehr auf.
+   deckt einen Buchstaben des gesuchten Elements mehr auf. Ein belegter
+   zeigt den Knopf «Prüfen»: er sagt für diesen einen Kasten, ob das
+   Element stimmt — richtig oder falsch, ohne die Lösung zu verraten.
 
    Geprüft wird die Zuordnung, nicht die Reihenfolge: Blöcke im selben Feld
    mit gleich vielen Ergebniskästen sind vertauschbar, und innerhalb eines
@@ -600,12 +602,23 @@
     return zeichen.slice(0, z.hinweis.n).join('') + (z.hinweis.n < zeichen.length ? '…' : '');
   }
 
+  /* «Prüfen» an einem belegten Kasten: merkt sich, welches Element geprüft
+     wurde. Das Urteil rechnet zeichnen() jedes Mal neu aus dem Abgleich —
+     wer daneben einen gleichwertigen Block füllt, kann es ändern. Ein
+     anderes Element im Kasten gilt als ungeprüft. Zählt nicht für den
+     Fortschritt: das tut nur die Prüfung der ganzen Übung. */
+  function einzelnPruefen(z) {
+    if (uebung.geprueft || !z.chip) { return; }
+    z.einzeln = z.chip.id;
+    zeichnen();
+  }
+
   /* Nach einer Prüfung weiterarbeiten: die falsch gelegten Elemente gehen
      zurück in die Auswahl, die richtigen bleiben liegen; die Prüfmarken gehen. */
   function weitermachen() {
     uebung.ziele.forEach(function (z) {
       if (z.status === 'falsch' && z.chip) { z.chip.ziel = null; z.chip = null; z.gezaehlt = null; }
-      z.status = ''; z.loesung = null;
+      z.status = ''; z.loesung = null; z.einzeln = null;
     });
     uebung.gewaehlt = null;
     uebung.geprueft = false;
@@ -616,7 +629,7 @@
   /* Zurück auf Anfang — an den bestehenden Objekten, denn die Ziele tragen
      die Verweise auf ihre Kästen im Raster. */
   function zuruecksetzen() {
-    uebung.ziele.forEach(function (z) { z.chip = null; z.status = ''; z.loesung = null; z.gezaehlt = null; z.hinweis = null; });
+    uebung.ziele.forEach(function (z) { z.chip = null; z.status = ''; z.loesung = null; z.gezaehlt = null; z.hinweis = null; z.einzeln = null; });
     uebung.chips.forEach(function (c) { c.ziel = null; });
     uebung.gewaehlt = null;
     uebung.geprueft = false;
@@ -639,6 +652,7 @@
       dataset: { ziel: String(i) }
     });
     el.addEventListener('click', function (ev) {
+      if (ev.target.closest('.tr-rz__pruefen')) { ev.stopPropagation(); einzelnPruefen(z); return; }
       if (ev.target.closest('.tr-rz__hinweis')) { ev.stopPropagation(); hinweisGeben(z); return; }
       if (z.gezogen) { z.gezogen = false; return; }
       zielGeklickt(z);
@@ -653,7 +667,7 @@
 
   /* Der Inhalt eines Kastens wie ein Element im Raster (js/raster.js,
      knoten): Rolle mit Zeichen, Meilenstein mit Raute, sonst der Name. */
-  function zielFuellen(z, zeigen, hinweis, gepr) {
+  function zielFuellen(z, zeigen, hinweis, gepr, urteil) {
     var kat = z.n.kategorie;
     var ms = !!zeigen && istMeilenstein(zeigen);
     z.el.classList.toggle('ra-k--meilenstein', ms);
@@ -670,6 +684,13 @@
         type: 'button', class: 'tr-rz__hinweis', tabindex: '-1',
         title: 'Hinweis: einen Buchstaben mehr zeigen', 'aria-label': 'Hinweis', text: 'Hinweis'
       }));
+    } else if (zeigen && !gepr) {
+      z.el.appendChild(urteil
+        ? h('span', { class: 'tr-rz__urteil tr-rz__urteil--' + urteil, text: urteil === 'richtig' ? 'Richtig' : 'Falsch' })
+        : h('button', {
+          type: 'button', class: 'tr-rz__hinweis tr-rz__pruefen', tabindex: '-1',
+          title: 'Prüfen: stimmt dieses Element hier?', 'aria-label': 'Prüfen', text: 'Prüfen'
+        }));
     }
   }
 
@@ -680,10 +701,15 @@
     var gepr = uebung.geprueft;
     var gewaehlt = gepr ? null : uebung.gewaehlt;
 
+    /* Einzeln geprüfte Kästen: ein Abgleich für alle, nur wenn es welche gibt. */
+    var einzeln = null;
+    if (!gepr && uebung.ziele.some(function (z) { return z.chip && z.einzeln === z.chip.id; })) { einzeln = abgleich(); }
+
     /* Kästen — neu gefüllt nur, wo sich etwas geändert hat. */
     var geaendert = false;
     uebung.ziele.forEach(function (z) {
       z.gezogen = false;
+      var urteil = null;
       var art = HT.graph.KAT[z.n.kategorie].singular;
       var passend = !!gewaehlt && gewaehlt.kategorie === z.n.kategorie;
       var klassen, zeigen = null, hinweis = null, beschreibung;
@@ -696,7 +722,12 @@
       } else if (z.chip) {
         klassen = ['tr-rz--belegt'];
         zeigen = z.chip;
-        beschreibung = artName(z.chip) + ' ' + z.chip.begriff + ' — Klick oder Enter legt es zurück, Ziehen verschiebt es';
+        if (einzeln && z.einzeln === z.chip.id) {
+          urteil = einzeln.get(z).status;
+          klassen.push('tr-rz--' + urteil);
+        }
+        beschreibung = artName(z.chip) + ' ' + z.chip.begriff + (urteil ? ' (geprüft: ' + urteil + ')' : '')
+          + ' — Klick oder Enter legt es zurück, Ziehen verschiebt es';
       } else {
         klassen = passend ? ['tr-rz--leer', 'tr-rz--bereit'] : ['tr-rz--leer'];
         hinweis = z.hinweis && z.hinweis.n ? hinweisText(z) : null;
@@ -704,10 +735,10 @@
           + (passend ? ' — Klick oder Enter legt ' + gewaehlt.begriff + ' hierher' : '');
       }
       ZIEL_ZUSTAENDE.forEach(function (k) { z.el.classList.toggle(k, klassen.indexOf(k) !== -1); });
-      var inhalt = (zeigen ? zeigen.id : '') + '|' + (hinweis || '') + '|' + !!gepr;
+      var inhalt = (zeigen ? zeigen.id : '') + '|' + (hinweis || '') + '|' + !!gepr + '|' + (urteil || '');
       if (inhalt !== z.inhalt) {
         z.inhalt = inhalt;
-        zielFuellen(z, zeigen, hinweis, gepr);
+        zielFuellen(z, zeigen, hinweis, gepr, urteil);
         geaendert = true;
       }
       z.el.title = beschreibung;
@@ -947,6 +978,7 @@
   function zielZiehbar(ziel, el) {
     el.addEventListener('pointerdown', function (ev) {
       if (ev.button !== 0 || ev.pointerType === 'touch' || uebung.geprueft || !ziel.chip) { return; }
+      if (ev.target.closest('.tr-rz__pruefen')) { return; }
       ev.stopPropagation();
       ziel.gezogen = false;
       ziehen(ev, ziel.chip, { el: el, ziel: ziel, gezogen: function () { ziel.gezogen = true; } });
@@ -1078,7 +1110,9 @@
     feld.addEventListener('input', function () { uebung.suche = feld.value; zeichnen(); });
     feld.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { feld.value = ''; uebung.suche = ''; zeichnen(); } });
     loeschen.addEventListener('click', function () { feld.value = ''; uebung.suche = ''; zeichnen(); feld.focus(); });
-    var huelle = h('div', { class: 'suche tr-suche' }, [feld, loeschen, refs.sucheStand]);
+    /* Das ✕ steht mittig zum Feld: .suche umfasst nur Feld und Knopf, die
+       Zeile mit der Zahl der Elemente steht darunter. */
+    var huelle = h('div', { class: 'tr-suche' }, [h('div', { class: 'suche' }, [feld, loeschen]), refs.sucheStand]);
     huelle.feld = feld;
     return huelle;
   }

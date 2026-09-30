@@ -244,8 +244,30 @@ body[data-route="trainer"][data-teil="uebung"] .unterleiste__inner { padding-inl
 }
 .tr-rz__hinweis:hover { color: var(--akzent-text); border-color: var(--akzent); }
 .ra-buehne:not(.ist-geprueft) .tr-rz--leer:hover .tr-rz__hinweis,
-.ra-buehne:not(.ist-geprueft) .tr-rz--leer:focus-visible .tr-rz__hinweis { display: block; }
+.ra-buehne:not(.ist-geprueft) .tr-rz--leer:focus-visible .tr-rz__hinweis,
+.ra-buehne:not(.ist-geprueft) .tr-rz--belegt:hover .tr-rz__pruefen,
+.ra-buehne:not(.ist-geprueft) .tr-rz--belegt:focus-visible .tr-rz__pruefen { display: block; }
 body.tr-zieht .tr-rz__hinweis { display: none !important; }
+/* Prüfen: derselbe Knopf auf einem belegten Kasten, aber auf der oberen
+   Kante — der Name bleibt lesbar; danach steht dort das Urteil, bis ein
+   anderes Element im Kasten liegt. */
+.tr-rz__pruefen { top: 0; right: 4px; }
+.tr-rz__urteil {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  z-index: 2;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font: 700 9.5px/1.4 var(--schrift);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.tr-rz__urteil--richtig { color: var(--gut); background: var(--gut-bg); }
+.tr-rz__urteil--falsch { color: #fff; background: var(--akzent); }
+body.tr-zieht .tr-rz__urteil { display: none; }
 .tr-rz__hinweistext { color: var(--text-leise); font-style: italic; letter-spacing: .02em; }
 
 /* --- Seite: Knöpfe, Suche, Auswertung, Pool ----------------------------------- */
@@ -254,6 +276,7 @@ body.tr-zieht .tr-rz__hinweis { display: none !important; }
 .tr-seite__text { padding: 14px 20px 32px; gap: 18px; }
 .tr-knoepfe { margin: 0; }
 .tr-suche { margin: 0; }
+.tr-suche .suche { margin: 0; }
 .tr-suche__feld { min-height: 36px; font-size: 13.5px; }
 .tr-suche__stand { display: block; margin-top: 4px; font-size: 12px; color: var(--text-leise); }
 
