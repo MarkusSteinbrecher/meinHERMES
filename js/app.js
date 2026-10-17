@@ -298,6 +298,17 @@
       });
     }
 
+    /* Pfade wie #/trainer/quiz: der letzte Teil, der etwas kennt, gilt
+       (quiz führt in den Trainer), sonst der erste. */
+    var gesucht = name;
+    if (name.indexOf('/') !== -1) {
+      var stufen = name.split('/').filter(Boolean);
+      name = stufen[0] || STARTROUTE;
+      for (var s = stufen.length - 1; s >= 0; s--) {
+        if (ALIASE[stufen[s]] || HT.views[stufen[s]]) { name = stufen[s]; break; }
+      }
+    }
+
     var alias = ALIASE[name];
     if (typeof alias === 'string') { name = alias; }
     else if (alias) {
@@ -306,8 +317,15 @@
         if (Object.prototype.hasOwnProperty.call(alias.params, k2)) { params[k2] = alias.params[k2]; }
       }
     }
-    if (!HT.views[name]) { name = STARTROUTE; }
+    if (!HT.views[name]) { return { name: STARTROUTE, params: {}, unbekannt: gesucht }; }
     return { name: name, params: params };
+  }
+
+  /* Eine unbekannte Adresse führt in den Überblick, sagt es aber — sonst
+     wirkt ein vertippter oder veralteter Link wie ein Fehler der Seite. */
+  function unbekanntHinweis(gesucht) {
+    return h('div', { class: 'datenwarnung', role: 'status' },
+      'Die Seite «' + gesucht + '» gibt es nicht (mehr). Hier ist der Überblick.');
   }
 
   function zeichnen() {
@@ -335,6 +353,11 @@
       if (global.console && global.console.error) { global.console.error(fehler); }
     }
     if (!suchmodusGesetzt && pille) { pille.modusSetzen(null); }
+    if (route.unbekannt) {
+      behaelter.insertBefore(unbekanntHinweis(route.unbekannt), behaelter.firstChild);
+      /* Die Adresszeile zeigt, wo man nun ist (ohne neuen Verlaufseintrag). */
+      try { global.history.replaceState(null, '', '#/' + STARTROUTE); } catch (e) { /* egal */ }
+    }
 
     /* Seiten, die je Parameter eine eigene Seite sind (Feld der Abbildung),
        stellen den Titel als Funktion bereit; `nav` sagt, welcher Menüpunkt

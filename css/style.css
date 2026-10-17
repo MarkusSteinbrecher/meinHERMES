@@ -1982,6 +1982,12 @@ html:has(.hb-fenster[open]) { overflow: hidden; }
 .hb-inhalt__knopf { padding: 2px 0; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; }
 .hb-inhalt__knopf:hover { color: var(--akzent); }
 .hb-inhalt__eintrag--1 .hb-inhalt__knopf { font-weight: 700; }
+/* Schmal reicht der Platz nicht für zwei Spalten: lange Wörter wie
+   «Entwicklungsmanagement» ragten sonst über die Karte. */
+@media (max-width: 559.98px) {
+  .hb-inhalt__liste { columns: 1; }
+}
+.hb-inhalt__knopf { max-width: 100%; overflow-wrap: break-word; hyphens: auto; }
 /* Teile (Unterkapitel) und Titelebenen des Handbuchtexts. */
 .hb-teil { margin-top: 8px; }
 .hb-teil + .hb-teil { margin-top: 26px; padding-top: 12px; border-top: 1px solid var(--linie-stark); }
