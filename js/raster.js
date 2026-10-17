@@ -3189,6 +3189,8 @@
   HT.views.ueberblick = {
     titel: 'Überblick',
     nav: 'ueberblick',
+    /* Das Raster braucht die Breite eines grösseren Schirms (js/app.js). */
+    nurDesktop: true,
     render: render,
     suchtreffer: function (e) {
       return !!(laufende && document.body.contains(laufende.buehne) && wahlVonAussen && wahlVonAussen(e));

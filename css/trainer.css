@@ -460,6 +460,21 @@ body.tr-zieht, body.tr-zieht * { cursor: grabbing; }
 .fs-legende li { display: flex; align-items: center; gap: 6px; }
 .fs-hinweis { margin: 0; font-size: 12px; color: var(--text-leise-hell); }
 
+/* Telefon: die ganze Tafel auf einen Blick statt seitlich zu rollen. Die
+   Balken fallen weg (die Zahl trägt Stand und Farbe), die Phasen stehen
+   senkrecht, lange Modulnamen brechen. */
+@media (max-width: 559.98px) {
+  .fs-raster { min-width: 0; }
+  .fs-raster th, .fs-raster td { padding-right: 6px; }
+  .fs-balken { display: none; }
+  .fs-zelle { width: auto; }
+  .fs-zahl { min-width: 0; }
+  .fs-kopf { vertical-align: bottom; }
+  .fs-kopf__link, .fs-kopf__text { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+  .fs-ecke { vertical-align: bottom; }
+  .fs-zeile { white-space: normal; hyphens: auto; overflow-wrap: break-word; font-size: 12.5px; line-height: 1.25; }
+}
+
 @media print {
   .fs-tafel { overflow: visible; }
 }

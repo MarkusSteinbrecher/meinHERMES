@@ -182,7 +182,7 @@
     phasen.forEach(function (p) {
       kopf.push(h('th', { class: 'fs-kopf', scope: 'col' }, uebungsLink('phase', p, vorgehen, 'fs-kopf__link')));
     });
-    kopf.push(h('th', { class: 'fs-kopf fs-kopf--summe', scope: 'col', text: 'Modul gesamt' }));
+    kopf.push(h('th', { class: 'fs-kopf fs-kopf--summe', scope: 'col' }, h('span', { class: 'fs-kopf__text', text: 'Modul gesamt' })));
 
     var zeilen = [], alleZahlen = [], jePhase = {};
     phasen.forEach(function (p) { jePhase[p] = []; });

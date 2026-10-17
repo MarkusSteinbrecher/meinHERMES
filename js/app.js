@@ -321,6 +321,36 @@
     return { name: name, params: params };
   }
 
+  /* Ansichten mit nurDesktop (das Raster des Überblicks, das Zuordnen)
+     sind für grössere Schirme gebaut. Schmal steht oben ein Hinweis dazu
+     (CSS zeigt ihn erst unter 700 px), mit dem Weg zu dem, was am Telefon
+     gut geht. Weggeklickt bleibt er für diese Sitzung weg. */
+  var DESKTOP_WEG = 'hermes-trainer:desktophinweis';
+
+  function desktopHinweisWeg() {
+    try { return global.sessionStorage.getItem(DESKTOP_WEG) === '1'; } catch (e) { return false; }
+  }
+
+  function desktopHinweis() {
+    var hinweis = h('div', { class: 'datenwarnung desktophinweis', role: 'note' }, [
+      h('p', { class: 'desktophinweis__text' }, [
+        h('b', { text: 'Für grössere Bildschirme gedacht. ' }),
+        'Diese Ansicht braucht Platz und eignet sich für Computer oder Tablet. Am Telefon gehen ',
+        h('a', { href: '#/trainer?teil=lernkarten', text: 'Lernkarten' }), ', ',
+        h('a', { href: '#/trainer?teil=quiz', text: 'Quiz' }), ' und das ',
+        h('a', { href: '#/handbuch', text: 'Handbuch' }), ' gut.'
+      ]),
+      h('button', {
+        type: 'button', class: 'desktophinweis__zu', 'aria-label': 'Hinweis schliessen', title: 'Hinweis schliessen', text: '✕',
+        on: { click: function () {
+          try { global.sessionStorage.setItem(DESKTOP_WEG, '1'); } catch (e) { /* egal */ }
+          if (hinweis.parentNode) { hinweis.parentNode.removeChild(hinweis); }
+        } }
+      })
+    ]);
+    return hinweis;
+  }
+
   /* Eine unbekannte Adresse führt in den Überblick, sagt es aber — sonst
      wirkt ein vertippter oder veralteter Link wie ein Fehler der Seite. */
   function unbekanntHinweis(gesucht) {
@@ -353,6 +383,10 @@
       if (global.console && global.console.error) { global.console.error(fehler); }
     }
     if (!suchmodusGesetzt && pille) { pille.modusSetzen(null); }
+    var nurDesktop = typeof view.nurDesktop === 'function' ? view.nurDesktop(route.params) : view.nurDesktop;
+    if (nurDesktop && !desktopHinweisWeg()) {
+      behaelter.insertBefore(desktopHinweis(), behaelter.firstChild);
+    }
     if (route.unbekannt) {
       behaelter.insertBefore(unbekanntHinweis(route.unbekannt), behaelter.firstChild);
       /* Die Adresszeile zeigt, wo man nun ist (ohne neuen Verlaufseintrag). */

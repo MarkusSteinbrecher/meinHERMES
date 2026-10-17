@@ -117,8 +117,17 @@
     return teil && teil.id !== TEILE[0] ? 'Trainer · ' + teil.label : 'Trainer';
   }
 
+  /* Das Zuordnen (Übersicht und Übungen) legt Elemente ins Raster des
+     Überblicks — das braucht einen grösseren Schirm (js/app.js). */
+  function nurDesktop(params) {
+    params = params || {};
+    var teil = seitenTeil(params) || teilFinden(params.teil);
+    return !!teil && teil.id === 'zuordnen';
+  }
+
   HT.views.trainer = {
     titel: titel,
+    nurDesktop: nurDesktop,
     render: render
   };
 }(window));

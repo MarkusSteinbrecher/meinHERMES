@@ -443,17 +443,18 @@ main:focus { outline: none; }
 .unterleiste__nr { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; color: var(--akzent-text); }
 .unterleiste__link[aria-current="page"] .unterleiste__nr { color: inherit; }
 .unterleiste__link svg { width: 14px; height: 14px; flex: 0 0 auto; }
-/* Schmal passen die vier Teile des Trainers mit Namen nicht in die Zeile
-   (406 px bei 270 frei): nicht gewählte zeigen nur ihr Icon, der Name
-   bleibt für Screenreader. */
+/* Schmal passen die vier Teile des Trainers mit Namen nicht nebeneinander
+   (406 px bei 270 frei): dort steht der Name klein unter dem Icon, so
+   bleibt jeder Teil lesbar. */
 @media (max-width: 699.98px) {
-  .unterleiste__link--ikone:not([aria-current="page"]) { padding-inline: 10px; }
-  .unterleiste__link--ikone:not([aria-current="page"]) .unterleiste__text {
-    position: absolute;
-    width: 1px; height: 1px;
-    padding: 0; margin: -1px;
-    overflow: hidden; clip: rect(0 0 0 0);
-    white-space: nowrap; border: 0;
+  .unterleiste__link--ikone {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding-inline: 6px;
+    font-size: 10.5px;
+    letter-spacing: 0;
+    text-transform: none;
   }
 }
 /* Trefferzahl der Handbuchsuche je Kapitel: klein über dem Ende des
@@ -2067,3 +2068,29 @@ a.hb-seite:hover { color: var(--akzent); border-bottom-color: var(--akzent); }
   color: var(--text);
 }
 .beleg__kopf { display: block; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--akzent-text); margin-bottom: 3px; }
+
+/* --- Hinweis: Ansicht für grössere Schirme (js/app.js) ------------------- */
+/* Nur schmal sichtbar; breiter ist die Ansicht ja gerade richtig. */
+.desktophinweis { display: none; }
+@media (max-width: 699.98px) {
+  .desktophinweis {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--akzent-schwach);
+    color: var(--text-weich);
+  }
+}
+.desktophinweis__text { flex: 1 1 auto; margin: 0; }
+.desktophinweis__text b { color: var(--text); }
+.desktophinweis__zu {
+  flex: 0 0 auto;
+  margin: -4px -6px 0 0;
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--text-leise);
+  font: inherit;
+  cursor: pointer;
+}
+.desktophinweis__zu:hover { color: var(--text); }
